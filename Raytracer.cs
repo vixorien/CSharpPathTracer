@@ -54,7 +54,7 @@ namespace CSharpRaytracing
 		public event ScanlineDelegate RaytraceScanlineComplete;
 
 		private Random rng;
-		private List<Sphere> scene;
+		private List<SphereOld> scene;
 		private Environment environment;
 
 		private RaytracingStats stats;
@@ -68,7 +68,7 @@ namespace CSharpRaytracing
 
 			// Other setup
 			rng = new Random();
-			scene = new List<Sphere>();
+			scene = new List<SphereOld>();
 
 			// Materials ===
 			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
@@ -79,24 +79,24 @@ namespace CSharpRaytracing
 			// Set up scene ===
 
 			// Large sphere below
-			scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
+			scene.Add(new SphereOld(new Vector3(0, -1000, 0), 1000, grayMatte));
 
 			// Small spheres in front of camera
-			scene.Add(new Sphere(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
-			scene.Add(new Sphere(new Vector3(0, 4.0f, 0), 2.0f, mirror));
-			scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
+			scene.Add(new SphereOld(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
+			scene.Add(new SphereOld(new Vector3(0, 4.0f, 0), 2.0f, mirror));
+			scene.Add(new SphereOld(new Vector3(5, 2.0f, 0), 2.0f, gold));
 
 			// Random floating spheres
 			for (int i = 0; i < 25; i++)
 			{
-				scene.Add(new Sphere(
+				scene.Add(new SphereOld(
 					new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
 					rng.NextFloat(0.25f, 1.0f),
 					new Material(rng.NextColor(), rng.NextBool())));
 			}
 		}
 
-		public void RaytraceScene(object threadParam) //Bitmap output, Camera camera, int samplesPerPixel, int maxRecursionDepth)
+		public void RaytraceScene(object threadParam) //Bitmap output, Camera camera, int samplesPerPixel, int maxRecursionDepth
 		{
 			RaytracingParameters rtParams = threadParam as RaytracingParameters;
 			if (rtParams == null)
@@ -192,10 +192,10 @@ namespace CSharpRaytracing
 		{
 			// No hits yet
 			bool anyHit = false;
-			hit = new SphereIntersection(Vector3.Zero, Vector3.Zero, float.PositiveInfinity, Sphere.Null);
+			hit = new SphereIntersection(Vector3.Zero, Vector3.Zero, float.PositiveInfinity, SphereOld.Null);
 
 			// Loop through scene and check all spheres
-			foreach (Sphere sphere in scene)
+			foreach (SphereOld sphere in scene)
 			{
 				SphereIntersection[] currentHits;
 				if (ray.Intersect(sphere, out currentHits))

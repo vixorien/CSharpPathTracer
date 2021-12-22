@@ -17,8 +17,6 @@ namespace CSharpRaytracing
 		private Camera camera;
 		private Environment environment;
 
-		private Thread raytraceThread;
-
 		public MainForm()
 		{
 			InitializeComponent();
@@ -48,9 +46,6 @@ namespace CSharpRaytracing
 			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
 			numWidth.Value = raytracingDisplay.Width;
 			numHeight.Value = raytracingDisplay.Height;
-
-			// Set up thread
-			raytraceThread = new Thread(raytracer.RaytraceScene);
 		}
 
 		private void buttonStartRaytrace_Click(object sender, EventArgs e)
@@ -74,8 +69,6 @@ namespace CSharpRaytracing
 			// Raytrace the scene
 			RaytracingParameters rtParams = new RaytracingParameters(renderTarget, camera, sliderSamplesPerPixel.Value, sliderMaxRecursion.Value);
 			raytracer.RaytraceScene(rtParams);
-
-			//raytraceThread.Start(rtParams);
 		}
 
 
