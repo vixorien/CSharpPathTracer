@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Collections.Generic;
 
 using Microsoft.Xna.Framework;
@@ -9,19 +10,54 @@ using System.Drawing;
 
 namespace CSharpRaytracing
 {
+	struct RaytracingStats
+	{
+		public ulong TotalRays { get; set; }
+		public int DeepestRecursion { get; set; }
+		public int MaxRecursion { get; set; }
+		public TimeSpan TotalTime { get; set; }
+
+		public void Reset()
+		{
+			TotalRays = 0;
+			DeepestRecursion = 0;
+			MaxRecursion = 0;
+			TotalTime = TimeSpan.Zero;
+		}
+	}
+
+	class RaytracingParameters
+	{
+		public Bitmap RenderTarget { get; set; }
+		public Camera Camera { get; set; }
+		public int SamplesPerPixel { get; set; }
+		public int MaxRecursionDepth { get; set; }
+
+		public RaytracingParameters(Bitmap renderTarget, Camera camera, int samplesPerPixel, int maxRecursionDepth)
+		{
+			RenderTarget = renderTarget;
+			Camera = camera;
+			SamplesPerPixel = samplesPerPixel;
+			MaxRecursionDepth = maxRecursionDepth;
+		}
+	}
+
 	class Raytracer
 	{
-		public event Action RaytraceComplete;
+		public delegate void CompleteDelegate(RaytracingStats stats);
+		public event CompleteDelegate RaytraceComplete;
 
 		public delegate void PixelDelegate(int x, int y);
 		public event PixelDelegate RaytracePixelComplete;
 
-		public delegate void ScanlineDelegate(int y);
+		public delegate void ScanlineDelegate(int y, RaytracingStats stats);
 		public event ScanlineDelegate RaytraceScanlineComplete;
 
 		private Random rng;
 		private List<Sphere> scene;
 		private Environment environment;
+
+		private RaytracingStats stats;
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
@@ -55,21 +91,26 @@ namespace CSharpRaytracing
 			{
 				scene.Add(new Sphere(
 					new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
-					rng.NextFloat(0.5f, 3.0f),
+					rng.NextFloat(0.25f, 1.0f),
 					new Material(rng.NextColor(), rng.NextBool())));
 			}
 		}
 
-		public void RaytraceScene(Bitmap output, Camera camera, ProgressBar progress, int samplesPerPixel, int maxRecursionDepth)
+		public void RaytraceScene(object threadParam) //Bitmap output, Camera camera, int samplesPerPixel, int maxRecursionDepth)
 		{
-			int width = output.Width;
-			int height = output.Height;
+			RaytracingParameters rtParams = threadParam as RaytracingParameters;
+			if (rtParams == null)
+				return;
 
-			// Set up progress bar
-			progress.Minimum = 0;
-			progress.Maximum = width * height;
-			progress.Value = 0;
+			int width = rtParams.RenderTarget.Width;
+			int height = rtParams.RenderTarget.Height;
 
+			// Reset stats
+			stats.Reset();
+			stats.MaxRecursion = rtParams.MaxRecursionDepth;
+			Stopwatch sw = new Stopwatch();
+			sw.Start();
+			
 			// Loop through pixels
 			for (int y = 0; y < height; y++)
 			{
@@ -77,35 +118,45 @@ namespace CSharpRaytracing
 				{
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
-					for (int s = 0; s < samplesPerPixel; s++)
+					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
 					{
 						float adjustedX = x + rng.NextFloat(-0.5f, 0.5f);
 						float adjustedY = y + rng.NextFloat(-0.5f, 0.5f);
 
 						// Get this ray and add to the total raytraced color
-						Ray ray = camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
-						totalColor += TraceRay(ray, maxRecursionDepth);
+						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
+						totalColor += TraceRay(ray, rtParams.MaxRecursionDepth);
 					}
-					SetColor(output, x, y, totalColor / samplesPerPixel);
+					SetColor(rtParams.RenderTarget, x, y, totalColor / rtParams.SamplesPerPixel);
 					
-					// Update form
-					progress.IncrementNoAnimation(1);
+					// Notify that this pixel is complete
 					RaytracePixelComplete?.Invoke(x, y);
-					Application.DoEvents();
 				}
 
 				// Update after an entire line
-				RaytraceScanlineComplete?.Invoke(y);
+				stats.TotalTime = sw.Elapsed;
+				RaytraceScanlineComplete?.Invoke(y, stats);
+				Application.DoEvents();
 			}
 
+			sw.Stop();
+			stats.TotalTime = sw.Elapsed;
+
 			// All done
-			RaytraceComplete?.Invoke();
+			RaytraceComplete?.Invoke(stats);
 		}
 
 		private Vector3 TraceRay(Ray ray, int depth)
 		{
+			// Check depth for stats
+			if (stats.MaxRecursion - depth > stats.DeepestRecursion)
+				stats.DeepestRecursion = stats.MaxRecursion - depth;
+
 			// Have we gone too far?
 			if (depth <= 0) return Vector3.Zero;
+
+			// Using the ray; update stats
+			stats.TotalRays++;
 
 			// Get closest hit along this ray
 			SphereIntersection hit;
@@ -169,7 +220,6 @@ namespace CSharpRaytracing
 		{
 			if (gammaCorrect)
 			{
-				
 				color = new Vector3(
 					MathF.Pow(color.X, GammaCorrectionPower),
 					MathF.Pow(color.Y, GammaCorrectionPower),

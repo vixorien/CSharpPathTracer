@@ -30,7 +30,6 @@ namespace CSharpRaytracing
 		private void InitializeComponent()
 		{
 			this.buttonStartRaytrace = new System.Windows.Forms.Button();
-			this.progressRaytrace = new System.Windows.Forms.ProgressBar();
 			this.sliderSamplesPerPixel = new System.Windows.Forms.TrackBar();
 			this.labelSamplesPerPixel = new System.Windows.Forms.Label();
 			this.labelMaxRecursion = new System.Windows.Forms.Label();
@@ -41,32 +40,29 @@ namespace CSharpRaytracing
 			this.numWidth = new System.Windows.Forms.NumericUpDown();
 			this.numHeight = new System.Windows.Forms.NumericUpDown();
 			this.checkDisplayProgress = new System.Windows.Forms.CheckBox();
+			this.raytracingStatus = new System.Windows.Forms.StatusStrip();
+			this.labelStatus = new System.Windows.Forms.ToolStripStatusLabel();
+			this.progressRT = new System.Windows.Forms.ToolStripProgressBar();
+			this.labelTotalRays = new System.Windows.Forms.ToolStripStatusLabel();
+			this.labelDeepestRecursion = new System.Windows.Forms.ToolStripStatusLabel();
+			this.labelTime = new System.Windows.Forms.ToolStripStatusLabel();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numWidth)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.numHeight)).BeginInit();
+			this.raytracingStatus.SuspendLayout();
 			this.SuspendLayout();
 			// 
 			// buttonStartRaytrace
 			// 
 			this.buttonStartRaytrace.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.buttonStartRaytrace.Location = new System.Drawing.Point(12, 417);
+			this.buttonStartRaytrace.Location = new System.Drawing.Point(12, 429);
 			this.buttonStartRaytrace.Name = "buttonStartRaytrace";
 			this.buttonStartRaytrace.Size = new System.Drawing.Size(189, 46);
 			this.buttonStartRaytrace.TabIndex = 1;
 			this.buttonStartRaytrace.Text = "Start Raytrace";
 			this.buttonStartRaytrace.UseVisualStyleBackColor = true;
 			this.buttonStartRaytrace.Click += new System.EventHandler(this.buttonStartRaytrace_Click);
-			// 
-			// progressRaytrace
-			// 
-			this.progressRaytrace.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
-			this.progressRaytrace.Location = new System.Drawing.Point(207, 440);
-			this.progressRaytrace.Name = "progressRaytrace";
-			this.progressRaytrace.Size = new System.Drawing.Size(609, 23);
-			this.progressRaytrace.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
-			this.progressRaytrace.TabIndex = 2;
 			// 
 			// sliderSamplesPerPixel
 			// 
@@ -86,7 +82,7 @@ namespace CSharpRaytracing
 			this.labelSamplesPerPixel.AutoSize = true;
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(12, 12);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(99, 15);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(98, 15);
 			this.labelSamplesPerPixel.TabIndex = 4;
 			this.labelSamplesPerPixel.Text = "Samples Per Pixel";
 			// 
@@ -95,7 +91,7 @@ namespace CSharpRaytracing
 			this.labelMaxRecursion.AutoSize = true;
 			this.labelMaxRecursion.Location = new System.Drawing.Point(12, 78);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
-			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
+			this.labelMaxRecursion.Size = new System.Drawing.Size(151, 15);
 			this.labelMaxRecursion.TabIndex = 6;
 			this.labelMaxRecursion.Text = "Maximum Recursion Depth";
 			// 
@@ -120,7 +116,7 @@ namespace CSharpRaytracing
 			this.raytracingDisplay.Bitmap = null;
 			this.raytracingDisplay.Location = new System.Drawing.Point(207, 12);
 			this.raytracingDisplay.Name = "raytracingDisplay";
-			this.raytracingDisplay.Size = new System.Drawing.Size(609, 422);
+			this.raytracingDisplay.Size = new System.Drawing.Size(609, 463);
 			this.raytracingDisplay.TabIndex = 7;
 			this.raytracingDisplay.Text = "renderTarget1";
 			// 
@@ -194,18 +190,71 @@ namespace CSharpRaytracing
 			this.checkDisplayProgress.AutoSize = true;
 			this.checkDisplayProgress.Checked = true;
 			this.checkDisplayProgress.CheckState = System.Windows.Forms.CheckState.Checked;
-			this.checkDisplayProgress.Location = new System.Drawing.Point(19, 392);
+			this.checkDisplayProgress.Location = new System.Drawing.Point(19, 404);
 			this.checkDisplayProgress.Name = "checkDisplayProgress";
 			this.checkDisplayProgress.Size = new System.Drawing.Size(171, 19);
 			this.checkDisplayProgress.TabIndex = 12;
 			this.checkDisplayProgress.Text = "Display Raytracing Progress";
 			this.checkDisplayProgress.UseVisualStyleBackColor = true;
 			// 
+			// raytracingStatus
+			// 
+			this.raytracingStatus.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.labelStatus,
+            this.progressRT,
+            this.labelTotalRays,
+            this.labelDeepestRecursion,
+            this.labelTime});
+			this.raytracingStatus.Location = new System.Drawing.Point(0, 485);
+			this.raytracingStatus.Name = "raytracingStatus";
+			this.raytracingStatus.Size = new System.Drawing.Size(828, 22);
+			this.raytracingStatus.TabIndex = 13;
+			this.raytracingStatus.Text = "statusStrip1";
+			// 
+			// labelStatus
+			// 
+			this.labelStatus.Name = "labelStatus";
+			this.labelStatus.Size = new System.Drawing.Size(152, 17);
+			this.labelStatus.Spring = true;
+			this.labelStatus.Text = "Status: Waiting";
+			this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// progressRT
+			// 
+			this.progressRT.Name = "progressRT";
+			this.progressRT.Size = new System.Drawing.Size(200, 16);
+			this.progressRT.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+			// 
+			// labelTotalRays
+			// 
+			this.labelTotalRays.Name = "labelTotalRays";
+			this.labelTotalRays.Size = new System.Drawing.Size(152, 17);
+			this.labelTotalRays.Spring = true;
+			this.labelTotalRays.Text = "Total Rays: ?";
+			this.labelTotalRays.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// labelDeepestRecursion
+			// 
+			this.labelDeepestRecursion.Name = "labelDeepestRecursion";
+			this.labelDeepestRecursion.Size = new System.Drawing.Size(152, 17);
+			this.labelDeepestRecursion.Spring = true;
+			this.labelDeepestRecursion.Text = "Deepest Recursion: ?";
+			this.labelDeepestRecursion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
+			// labelTime
+			// 
+			this.labelTime.Name = "labelTime";
+			this.labelTime.Size = new System.Drawing.Size(152, 17);
+			this.labelTime.Spring = true;
+			this.labelTime.Text = "Total Time: ?";
+			this.labelTime.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(828, 475);
+			this.ClientSize = new System.Drawing.Size(828, 507);
+			this.Controls.Add(this.raytracingStatus);
 			this.Controls.Add(this.checkDisplayProgress);
 			this.Controls.Add(this.numHeight);
 			this.Controls.Add(this.numWidth);
@@ -216,7 +265,6 @@ namespace CSharpRaytracing
 			this.Controls.Add(this.sliderMaxRecursion);
 			this.Controls.Add(this.labelSamplesPerPixel);
 			this.Controls.Add(this.sliderSamplesPerPixel);
-			this.Controls.Add(this.progressRaytrace);
 			this.Controls.Add(this.buttonStartRaytrace);
 			this.MinimumSize = new System.Drawing.Size(500, 400);
 			this.Name = "MainForm";
@@ -227,6 +275,8 @@ namespace CSharpRaytracing
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numWidth)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.numHeight)).EndInit();
+			this.raytracingStatus.ResumeLayout(false);
+			this.raytracingStatus.PerformLayout();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -234,7 +284,6 @@ namespace CSharpRaytracing
 
 		#endregion
 		private System.Windows.Forms.Button buttonStartRaytrace;
-		private System.Windows.Forms.ProgressBar progressRaytrace;
 		private System.Windows.Forms.TrackBar sliderSamplesPerPixel;
 		private System.Windows.Forms.Label labelSamplesPerPixel;
 		private System.Windows.Forms.Label labelMaxRecursion;
@@ -245,5 +294,11 @@ namespace CSharpRaytracing
 		private System.Windows.Forms.NumericUpDown numWidth;
 		private System.Windows.Forms.NumericUpDown numHeight;
 		private System.Windows.Forms.CheckBox checkDisplayProgress;
+		private System.Windows.Forms.StatusStrip raytracingStatus;
+		private System.Windows.Forms.ToolStripStatusLabel labelTotalRays;
+		private System.Windows.Forms.ToolStripStatusLabel labelDeepestRecursion;
+		private System.Windows.Forms.ToolStripStatusLabel labelTime;
+		private System.Windows.Forms.ToolStripProgressBar progressRT;
+		private System.Windows.Forms.ToolStripStatusLabel labelStatus;
 	}
 }
