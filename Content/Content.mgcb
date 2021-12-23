@@ -13,3 +13,24 @@
 
 #---------------------------------- Content ---------------------------------#
 
+#begin Models/cube.obj
+/copy:Models/cube.obj
+
+#begin Models/cylinder.obj
+/copy:Models/cylinder.obj
+
+#begin Models/helix.obj
+/copy:Models/helix.obj
+
+#begin Models/quad.obj
+/copy:Models/quad.obj
+
+#begin Models/quad_double_sided.obj
+/copy:Models/quad_double_sided.obj
+
+#begin Models/sphere.obj
+/copy:Models/sphere.obj
+
+#begin Models/torus.obj
+/copy:Models/torus.obj
+

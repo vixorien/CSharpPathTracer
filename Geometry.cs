@@ -36,6 +36,8 @@ namespace CSharpRaytracing
 		{
 			Material = material;
 		}
+
+		public abstract bool RayIntersection(Ray ray, out RayHit[] hits);
 	}
 
 	/// <summary>
@@ -53,6 +55,107 @@ namespace CSharpRaytracing
 			vertices = new List<Vertex>();
 
 			LoadMesh(file);
+		}
+
+
+		public override bool RayIntersection(Ray ray, out RayHit[] hits)
+		{
+			// Closest hit, if any
+			bool anyHit = false;
+			TriangleHit closestHit = new TriangleHit();
+			closestHit.Distance = float.PositiveInfinity;
+
+			// Loop through indices/triangles, looking for hits
+			for (int i = 0; i < indices.Count;)
+			{
+				// Get the three vertices for this triangle
+				Vertex v0 = vertices[indices[i++]];
+				Vertex v1 = vertices[indices[i++]];
+				Vertex v2 = vertices[indices[i++]];
+
+				// Test for intersection
+				TriangleHit triHit;
+				if (RayTriangleIntersection(ray, v0, v1, v2, out triHit))
+				{
+					// We hit a triangle, test for closest
+					if (triHit.Distance < closestHit.Distance)
+					{
+						closestHit = triHit;
+					}
+
+					anyHit = true;
+				}
+			}
+
+			// Any results?
+			if (anyHit)
+			{
+				hits = new RayHit[1];
+				hits[0] = new RayHit(
+					closestHit.Position,
+					closestHit.CalcHitNormal(),
+					closestHit.Distance,
+					this);
+				return true;
+			}
+
+			hits = new RayHit[0];
+			return false;
+		}
+
+		public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit)
+		{
+			// Assume no hit
+			triHit = new TriangleHit();
+
+			// Calculate triangle's mathematical normal
+			Vector3 v0v1 = v1.Position - v0.Position;
+			Vector3 v0v2 = v2.Position - v0.Position;
+			Vector3 triNormal = Vector3.Cross(v0v1, v0v2);
+			float baryDivision = Vector3.Dot(triNormal, triNormal);
+
+			// Is ray parallel to triangle?
+			float NdotRay = Vector3.Dot(triNormal, ray.Direction);
+			if (MathF.Abs(NdotRay) == 0.0f) return false;
+
+			// Calculate D from plane equation
+			float d = Vector3.Dot(triNormal, v0.Position);
+
+			// Calculate the hit distance and determine
+			// if the triangle is behind the ray
+			float t = (Vector3.Dot(triNormal, ray.Origin) + d) / NdotRay;
+			if (t < 0) return false;
+
+			// Calculate the hit position on the triangle's plane
+			Vector3 hitPosOnPlane = ray.Origin + ray.Direction * t;
+			Vector3 barycentrics = Vector3.Zero;
+
+			// Check the first triangle edge
+			Vector3 cross0 = Vector3.Cross(v0v1, hitPosOnPlane - v0.Position);
+			barycentrics.X = Vector3.Dot(triNormal, cross0); // X = v0
+			if (barycentrics.X < 0) return false;
+
+			// Check second edge
+			Vector3 cross1 = Vector3.Cross(v0v2, hitPosOnPlane - v2.Position);
+			barycentrics.Z = Vector3.Dot(triNormal, cross1); // Z = v2
+			if (barycentrics.Z < 0) return false;
+
+			// Check last edge
+			Vector3 cross2 = Vector3.Cross(v2.Position - v1.Position, hitPosOnPlane - v1.Position);
+			barycentrics.Y = Vector3.Dot(triNormal, cross2); // Y = v1
+			if (barycentrics.Y < 0) return false;
+
+			// Finalize barycentrics
+			barycentrics /= baryDivision;
+
+			// If we get here, the hit point is within the bounds of the triangle
+			triHit.V0 = v0;
+			triHit.V1 = v1;
+			triHit.V2 = v2;
+			triHit.Distance = t;
+			triHit.Position = hitPosOnPlane;
+			triHit.Barycentrics = barycentrics;
+			return true;
 		}
 
 		private void LoadMesh(string file)
@@ -211,8 +314,6 @@ namespace CSharpRaytracing
 						}
 						
 					}
-
-
 				}
 			}
 		}
@@ -231,40 +332,100 @@ namespace CSharpRaytracing
 			Center = center;
 			Radius = radius;
 		}
-	}
 
-	struct SphereOld
-	{
-		public static SphereOld Null { get { return new SphereOld(Vector3.Zero, 0, null); } }
-
-		public Vector3 Center { get; set; }
-		public float Radius { get; set; }
-
-		public Material Material { get; set; }
-
-		public SphereOld(Vector3 center, float radius, Material mat)
+		public override bool RayIntersection(Ray ray, out RayHit[] hits)
 		{
-			Center = center;
-			Radius = radius;
-			Material = mat;
+			// How far along ray to closest point to sphere center
+			Vector3 originToCenter = Center - ray.Origin;
+			float tCenter = Vector3.Dot(originToCenter, ray.Direction);
+
+			// If tCenter is negative, we point away from sphere
+			if (tCenter < 0)
+			{
+				// No intersection points
+				hits = new RayHit[0];
+				return false;
+			}
+
+			// Distance from closest point to sphere's center
+			float d = MathF.Sqrt(originToCenter.LengthSquared() - tCenter * tCenter);
+
+			// If distance is greater than radius, we don't hit the sphere
+			if (d > Radius)
+			{
+				// No intersection points
+				hits = new RayHit[0];
+				return false;
+			}
+
+			// Offset from tCenter to an intersection point
+			float offset = MathF.Sqrt(Radius * Radius - d * d);
+
+			// Distances to the two hit points
+			float t1 = tCenter - offset;
+			float t2 = tCenter + offset;
+
+			// Points of intersection
+			Vector3 p1 = ray.Origin + ray.Direction * t1;
+			Vector3 p2 = ray.Origin + ray.Direction * t2;
+
+			// Normals
+			Vector3 n1 = p1 - Center; n1.Normalize();
+			Vector3 n2 = p2 - Center; n2.Normalize();
+
+			// Set up return values
+			hits = new RayHit[2];
+			hits[0] = new RayHit(p1, n1, t1, this);
+			hits[1] = new RayHit(p2, n2, t2, this);
+			return true;
 		}
 	}
 
-	struct SphereIntersection
+	struct TriangleHit
 	{
+		public Vertex V0 { get; set; }
+		public Vertex V1 { get; set; }
+		public Vertex V2 { get; set; }
+		public float Distance { get; set; }
+		public Vector3 Position { get; set; }
+		public Vector3 Barycentrics { get; set; }
+
+		public Vector3 CalcHitNormal()
+		{
+			return
+				Barycentrics.X * V0.Normal +
+				Barycentrics.Y * V1.Normal +
+				Barycentrics.Z * V2.Normal;
+		}
+
+		public Vector2 CalcHitUV()
+		{
+			return
+				Barycentrics.X * V0.UV +
+				Barycentrics.Y * V1.UV +
+				Barycentrics.Z * V2.UV;
+		}
+	}
+
+	struct RayHit
+	{
+		public static RayHit None = new RayHit();
+		public static RayHit Infinity = new RayHit(Vector3.Zero, Vector3.Zero, float.PositiveInfinity, null);
+
 		public Vector3 Position { get; }
 		public Vector3 Normal { get; }
 		public float Distance { get; }
-		public SphereOld Sphere { get; }
+		public Geometry Geometry { get; }
 
-		public SphereIntersection(Vector3 position, Vector3 normal, float distance, SphereOld sphere)
+		public RayHit(Vector3 position, Vector3 normal, float distance, Geometry geometry)
 		{
 			Position = position;
 			Normal = normal;
 			Distance = distance;
-			Sphere = sphere;
+			Geometry = geometry;
 		}
 	}
+
 
 	struct Ray
 	{
@@ -286,7 +447,7 @@ namespace CSharpRaytracing
 			TMax = tmax;
 		}
 
-		public bool Intersect(SphereOld sphere, out SphereIntersection[] hits)
+		public bool Intersect(Sphere sphere, out RayHit[] hits)
 		{
 			// How far along ray to closest point to sphere center
 			Vector3 originToCenter = sphere.Center - this.Origin;
@@ -296,7 +457,7 @@ namespace CSharpRaytracing
 			if (tCenter < 0)
 			{
 				// No intersection points
-				hits = new SphereIntersection[0];
+				hits = new RayHit[0];
 				return false;
 			}
 
@@ -307,7 +468,7 @@ namespace CSharpRaytracing
 			if (d > sphere.Radius)
 			{
 				// No intersection points
-				hits = new SphereIntersection[0];
+				hits = new RayHit[0];
 				return false;
 			}
 
@@ -327,9 +488,9 @@ namespace CSharpRaytracing
 			Vector3 n2 = p2 - sphere.Center; n2.Normalize();
 
 			// Set up return values
-			hits = new SphereIntersection[2];
-			hits[0] = new SphereIntersection(p1, n1, t1, sphere);
-			hits[1] = new SphereIntersection(p2, n2, t2, sphere);
+			hits = new RayHit[2];
+			hits[0] = new RayHit(p1, n1, t1, sphere);
+			hits[1] = new RayHit(p2, n2, t2, sphere);
 			return true;
 		}
 	}

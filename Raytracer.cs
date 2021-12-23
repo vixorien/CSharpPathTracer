@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Collections.Generic;
 
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 
 using System.Windows.Forms;
@@ -54,7 +55,7 @@ namespace CSharpRaytracing
 		public event ScanlineDelegate RaytraceScanlineComplete;
 
 		private Random rng;
-		private List<SphereOld> scene;
+		private List<Geometry> scene;
 		private Environment environment;
 
 		private RaytracingStats stats;
@@ -68,7 +69,7 @@ namespace CSharpRaytracing
 
 			// Other setup
 			rng = new Random();
-			scene = new List<SphereOld>();
+			scene = new List<Geometry>();
 
 			// Materials ===
 			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
@@ -79,17 +80,17 @@ namespace CSharpRaytracing
 			// Set up scene ===
 
 			// Large sphere below
-			scene.Add(new SphereOld(new Vector3(0, -1000, 0), 1000, grayMatte));
+			scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
 
 			// Small spheres in front of camera
-			scene.Add(new SphereOld(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
-			scene.Add(new SphereOld(new Vector3(0, 4.0f, 0), 2.0f, mirror));
-			scene.Add(new SphereOld(new Vector3(5, 2.0f, 0), 2.0f, gold));
+			scene.Add(new Sphere(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
+			scene.Add(new Sphere(new Vector3(0, 4.0f, 0), 2.0f, mirror));
+			scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
 
 			// Random floating spheres
 			for (int i = 0; i < 25; i++)
 			{
-				scene.Add(new SphereOld(
+				scene.Add(new Sphere(
 					new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
 					rng.NextFloat(0.25f, 1.0f),
 					new Material(rng.NextColor(), rng.NextBool())));
@@ -159,13 +160,13 @@ namespace CSharpRaytracing
 			stats.TotalRays++;
 
 			// Get closest hit along this ray
-			SphereIntersection hit;
+			RayHit hit;
 			if (GetClosestSceneHit(ray, out hit))
 			{
 				Ray newRay;
 
 				// We found a hit; which kind of material?
-				if (hit.Sphere.Material.Metal)
+				if (hit.Geometry.Material.Metal)
 				{
 					// Metal - perfect reflection
 					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
@@ -178,7 +179,7 @@ namespace CSharpRaytracing
 				}
 
 				// Take into account the hit color and trace the next ray
-				return hit.Sphere.Material.Color * TraceRay(newRay, depth - 1);
+				return hit.Geometry.Material.Color * TraceRay(newRay, depth - 1);
 			}
 			else
 			{
@@ -188,17 +189,17 @@ namespace CSharpRaytracing
 		}
 
 
-		private bool GetClosestSceneHit(Ray ray, out SphereIntersection hit)
+		private bool GetClosestSceneHit(Ray ray, out RayHit hit)
 		{
 			// No hits yet
 			bool anyHit = false;
-			hit = new SphereIntersection(Vector3.Zero, Vector3.Zero, float.PositiveInfinity, SphereOld.Null);
+			hit = RayHit.Infinity;
 
 			// Loop through scene and check all spheres
-			foreach (SphereOld sphere in scene)
+			foreach (Geometry sphere in scene)
 			{
-				SphereIntersection[] currentHits;
-				if (ray.Intersect(sphere, out currentHits))
+				RayHit[] currentHits;
+				if (ray.Intersect(sphere as Sphere, out currentHits))
 				{
 					// We have a hit; was it closest?
 					if (currentHits[0].Distance < hit.Distance)
