@@ -79,6 +79,10 @@ namespace CSharpRaytracing
 
 			// Set up scene ===
 
+			// Try out a cube
+			Mesh cubeMesh = new Mesh("Content/Models/cube.obj", grayMatte);
+			scene.Add(cubeMesh);
+
 			// Large sphere below
 			scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
 
@@ -196,10 +200,10 @@ namespace CSharpRaytracing
 			hit = RayHit.Infinity;
 
 			// Loop through scene and check all spheres
-			foreach (Geometry sphere in scene)
+			foreach (Geometry geo in scene)
 			{
 				RayHit[] currentHits;
-				if (ray.Intersect(sphere as Sphere, out currentHits))
+				if(geo.RayIntersection(ray, out currentHits))
 				{
 					// We have a hit; was it closest?
 					if (currentHits[0].Distance < hit.Distance)
