@@ -87,23 +87,24 @@ namespace CSharpRaytracing
 				}
 			}
 
-			// Any results?
-			if (anyHit)
+			// No hits at all
+			if (!anyHit)
 			{
-				hits = new RayHit[1];
-				hits[0] = new RayHit(
-					closestHit.Position,
-					closestHit.CalcHitNormal(),
-					closestHit.Distance,
-					this);
-				return true;
+				hits = new RayHit[0];
+				return false;
 			}
 
-			hits = new RayHit[0];
-			return false;
+			// Got a hit
+			hits = new RayHit[1];
+			hits[0] = new RayHit(
+				closestHit.Position,
+				closestHit.CalcHitNormal(),
+				closestHit.Distance,
+				this);
+			return true;
 		}
 
-		public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit)
+		public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit, bool cullBackfaces = true)
 		{
 			// Assume no hit
 			triHit = new TriangleHit();
@@ -119,7 +120,11 @@ namespace CSharpRaytracing
 			float a = Vector3.Dot(edge1, q);
 
 			// Parallel?
-			if (MathF.Abs(a) < 0.000001f) // Can do backface here, too!
+			if (MathF.Abs(a) < 0.000001f)
+				return false;
+
+			// Check backfaces?
+			if (cullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
 				return false;
 
 			// Get barycentrics

@@ -74,13 +74,14 @@ namespace CSharpRaytracing
 			// Materials ===
 			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
 			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
+			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
 			Material mirror = new Material(new Vector3(1, 1, 1), true);
 			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
 
 			// Set up scene ===
 
 			// Try out a cube
-			Mesh cubeMesh = new Mesh("Content/Models/cube.obj", grayMatte);
+			Mesh cubeMesh = new Mesh("Content/Models/cube.obj", blueMatte);
 			scene.Add(cubeMesh);
 
 			// Large sphere below
@@ -92,13 +93,13 @@ namespace CSharpRaytracing
 			scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
 
 			// Random floating spheres
-			for (int i = 0; i < 25; i++)
-			{
-				scene.Add(new Sphere(
-					new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
-					rng.NextFloat(0.25f, 1.0f),
-					new Material(rng.NextColor(), rng.NextBool())));
-			}
+			//for (int i = 0; i < 25; i++)
+			//{
+			//	scene.Add(new Sphere(
+			//		new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
+			//		rng.NextFloat(0.25f, 1.0f),
+			//		new Material(rng.NextColor(), rng.NextBool())));
+			//}
 		}
 
 		public void RaytraceScene(object threadParam) //Bitmap output, Camera camera, int samplesPerPixel, int maxRecursionDepth
