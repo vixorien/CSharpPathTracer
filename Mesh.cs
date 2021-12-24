@@ -63,7 +63,7 @@ namespace CSharpPathTracer
 		private List<int> indices;
 		private List<Vertex> vertices;
 
-		public Mesh(string file, Material material) : base(material)
+		public Mesh(string file) : base()
 		{
 			indices = new List<int>();
 			vertices = new List<Vertex>();
@@ -114,7 +114,7 @@ namespace CSharpPathTracer
 				closestHit.Position,
 				closestHit.CalcHitNormal(),
 				closestHit.Distance,
-				this);
+				null);
 			return true;
 		}
 

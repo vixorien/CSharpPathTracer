@@ -29,13 +29,15 @@ namespace CSharpPathTracer
 
 	class RaytracingParameters
 	{
+		public Scene Scene { get; set; }
 		public Bitmap RenderTarget { get; set; }
 		public Camera Camera { get; set; }
 		public int SamplesPerPixel { get; set; }
 		public int MaxRecursionDepth { get; set; }
 
-		public RaytracingParameters(Bitmap renderTarget, Camera camera, int samplesPerPixel, int maxRecursionDepth)
+		public RaytracingParameters(Scene scene, Bitmap renderTarget, Camera camera, int samplesPerPixel, int maxRecursionDepth)
 		{
+			Scene = scene;
 			RenderTarget = renderTarget;
 			Camera = camera;
 			SamplesPerPixel = samplesPerPixel;
@@ -55,54 +57,18 @@ namespace CSharpPathTracer
 		public event ScanlineDelegate RaytraceScanlineComplete;
 
 		private Random rng;
-		private List<Geometry> scene;
-		private Environment environment;
-
+		
 		private RaytracingStats stats;
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
-		public Raytracer(Environment environment)
+		public Raytracer()
 		{
-			// Save params
-			this.environment = environment;
-
 			// Other setup
 			rng = new Random();
-			scene = new List<Geometry>();
-
-			// Materials ===
-			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
-			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
-			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
-			Material mirror = new Material(new Vector3(1, 1, 1), true);
-			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
-
-			// Set up scene ===
-
-			// Try out a cube
-			Mesh cubeMesh = new Mesh("Content/Models/cube.obj", blueMatte);
-			scene.Add(cubeMesh);
-
-			// Large sphere below
-			scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
-
-			// Small spheres in front of camera
-			scene.Add(new Sphere(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
-			scene.Add(new Sphere(new Vector3(0, 4.0f, 0), 2.0f, mirror));
-			scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
-
-			// Random floating spheres
-			//for (int i = 0; i < 25; i++)
-			//{
-			//	scene.Add(new Sphere(
-			//		new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
-			//		rng.NextFloat(0.25f, 1.0f),
-			//		new Material(rng.NextColor(), rng.NextBool())));
-			//}
 		}
 
-		public void RaytraceScene(object threadParam) //Bitmap output, Camera camera, int samplesPerPixel, int maxRecursionDepth
+		public void RaytraceScene(object threadParam)
 		{
 			RaytracingParameters rtParams = threadParam as RaytracingParameters;
 			if (rtParams == null)
@@ -131,7 +97,7 @@ namespace CSharpPathTracer
 
 						// Get this ray and add to the total raytraced color
 						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
-						totalColor += TraceRay(ray, rtParams.MaxRecursionDepth);
+						totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
 					}
 					SetColor(rtParams.RenderTarget, x, y, totalColor / rtParams.SamplesPerPixel);
 					
@@ -152,7 +118,7 @@ namespace CSharpPathTracer
 			RaytraceComplete?.Invoke(stats);
 		}
 
-		private Vector3 TraceRay(Ray ray, int depth)
+		private Vector3 TraceRay(Ray ray, Scene scene, int depth)
 		{
 			// Check depth for stats
 			if (stats.MaxRecursion - depth > stats.DeepestRecursion)
@@ -166,12 +132,12 @@ namespace CSharpPathTracer
 
 			// Get closest hit along this ray
 			RayHit hit;
-			if (GetClosestSceneHit(ray, out hit))
+			if (scene.ClosestHit(ray, out hit))
 			{
 				Ray newRay;
 
 				// We found a hit; which kind of material?
-				if (hit.Geometry.Material.Metal)
+				if (hit.Entity.Material.Metal)
 				{
 					// Metal - perfect reflection
 					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
@@ -184,42 +150,14 @@ namespace CSharpPathTracer
 				}
 
 				// Take into account the hit color and trace the next ray
-				return hit.Geometry.Material.Color * TraceRay(newRay, depth - 1);
+				return hit.Entity.Material.Color * TraceRay(newRay, scene, depth - 1);
 			}
 			else
 			{
 				// No hit so use environment gradient
-				return environment.GetColorFromDirection(ray.Direction);
+				return scene.Environment.GetColorFromDirection(ray.Direction);
 			}
 		}
-
-
-		private bool GetClosestSceneHit(Ray ray, out RayHit hit)
-		{
-			// No hits yet
-			bool anyHit = false;
-			hit = RayHit.Infinity;
-
-			// Loop through scene and check all spheres
-			foreach (Geometry geo in scene)
-			{
-				RayHit[] currentHits;
-				if(geo.RayIntersection(ray, out currentHits))
-				{
-					// We have a hit; was it closest?
-					if (currentHits[0].Distance < hit.Distance)
-					{
-						hit = currentHits[0];
-						anyHit = true;
-					}
-				}
-			}
-
-			return anyHit;
-		}
-
-
-
 
 
 		private void SetColor(Bitmap bitmap, int x, int y, Vector3 color, bool gammaCorrect = true)

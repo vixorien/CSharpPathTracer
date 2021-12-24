@@ -11,7 +11,7 @@ namespace CSharpPathTracer
 		public Vector3 Center { get; set; }
 		public float Radius { get; set; }
 
-		public Sphere(Vector3 center, float radius, Material material) : base(material)
+		public Sphere(Vector3 center, float radius) : base()
 		{
 			Center = center;
 			Radius = radius;
@@ -59,8 +59,8 @@ namespace CSharpPathTracer
 
 			// Set up return values
 			hits = new RayHit[2];
-			hits[0] = new RayHit(p1, n1, t1, this);
-			hits[1] = new RayHit(p2, n2, t2, this);
+			hits[0] = new RayHit(p1, n1, t1, null);
+			hits[1] = new RayHit(p2, n2, t2, null);
 			return true;
 		}
 	}

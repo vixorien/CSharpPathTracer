@@ -7,11 +7,8 @@ namespace CSharpPathTracer
 	/// </summary>
 	abstract class Geometry
 	{
-		public Material Material { get; set; }
-
-		public Geometry(Material material)
+		public Geometry()
 		{
-			Material = material;
 		}
 
 		public abstract bool RayIntersection(Ray ray, out RayHit[] hits);

@@ -15,7 +15,9 @@ namespace CSharpPathTracer
 		private Bitmap renderTarget;
 		private Raytracer raytracer;
 		private Camera camera;
+		
 		private Environment environment;
+		private List<Scene> scenes;
 
 		public MainForm()
 		{
@@ -24,12 +26,18 @@ namespace CSharpPathTracer
 
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			environment = new Environment(
-				System.Drawing.Color.CornflowerBlue.ToVector3(),
-				System.Drawing.Color.White.ToVector3(),
-				System.Drawing.Color.White.ToVector3());
+			// Set up scene(s)
+			scenes = new List<Scene>();
+			CreateScenes();
 
-			raytracer = new Raytracer(environment);
+			// Populate combo box with scenes
+			foreach (Scene s in scenes)
+			{
+				comboScene.Items.Add(s.Name);
+			}
+			comboScene.SelectedIndex = 0;
+
+			raytracer = new Raytracer();
 			raytracer.RaytraceScanlineComplete += Raytracer_RaytraceScanlineComplete;
 			raytracer.RaytraceComplete += Raytracer_RaytraceComplete;
 
@@ -44,8 +52,8 @@ namespace CSharpPathTracer
 			// Update labels and such
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
 			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
-			numWidth.Value = raytracingDisplay.Width;
-			numHeight.Value = raytracingDisplay.Height;
+			textWidth.Text = raytracingDisplay.Width.ToString();
+			textHeight.Text = raytracingDisplay.Height.ToString();
 		}
 
 		private void buttonStartRaytrace_Click(object sender, EventArgs e)
@@ -67,7 +75,12 @@ namespace CSharpPathTracer
 			camera.AspectRatio = (float)raytracingDisplay.Width / raytracingDisplay.Height;
 
 			// Raytrace the scene
-			RaytracingParameters rtParams = new RaytracingParameters(renderTarget, camera, sliderSamplesPerPixel.Value, sliderMaxRecursion.Value);
+			RaytracingParameters rtParams = new RaytracingParameters(
+				scenes[comboScene.SelectedIndex], 
+				renderTarget, 
+				camera, 
+				sliderSamplesPerPixel.Value, 
+				sliderMaxRecursion.Value);
 			raytracer.RaytraceScene(rtParams);
 		}
 
@@ -112,9 +125,61 @@ namespace CSharpPathTracer
 
 		private void MainForm_Resize(object sender, EventArgs e)
 		{
-			numWidth.Value = raytracingDisplay.Width;
-			numHeight.Value = raytracingDisplay.Height;
+			textWidth.Text = raytracingDisplay.Width.ToString();
+			textHeight.Text = raytracingDisplay.Height.ToString();
 			raytracingDisplay.Invalidate();
+		}
+
+		private void CreateScenes()
+		{
+			// === Environments ===
+			environment = new Environment(
+				System.Drawing.Color.CornflowerBlue.ToVector3(),
+				System.Drawing.Color.White.ToVector3(),
+				System.Drawing.Color.White.ToVector3());
+
+			// === Materials ===
+			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
+			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
+			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
+			Material mirror = new Material(new Vector3(1, 1, 1), true);
+			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
+
+			// === Meshes ===
+			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
+			Sphere sphereLarge = new Sphere(new Vector3(0, -1000, 0), 1000);
+
+			// === SCENE 1 ===
+
+			// Entities ===
+			Entity cube = new Entity(cubeMesh, blueMatte);
+			cube.Transform.MoveAbsolute(1, 0, 0);
+			Entity ground = new Entity(sphereLarge, grayMatte);
+
+			// Add to scene ===
+			Scene scene1 = new Scene("Test", environment);
+			scene1.Add(cube);
+			scene1.Add(ground);
+
+			scenes.Add(scene1);
+
+
+			// Large sphere below
+			//scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
+
+			// Small spheres in front of camera
+			//scene.Add(new Sphere(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
+			//scene.Add(new Sphere(new Vector3(0, 4.0f, 0), 2.0f, mirror));
+			//scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
+
+			// Random floating spheres
+			//for (int i = 0; i < 25; i++)
+			//{
+			//	scene.Add(new Sphere(
+			//		new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
+			//		rng.NextFloat(0.25f, 1.0f),
+			//		new Material(rng.NextColor(), rng.NextBool())));
+			//}
 		}
 	}
 }

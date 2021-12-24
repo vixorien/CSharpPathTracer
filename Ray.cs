@@ -38,14 +38,14 @@ namespace CSharpPathTracer
 		public Vector3 Position { get; set; }
 		public Vector3 Normal { get; set; }
 		public float Distance { get; set; }
-		public Geometry Geometry { get; set; }
+		public Entity Entity { get; set; }
 
-		public RayHit(Vector3 position, Vector3 normal, float distance, Geometry geometry)
+		public RayHit(Vector3 position, Vector3 normal, float distance, Entity entity)
 		{
 			Position = position;
 			Normal = normal;
 			Distance = distance;
-			Geometry = geometry;
+			Entity = entity;
 		}
 	}
 
