@@ -1,5 +1,5 @@
 ﻿
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	partial class MainForm
 	{
@@ -34,7 +34,7 @@ namespace CSharpRaytracing
 			this.labelSamplesPerPixel = new System.Windows.Forms.Label();
 			this.labelMaxRecursion = new System.Windows.Forms.Label();
 			this.sliderMaxRecursion = new System.Windows.Forms.TrackBar();
-			this.raytracingDisplay = new CSharpRaytracing.BitmapDisplay();
+			this.raytracingDisplay = new CSharpPathTracer.BitmapDisplay();
 			this.labelWidth = new System.Windows.Forms.Label();
 			this.labelHeight = new System.Windows.Forms.Label();
 			this.numWidth = new System.Windows.Forms.NumericUpDown();

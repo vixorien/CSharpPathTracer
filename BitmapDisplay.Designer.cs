@@ -1,5 +1,5 @@
 ﻿
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	partial class BitmapDisplay
 	{

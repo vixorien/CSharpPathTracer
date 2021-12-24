@@ -5,7 +5,7 @@ using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	class Camera
 	{

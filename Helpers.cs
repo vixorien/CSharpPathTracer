@@ -5,7 +5,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using System.Windows.Forms;
 
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	public static class Helpers
 	{

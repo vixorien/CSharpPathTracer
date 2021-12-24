@@ -8,7 +8,7 @@ using System.Text;
 using System.Windows.Forms;
 using Microsoft.Xna.Framework;
 
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	public partial class MainForm : Form
 	{

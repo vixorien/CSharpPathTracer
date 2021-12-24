@@ -5,7 +5,7 @@ using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace CSharpRaytracing
+namespace CSharpPathTracer
 {
 	static class ImageWriter
 	{
