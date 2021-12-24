@@ -146,7 +146,6 @@ namespace CSharpPathTracer
 
 			// === Meshes ===
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
-			Sphere sphereLarge = new Sphere(new Vector3(0, -1000, 0), 1000);
 
 			// === SCENE 0 ===
 			{
@@ -179,9 +178,13 @@ namespace CSharpPathTracer
 			{
 				// Entities ===
 				Entity cube = new Entity(cubeMesh, blueMatte);
-				cube.Transform.MoveAbsolute(1, 0, 0);
+				cube.Transform.ScaleRelative(3.0f);
+				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
+				cube.Transform.MoveAbsolute(0, 2.0f, 0);
 
-				Entity ground = new Entity(sphereLarge, grayMatte);
+				Entity ground = new Entity(Sphere.Default, grayMatte);
+				ground.Transform.SetPosition(0, -1000, 0);
+				ground.Transform.SetScale(1000);
 
 				// Create scene
 				Scene scene1 = new Scene("Mesh Test", environment);
@@ -195,35 +198,27 @@ namespace CSharpPathTracer
 			// === SCENE 2 ===
 			{
 				// Entities
-				Sphere reg = new Sphere(Vector3.Zero, 1.0f);
-				Entity ground = new Entity(reg, grayMatte);
-				ground.Transform.ScaleRelative(0.25f);
-				ground.Transform.MoveAbsolute(1, 5, 1);
+				Entity ground = new Entity(Sphere.Default, grayMatte);
+				ground.Transform.SetPosition(0, -1000, 0);
+				ground.Transform.SetScale(1000);
 
 				// Create scene
-				Scene scene = new Scene("Sphere Transform Test", environment);
+				Scene scene = new Scene("Random Spheres", environment);
 				scene.Add(ground);
+
+				// Add random entities
+				Random rng = new Random();
+				for (int i = 0; i < 25; i++)
+				{
+					Entity s = new Entity(Sphere.Default, new Material(rng.NextColor(), rng.NextBool()));
+					s.Transform.SetPosition(rng.NextFloat(-10, 10), rng.NextFloat(0, 10), rng.NextFloat(-10, 10));
+					s.Transform.SetScale(rng.NextFloat(0.1f, 1.0f));
+					scene.Add(s);
+				}
 
 				// Add to scene list
 				scenes.Add(scene);
 			}
-
-			// Large sphere below
-			//scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));
-
-			// Small spheres in front of camera
-			//scene.Add(new Sphere(new Vector3(-5, 2.0f, 0), 2.0f, greenMatte));
-			//scene.Add(new Sphere(new Vector3(0, 4.0f, 0), 2.0f, mirror));
-			//scene.Add(new Sphere(new Vector3(5, 2.0f, 0), 2.0f, gold));
-
-			// Random floating spheres
-			//for (int i = 0; i < 25; i++)
-			//{
-			//	scene.Add(new Sphere(
-			//		new Vector3(rng.NextFloat(-10, 10), rng.NextFloat(0, 5), rng.NextFloat(-10, 10)),
-			//		rng.NextFloat(0.25f, 1.0f),
-			//		new Material(rng.NextColor(), rng.NextBool())));
-			//}
 		}
 	}
 }
