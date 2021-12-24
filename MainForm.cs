@@ -16,7 +16,6 @@ namespace CSharpPathTracer
 		private Raytracer raytracer;
 		private Camera camera;
 		
-		private Environment environment;
 		private List<Scene> scenes;
 
 		public MainForm()
@@ -133,7 +132,7 @@ namespace CSharpPathTracer
 		private void CreateScenes()
 		{
 			// === Environments ===
-			environment = new Environment(
+			Environment environment = new Environment(
 				System.Drawing.Color.CornflowerBlue.ToVector3(),
 				System.Drawing.Color.White.ToVector3(),
 				System.Drawing.Color.White.ToVector3());
@@ -149,20 +148,65 @@ namespace CSharpPathTracer
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
 			Sphere sphereLarge = new Sphere(new Vector3(0, -1000, 0), 1000);
 
+			// === SCENE 0 ===
+			{
+				Entity ground = new Entity(Sphere.Default, grayMatte);
+				ground.Transform.SetPosition(0, -1000, 0);
+				ground.Transform.SetScale(1000);
+
+				Entity left = new Entity(Sphere.Default, greenMatte);
+				left.Transform.SetPosition(-5, 2, 0);
+				left.Transform.SetScale(2);
+
+				Entity middle = new Entity(Sphere.Default, mirror);
+				middle.Transform.SetPosition(0, 4, 0);
+				middle.Transform.SetScale(2);
+
+				Entity right = new Entity(Sphere.Default, gold);
+				right.Transform.SetPosition(5, 2, 0);
+				right.Transform.SetScale(2);
+
+				Scene scene = new Scene("Default", environment);
+				scene.Add(ground);
+				scene.Add(left);
+				scene.Add(middle);
+				scene.Add(right);
+
+				scenes.Add(scene);
+			}
+
 			// === SCENE 1 ===
+			{
+				// Entities ===
+				Entity cube = new Entity(cubeMesh, blueMatte);
+				cube.Transform.MoveAbsolute(1, 0, 0);
 
-			// Entities ===
-			Entity cube = new Entity(cubeMesh, blueMatte);
-			cube.Transform.MoveAbsolute(1, 0, 0);
-			Entity ground = new Entity(sphereLarge, grayMatte);
+				Entity ground = new Entity(sphereLarge, grayMatte);
 
-			// Add to scene ===
-			Scene scene1 = new Scene("Test", environment);
-			scene1.Add(cube);
-			scene1.Add(ground);
+				// Create scene
+				Scene scene1 = new Scene("Mesh Test", environment);
+				scene1.Add(cube);
+				scene1.Add(ground);
 
-			scenes.Add(scene1);
+				// Add to scene list
+				scenes.Add(scene1);
+			}
 
+			// === SCENE 2 ===
+			{
+				// Entities
+				Sphere reg = new Sphere(Vector3.Zero, 1.0f);
+				Entity ground = new Entity(reg, grayMatte);
+				ground.Transform.ScaleRelative(0.25f);
+				ground.Transform.MoveAbsolute(1, 5, 1);
+
+				// Create scene
+				Scene scene = new Scene("Sphere Transform Test", environment);
+				scene.Add(ground);
+
+				// Add to scene list
+				scenes.Add(scene);
+			}
 
 			// Large sphere below
 			//scene.Add(new Sphere(new Vector3(0, -1000, 0), 1000, grayMatte));

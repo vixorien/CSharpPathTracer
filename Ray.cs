@@ -21,7 +21,6 @@ namespace CSharpPathTracer
 		{
 			Origin = origin;
 			Direction = direction;
-			Direction.Normalize();
 			TMin = tmin;
 			TMax = tmax;
 		}

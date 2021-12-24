@@ -67,7 +67,7 @@ namespace CSharpPathTracer
 			bool anyHit = false;
 			hit = RayHit.Infinity;
 
-			// Loop through scene and check all spheres
+			// Loop through scene and check all entities
 			foreach (Entity e in entities)
 			{
 				RayHit[] currentHits;

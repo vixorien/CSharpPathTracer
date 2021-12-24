@@ -19,19 +19,24 @@ namespace CSharpPathTracer
 		{
 			// Transform the ray into the entity's space
 			Matrix worldInv = Matrix.Invert(Transform.WorldMatrix);
-			Ray tRay = ray;
-			tRay.Origin = Vector3.Transform(ray.Origin, worldInv);
-			tRay.Direction = Vector3.TransformNormal(ray.Direction, worldInv);
+			ray.Origin = Vector3.Transform(ray.Origin, worldInv);
+			ray.Direction = Vector3.TransformNormal(ray.Direction, worldInv).Normalized();
 
 			// Perform the intersection using the transformed ray
-			if (Geometry.RayIntersection(tRay, out hits))
+			if (Geometry.RayIntersection(ray, out hits))
 			{
 				// Transform the results back into world space
-				
 				for (int i = 0; i < hits.Length; i++)
 				{
+					// Handle distance first
+					Vector3 rayToHit = hits[i].Position - ray.Origin;
+					hits[i].Distance = Vector3.TransformNormal(rayToHit, Transform.WorldMatrix).Length();
+
+					// Transform params
 					hits[i].Position = Vector3.Transform(hits[i].Position, Transform.WorldMatrix);
-					hits[i].Normal = Vector3.TransformNormal(hits[i].Normal, Transform.WorldMatrix);
+					hits[i].Normal = Vector3.TransformNormal(hits[i].Normal, Transform.WorldMatrix).Normalized();
+
+					// Save this entity
 					hits[i].Entity = this;
 				}
 				

@@ -8,8 +8,16 @@ namespace CSharpPathTracer
 	/// </summary>
 	class Sphere : Geometry
 	{
+		public static Sphere Default { get { return new Sphere(); } }
+
 		public Vector3 Center { get; set; }
 		public float Radius { get; set; }
+
+		public Sphere() : base()
+		{
+			Center = Vector3.Zero;
+			Radius = 1.0f;
+		}
 
 		public Sphere(Vector3 center, float radius) : base()
 		{

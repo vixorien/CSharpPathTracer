@@ -9,6 +9,12 @@ namespace CSharpPathTracer
 {
 	public static class Helpers
 	{
+		public static Vector3 Normalized(this Vector3 v)
+		{
+			v.Normalize();
+			return v;
+		}
+
 		public static System.Drawing.Color ToSystemColor(this Vector3 color)
 		{
 			return System.Drawing.Color.FromArgb(
