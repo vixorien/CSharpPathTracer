@@ -51,6 +51,7 @@ namespace CSharpPathTracer
 			// Update labels and such
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
 			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
+			labelResReduction.Text = "Resolution Reduction: " + sliderResReduction.Value;
 			textWidth.Text = raytracingDisplay.Width.ToString();
 			textHeight.Text = raytracingDisplay.Height.ToString();
 		}
@@ -79,6 +80,7 @@ namespace CSharpPathTracer
 				renderTarget, 
 				camera, 
 				sliderSamplesPerPixel.Value, 
+				sliderResReduction.Value,
 				sliderMaxRecursion.Value);
 			raytracer.RaytraceScene(rtParams);
 		}
@@ -103,7 +105,7 @@ namespace CSharpPathTracer
 				raytracingDisplay.Invalidate();
 
 			// Update progress bar and other status
-			progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width); // An entire row
+			progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
 
 			labelStatus.Text = "Status: Raytracing..." + Math.Round((float)y / raytracingDisplay.Height * 100, 2) + "%";
 			labelTotalRays.Text = "Total Rays: " + stats.TotalRays.ToString("N0");
@@ -120,6 +122,11 @@ namespace CSharpPathTracer
 		private void sliderMaxRecursion_Scroll(object sender, EventArgs e)
 		{
 			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
+		}
+
+		private void sliderResReduction_Scroll(object sender, EventArgs e)
+		{
+			labelResReduction.Text = "Resolution Reduction: " + sliderResReduction.Value;
 		}
 
 		private void MainForm_Resize(object sender, EventArgs e)
@@ -146,6 +153,8 @@ namespace CSharpPathTracer
 
 			// === Meshes ===
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
+			Mesh helixMesh = new Mesh("Content/Models/helix.obj");
+			Mesh sphereMesh = new Mesh("Content/Models/sphere.obj");
 
 			// === SCENE 0 ===
 			{
@@ -177,22 +186,32 @@ namespace CSharpPathTracer
 			// === SCENE 1 ===
 			{
 				// Entities ===
-				Entity cube = new Entity(cubeMesh, blueMatte);
+				Entity cube = new Entity(cubeMesh, mirror);
 				cube.Transform.ScaleRelative(3.0f);
 				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
 				cube.Transform.MoveAbsolute(0, 2.0f, 0);
+
+				Entity helix = new Entity(helixMesh, mirror);
+				helix.Transform.MoveAbsolute(0, 1, 0);
+				helix.Transform.ScaleRelative(5.0f);
+
+				Entity sphere = new Entity(sphereMesh, mirror);
+				sphere.Transform.MoveAbsolute(0, 1, 0);
+				sphere.Transform.ScaleRelative(8.0f);
 
 				Entity ground = new Entity(Sphere.Default, grayMatte);
 				ground.Transform.SetPosition(0, -1000, 0);
 				ground.Transform.SetScale(1000);
 
 				// Create scene
-				Scene scene1 = new Scene("Mesh Test", environment);
-				scene1.Add(cube);
-				scene1.Add(ground);
+				Scene scene = new Scene("Mesh Test", environment);
+				//scene.Add(cube);
+				scene.Add(ground);
+				scene.Add(helix);
+				//scene.Add(sphere);
 
 				// Add to scene list
-				scenes.Add(scene1);
+				scenes.Add(scene);
 			}
 
 			// === SCENE 2 ===
@@ -220,5 +239,7 @@ namespace CSharpPathTracer
 				scenes.Add(scene);
 			}
 		}
+
+		
 	}
 }

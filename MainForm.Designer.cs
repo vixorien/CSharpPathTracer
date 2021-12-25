@@ -48,9 +48,12 @@ namespace CSharpPathTracer
 			this.textHeight = new System.Windows.Forms.TextBox();
 			this.labelScene = new System.Windows.Forms.Label();
 			this.comboScene = new System.Windows.Forms.ComboBox();
+			this.labelResReduction = new System.Windows.Forms.Label();
+			this.sliderResReduction = new System.Windows.Forms.TrackBar();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			this.raytracingStatus.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.sliderResReduction)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// buttonStartRaytrace
@@ -82,7 +85,7 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixel.AutoSize = true;
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(12, 64);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(99, 15);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(98, 15);
 			this.labelSamplesPerPixel.TabIndex = 4;
 			this.labelSamplesPerPixel.Text = "Samples Per Pixel";
 			// 
@@ -91,7 +94,7 @@ namespace CSharpPathTracer
 			this.labelMaxRecursion.AutoSize = true;
 			this.labelMaxRecursion.Location = new System.Drawing.Point(12, 130);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
-			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
+			this.labelMaxRecursion.Size = new System.Drawing.Size(151, 15);
 			this.labelMaxRecursion.TabIndex = 6;
 			this.labelMaxRecursion.Text = "Maximum Recursion Depth";
 			// 
@@ -123,7 +126,7 @@ namespace CSharpPathTracer
 			// labelWidth
 			// 
 			this.labelWidth.AutoSize = true;
-			this.labelWidth.Location = new System.Drawing.Point(12, 196);
+			this.labelWidth.Location = new System.Drawing.Point(12, 264);
 			this.labelWidth.Name = "labelWidth";
 			this.labelWidth.Size = new System.Drawing.Size(80, 15);
 			this.labelWidth.TabIndex = 8;
@@ -132,7 +135,7 @@ namespace CSharpPathTracer
 			// labelHeight
 			// 
 			this.labelHeight.AutoSize = true;
-			this.labelHeight.Location = new System.Drawing.Point(110, 196);
+			this.labelHeight.Location = new System.Drawing.Point(110, 264);
 			this.labelHeight.Name = "labelHeight";
 			this.labelHeight.Size = new System.Drawing.Size(84, 15);
 			this.labelHeight.TabIndex = 9;
@@ -205,7 +208,7 @@ namespace CSharpPathTracer
 			// 
 			// textWidth
 			// 
-			this.textWidth.Location = new System.Drawing.Point(10, 217);
+			this.textWidth.Location = new System.Drawing.Point(10, 285);
 			this.textWidth.Name = "textWidth";
 			this.textWidth.ReadOnly = true;
 			this.textWidth.Size = new System.Drawing.Size(82, 23);
@@ -214,7 +217,7 @@ namespace CSharpPathTracer
 			// 
 			// textHeight
 			// 
-			this.textHeight.Location = new System.Drawing.Point(110, 217);
+			this.textHeight.Location = new System.Drawing.Point(110, 285);
 			this.textHeight.Name = "textHeight";
 			this.textHeight.ReadOnly = true;
 			this.textHeight.Size = new System.Drawing.Size(82, 23);
@@ -239,11 +242,34 @@ namespace CSharpPathTracer
 			this.comboScene.Size = new System.Drawing.Size(182, 23);
 			this.comboScene.TabIndex = 17;
 			// 
+			// labelResReduction
+			// 
+			this.labelResReduction.AutoSize = true;
+			this.labelResReduction.Location = new System.Drawing.Point(12, 195);
+			this.labelResReduction.Name = "labelResReduction";
+			this.labelResReduction.Size = new System.Drawing.Size(120, 15);
+			this.labelResReduction.TabIndex = 19;
+			this.labelResReduction.Text = "Resolution Reduction";
+			// 
+			// sliderResReduction
+			// 
+			this.sliderResReduction.Location = new System.Drawing.Point(12, 213);
+			this.sliderResReduction.Maximum = 16;
+			this.sliderResReduction.Minimum = 1;
+			this.sliderResReduction.Name = "sliderResReduction";
+			this.sliderResReduction.Size = new System.Drawing.Size(189, 45);
+			this.sliderResReduction.TabIndex = 18;
+			this.sliderResReduction.TickFrequency = 5;
+			this.sliderResReduction.Value = 1;
+			this.sliderResReduction.Scroll += new System.EventHandler(this.sliderResReduction_Scroll);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(828, 507);
+			this.Controls.Add(this.labelResReduction);
+			this.Controls.Add(this.sliderResReduction);
 			this.Controls.Add(this.comboScene);
 			this.Controls.Add(this.labelScene);
 			this.Controls.Add(this.textHeight);
@@ -267,6 +293,7 @@ namespace CSharpPathTracer
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).EndInit();
 			this.raytracingStatus.ResumeLayout(false);
 			this.raytracingStatus.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.sliderResReduction)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -292,5 +319,7 @@ namespace CSharpPathTracer
 		private System.Windows.Forms.TextBox textHeight;
 		private System.Windows.Forms.Label labelScene;
 		private System.Windows.Forms.ComboBox comboScene;
+		private System.Windows.Forms.Label labelResReduction;
+		private System.Windows.Forms.TrackBar sliderResReduction;
 	}
 }

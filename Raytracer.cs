@@ -31,14 +31,16 @@ namespace CSharpPathTracer
 		public Bitmap RenderTarget { get; set; }
 		public Camera Camera { get; set; }
 		public int SamplesPerPixel { get; set; }
+		public int ResolutionReduction { get; set; }
 		public int MaxRecursionDepth { get; set; }
 
-		public RaytracingParameters(Scene scene, Bitmap renderTarget, Camera camera, int samplesPerPixel, int maxRecursionDepth)
+		public RaytracingParameters(Scene scene, Bitmap renderTarget, Camera camera, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
 		{
 			Scene = scene;
 			RenderTarget = renderTarget;
 			Camera = camera;
 			SamplesPerPixel = samplesPerPixel;
+			ResolutionReduction = resolutionReduction;
 			MaxRecursionDepth = maxRecursionDepth;
 		}
 	}
@@ -47,9 +49,6 @@ namespace CSharpPathTracer
 	{
 		public delegate void CompleteDelegate(RaytracingStats stats);
 		public event CompleteDelegate RaytraceComplete;
-
-		public delegate void PixelDelegate(int x, int y);
-		public event PixelDelegate RaytracePixelComplete;
 
 		public delegate void ScanlineDelegate(int y, RaytracingStats stats);
 		public event ScanlineDelegate RaytraceScanlineComplete;
@@ -80,11 +79,13 @@ namespace CSharpPathTracer
 			stats.MaxRecursion = rtParams.MaxRecursionDepth;
 			Stopwatch sw = new Stopwatch();
 			sw.Start();
-			
+
+			int res = rtParams.ResolutionReduction;
+
 			// Loop through pixels
-			for (int y = 0; y < height; y++)
+			for (int y = 0; y < height; y += res)
 			{
-				for (int x = 0; x < width; x++)
+				for (int x = 0; x < width; x += res)
 				{
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
@@ -97,10 +98,12 @@ namespace CSharpPathTracer
 						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
 						totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
 					}
-					SetColor(rtParams.RenderTarget, x, y, totalColor / rtParams.SamplesPerPixel);
-					
-					// Notify that this pixel is complete
-					RaytracePixelComplete?.Invoke(x, y);
+
+					// Average the color and set the resolution block
+					totalColor /= rtParams.SamplesPerPixel;
+					for (int blockY = y; blockY < y + res && blockY < height; blockY++)
+						for(int blockX = x; blockX < x + res && blockX < width; blockX++)
+							SetColor(rtParams.RenderTarget, blockX, blockY, totalColor);
 				}
 
 				// Update after an entire line

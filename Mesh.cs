@@ -40,17 +40,17 @@ namespace CSharpPathTracer
 		public Vector3 CalcHitNormal()
 		{
 			return
-				Barycentrics.X * V0.Normal +
-				Barycentrics.Y * V1.Normal +
-				Barycentrics.Z * V2.Normal;
+				Barycentrics.X * V1.Normal +
+				Barycentrics.Y * V2.Normal +
+				Barycentrics.Z * V0.Normal;
 		}
 
 		public Vector2 CalcHitUV()
 		{
 			return
-				Barycentrics.X * V0.UV +
-				Barycentrics.Y * V1.UV +
-				Barycentrics.Z * V2.UV;
+				Barycentrics.X * V1.UV +
+				Barycentrics.Y * V2.UV +
+				Barycentrics.Z * V0.UV;
 		}
 	}
 

@@ -74,7 +74,8 @@ namespace CSharpPathTracer
 
 			// Are we in the wrong hemisphere?
 			float dot = Vector3.Dot(randomVec, normal);
-			if (dot < 0.0f) randomVec *= -1;
+			if (dot < 0.0f) 
+				randomVec *= -1;
 
 			return randomVec;
 		}
