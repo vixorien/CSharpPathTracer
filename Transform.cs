@@ -8,7 +8,7 @@ namespace CSharpPathTracer
 	/// <summary>
 	/// Represents a set of translation, rotation and scale transformations
 	/// </summary>
-	class Transform
+	public class Transform
 	{
 		private Vector3 position;
 		private Vector3 pitchYawRoll;

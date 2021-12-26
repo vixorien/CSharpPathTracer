@@ -138,6 +138,11 @@ namespace CSharpPathTracer
 
 		private void CreateScenes()
 		{
+			// Overall scene bounds
+			BoundingBox sceneBounds = new BoundingBox(
+				new Vector3(-10000),
+				new Vector3(10000));
+
 			// === Environments ===
 			Environment environment = new Environment(
 				System.Drawing.Color.CornflowerBlue.ToVector3(),
@@ -174,7 +179,7 @@ namespace CSharpPathTracer
 				right.Transform.SetPosition(5, 2, 0);
 				right.Transform.SetScale(2);
 
-				Scene scene = new Scene("Default", environment);
+				Scene scene = new Scene("Default", environment, sceneBounds);
 				scene.Add(ground);
 				scene.Add(left);
 				scene.Add(middle);
@@ -197,18 +202,18 @@ namespace CSharpPathTracer
 
 				Entity sphere = new Entity(sphereMesh, mirror);
 				sphere.Transform.MoveAbsolute(0, 1, 0);
-				sphere.Transform.ScaleRelative(8.0f);
+				sphere.Transform.ScaleRelative(2.0f);
 
 				Entity ground = new Entity(Sphere.Default, grayMatte);
 				ground.Transform.SetPosition(0, -1000, 0);
 				ground.Transform.SetScale(1000);
 
 				// Create scene
-				Scene scene = new Scene("Mesh Test", environment);
+				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
 				//scene.Add(cube);
 				scene.Add(ground);
 				scene.Add(helix);
-				//scene.Add(sphere);
+				scene.Add(sphere);
 
 				// Add to scene list
 				scenes.Add(scene);
@@ -222,12 +227,12 @@ namespace CSharpPathTracer
 				ground.Transform.SetScale(1000);
 
 				// Create scene
-				Scene scene = new Scene("Random Spheres", environment);
+				Scene scene = new Scene("Random Spheres", environment, sceneBounds);
 				scene.Add(ground);
 
 				// Add random entities
 				Random rng = new Random();
-				for (int i = 0; i < 25; i++)
+				for (int i = 0; i < 100; i++)
 				{
 					Entity s = new Entity(Sphere.Default, new Material(rng.NextColor(), rng.NextBool()));
 					s.Transform.SetPosition(rng.NextFloat(-10, 10), rng.NextFloat(0, 10), rng.NextFloat(-10, 10));

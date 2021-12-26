@@ -24,6 +24,21 @@ namespace CSharpPathTracer
 			TMin = tmin;
 			TMax = tmax;
 		}
+
+		public Ray GetTransformed(Matrix transMatrix)
+		{
+			Ray tRay = new Ray();
+			tRay.Origin = Vector3.Transform(Origin, transMatrix);
+			tRay.Direction = Vector3.TransformNormal(Direction, transMatrix).Normalized();
+			tRay.TMin = Vector3.TransformNormal(Direction * TMin, transMatrix).Length();
+			tRay.TMax = Vector3.TransformNormal(Direction * TMax, transMatrix).Length();
+			return tRay;
+		}
+
+		public static implicit operator Microsoft.Xna.Framework.Ray(Ray ray)
+		{
+			return new Microsoft.Xna.Framework.Ray(ray.Origin + ray.Direction * ray.TMin, ray.Direction);
+		}
 	}
 
 	/// <summary>
@@ -32,19 +47,21 @@ namespace CSharpPathTracer
 	struct RayHit
 	{
 		public static RayHit None { get; } = new RayHit();
-		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, float.PositiveInfinity, null);
+		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, Vector2.Zero, float.PositiveInfinity, null);
 
 		public Vector3 Position { get; set; }
 		public Vector3 Normal { get; set; }
+		public Vector2 UV { get; set; }
 		public float Distance { get; set; }
-		public Entity Entity { get; set; }
+		public IRayIntersectable HitObject { get; set; }
 
-		public RayHit(Vector3 position, Vector3 normal, float distance, Entity entity)
+		public RayHit(Vector3 position, Vector3 normal, Vector2 uv, float distance, IRayIntersectable hitObj)
 		{
 			Position = position;
 			Normal = normal;
+			UV = uv;
 			Distance = distance;
-			Entity = entity;
+			HitObject = hitObj;
 		}
 	}
 

@@ -13,19 +13,26 @@ namespace CSharpPathTracer
 		public Vector3 Center { get; set; }
 		public float Radius { get; set; }
 
-		public Sphere() : base()
+		/// <summary>
+		/// Creates a new default sphere centered at the origin with a radius of 1
+		/// </summary>
+		public Sphere() 
+			: this(Vector3.Zero, 1.0f)
 		{
-			Center = Vector3.Zero;
-			Radius = 1.0f;
 		}
 
 		public Sphere(Vector3 center, float radius) : base()
 		{
+			// Save sphere details
 			Center = center;
 			Radius = radius;
+
+			// Set up AABB
+			aabb.Min = center - new Vector3(radius);
+			aabb.Max = center + new Vector3(radius);
 		}
 
-		public override bool RayIntersection(Ray ray, out RayHit[] hits)
+		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// How far along ray to closest point to sphere center
 			Vector3 originToCenter = Center - ray.Origin;
@@ -35,7 +42,7 @@ namespace CSharpPathTracer
 			if (tCenter < 0)
 			{
 				// No intersection points
-				hits = new RayHit[0];
+				hit = RayHit.None;
 				return false;
 			}
 
@@ -46,7 +53,7 @@ namespace CSharpPathTracer
 			if (d > Radius)
 			{
 				// No intersection points
-				hits = new RayHit[0];
+				hit = RayHit.None;
 				return false;
 			}
 
@@ -55,20 +62,27 @@ namespace CSharpPathTracer
 
 			// Distances to the two hit points
 			float t1 = tCenter - offset;
-			float t2 = tCenter + offset;
+			//float t2 = tCenter + offset;
+
+			// Valid hits?
+			if (t1 < ray.TMin || t1 > ray.TMax)
+			{
+				// Outside the valid ray range
+				hit = RayHit.None;
+				return false;
+			}
 
 			// Points of intersection
 			Vector3 p1 = ray.Origin + ray.Direction * t1;
-			Vector3 p2 = ray.Origin + ray.Direction * t2;
+			//Vector3 p2 = ray.Origin + ray.Direction * t2;
 
 			// Normals
 			Vector3 n1 = p1 - Center; n1.Normalize();
-			Vector3 n2 = p2 - Center; n2.Normalize();
+			//Vector3 n2 = p2 - Center; n2.Normalize();
 
 			// Set up return values
-			hits = new RayHit[2];
-			hits[0] = new RayHit(p1, n1, t1, null);
-			hits[1] = new RayHit(p2, n2, t2, null);
+			hit = new RayHit(p1, n1, Vector2.Zero, t1, null);
+			//hits[1] = new RayHit(p2, n2, Vector2.Zero, t2, null); // Secondary hit
 			return true;
 		}
 	}

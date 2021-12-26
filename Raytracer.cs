@@ -61,7 +61,6 @@ namespace CSharpPathTracer
 
 		public Raytracer()
 		{
-			// Other setup
 			rng = new Random();
 		}
 
@@ -133,25 +132,26 @@ namespace CSharpPathTracer
 
 			// Get closest hit along this ray
 			RayHit hit;
-			if (scene.ClosestHit(ray, out hit))
+			if (scene.RayIntersection(ray, out hit))
 			{
 				Ray newRay;
+				Entity hitEntity = hit.HitObject as Entity;
 
 				// We found a hit; which kind of material?
-				if (hit.Entity.Material.Metal)
+				if (hitEntity.Material.Metal)
 				{
 					// Metal - perfect reflection
 					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
-					newRay = new Ray(hit.Position, reflection);
+					newRay = new Ray(hit.Position, reflection, ray.TMin, ray.TMax);
 				}
 				else
 				{
 					// Non-metal, so diffuse!
-					newRay = new Ray(hit.Position, rng.NextVectorInHemisphere(hit.Normal));
+					newRay = new Ray(hit.Position, rng.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
 				}
 
 				// Take into account the hit color and trace the next ray
-				return hit.Entity.Material.Color * TraceRay(newRay, scene, depth - 1);
+				return hitEntity.Material.Color * TraceRay(newRay, scene, depth - 1);
 			}
 			else
 			{
@@ -166,9 +166,9 @@ namespace CSharpPathTracer
 			if (gammaCorrect)
 			{
 				color = new Vector3(
-					MathF.Pow(color.X, GammaCorrectionPower),
-					MathF.Pow(color.Y, GammaCorrectionPower),
-					MathF.Pow(color.Z, GammaCorrectionPower));
+					MathF.Pow(MathF.Max(color.X, 0), GammaCorrectionPower),
+					MathF.Pow(MathF.Max(color.Y, 0), GammaCorrectionPower),
+					MathF.Pow(MathF.Max(color.Z, 0), GammaCorrectionPower));
 			}
 
 			bitmap.SetPixel(x, y, color.ToSystemColor());

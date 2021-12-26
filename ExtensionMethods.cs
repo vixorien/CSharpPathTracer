@@ -7,8 +7,69 @@ using System.Windows.Forms;
 
 namespace CSharpPathTracer
 {
-	public static class Helpers
+	public static class ExtensionMethods
 	{
+		public static BoundingBox GetTransformed(this BoundingBox aabb, Transform transform)
+		{
+			Vector3[] corners = aabb.GetCorners();
+
+			// Create bounding box around just the first corner
+			Vector3 transformedCorner = Vector3.Transform(corners[0], transform.WorldMatrix);
+			BoundingBox transformedAABB = new BoundingBox(transformedCorner, transformedCorner);
+
+			// Loop and encompass all transformed corners
+			for (int i = 1; i < corners.Length; i++)
+			{
+				transformedCorner = Vector3.Transform(corners[i], transform.WorldMatrix);
+				transformedAABB.Encompass(transformedCorner);
+			}
+
+			return transformedAABB;
+		}
+
+		public static void Encompass(this ref BoundingBox aabb, Vector3 point)
+		{
+			// Test min
+			if (point.X < aabb.Min.X) aabb.Min.X = point.X;
+			if (point.Y < aabb.Min.Y) aabb.Min.Y = point.Y;
+			if (point.Z < aabb.Min.Z) aabb.Min.Z = point.Z;
+
+			// Test max
+			if (point.X > aabb.Max.X) aabb.Max.X = point.X;
+			if (point.Y > aabb.Max.Y) aabb.Max.Y = point.Y;
+			if (point.Z > aabb.Max.Z) aabb.Max.Z = point.Z;
+		}
+
+		public static BoundingBox LeftHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(aabb.Min, new Vector3(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Max.Y, aabb.Max.Z));
+		}
+
+		public static BoundingBox RightHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(new Vector3(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Min.Y, aabb.Min.Z), aabb.Max);
+		}
+
+		public static BoundingBox BottomHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(aabb.Min, new Vector3(aabb.Max.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Max.Z));
+		}
+
+		public static BoundingBox TopHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(new Vector3(aabb.Min.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Min.Z), aabb.Max);
+		}
+
+		public static BoundingBox FrontHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(aabb.Min, new Vector3(aabb.Max.X, aabb.Max.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)));
+		}
+
+		public static BoundingBox BackHalf(this BoundingBox aabb)
+		{
+			return new BoundingBox(new Vector3(aabb.Min.X, aabb.Min.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)), aabb.Max);
+		}
+
 		public static Vector3 Normalized(this Vector3 v)
 		{
 			v.Normalize();

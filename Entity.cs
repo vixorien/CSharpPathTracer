@@ -2,11 +2,13 @@
 
 namespace CSharpPathTracer
 {
-	class Entity
+	class Entity : IBoundable, IRayIntersectable
 	{
 		public Transform Transform { get; private set; }
 		public Geometry Geometry { get; set; }
 		public Material Material { get; set; }
+
+		public BoundingBox AABB { get { return Geometry.AABB.GetTransformed(Transform); } }
 
 		public Entity(Geometry geometry, Material material)
 		{
@@ -15,30 +17,25 @@ namespace CSharpPathTracer
 			Material = material;
 		}
 
-		public bool RayIntersection(Ray ray, out RayHit[] hits)
+		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Transform the ray into the entity's space
 			Matrix worldInv = Matrix.Invert(Transform.WorldMatrix);
-			ray.Origin = Vector3.Transform(ray.Origin, worldInv);
-			ray.Direction = Vector3.TransformNormal(ray.Direction, worldInv).Normalized();
+			Ray transformedRay = ray.GetTransformed(worldInv);
 
 			// Perform the intersection using the transformed ray
-			if (Geometry.RayIntersection(ray, out hits))
+			if (Geometry.RayIntersection(transformedRay, out hit))
 			{
-				// Transform the results back into world space
-				for (int i = 0; i < hits.Length; i++)
-				{
-					// Handle distance first
-					Vector3 rayToHit = hits[i].Position - ray.Origin;
-					hits[i].Distance = Vector3.TransformNormal(rayToHit, Transform.WorldMatrix).Length();
+				// Handle distance first
+				Vector3 rayToHit = hit.Position - transformedRay.Origin;
+				hit.Distance = Vector3.TransformNormal(rayToHit, Transform.WorldMatrix).Length();
 
-					// Transform params
-					hits[i].Position = Vector3.Transform(hits[i].Position, Transform.WorldMatrix);
-					hits[i].Normal = Vector3.TransformNormal(hits[i].Normal, Transform.WorldMatrix).Normalized();
+				// Transform params
+				hit.Position = Vector3.Transform(hit.Position, Transform.WorldMatrix);
+				hit.Normal = Vector3.TransformNormal(hit.Normal, Transform.WorldMatrix).Normalized();
 
-					// Save this entity
-					hits[i].Entity = this;
-				}
+				// Save this entity
+				hit.HitObject = this;
 				
 				// Success
 				return true;

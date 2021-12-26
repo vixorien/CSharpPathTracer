@@ -25,6 +25,104 @@ namespace CSharpPathTracer
 		}
 	}
 
+	struct Triangle : IBoundable, IRayIntersectable
+	{
+		/// <summary>
+		/// Gets or sets whether triangle backfaces should be culled
+		/// </summary>
+		public static bool CullBackfaces { get; set; }
+
+		// Fields
+		private BoundingBox aabb;
+
+		/// <summary>
+		/// Gets the AABB bounding box of this geometry
+		/// </summary>
+		public BoundingBox AABB => aabb;
+
+		public Vertex V0 { get; set; }
+		public Vertex V1 { get; set; }
+		public Vertex V2 { get; set; }
+
+		public Triangle(Vertex v0, Vertex v1, Vertex v2)
+		{
+			V0 = v0;
+			V1 = v1;
+			V2 = v2;
+
+			aabb = new BoundingBox(v0.Position, v0.Position);
+			aabb.Encompass(v1.Position);
+			aabb.Encompass(v2.Position);
+		}
+
+		public Vector3 CalcNormalBarycentric(Vector3 barycentrics)
+		{
+			return
+				(barycentrics.X * V1.Normal +
+				barycentrics.Y * V2.Normal +
+				barycentrics.Z * V0.Normal).Normalized();
+		}
+
+		public Vector2 CalcUVBarycentric(Vector3 barycentrics)
+		{
+			return
+				barycentrics.X * V1.UV +
+				barycentrics.Y * V2.UV +
+				barycentrics.Z * V0.UV;
+		}
+
+		public bool RayIntersection(Ray ray, out RayHit hit)
+		{
+			// Assume no hit
+			hit = RayHit.None;
+
+			// From: https://graphicscodex.com/Sample2-RayTriangleIntersection.pdf
+			Vector3 edge1 = V1.Position - V0.Position;
+			Vector3 edge2 = V2.Position - V0.Position;
+
+			Vector3 normal = Vector3.Cross(edge1, edge2);
+			normal.Normalize();
+
+			Vector3 q = Vector3.Cross(ray.Direction, edge2);
+			float a = Vector3.Dot(edge1, q);
+
+			// Parallel?
+			if (MathF.Abs(a) < 0.000001f)
+				return false;
+
+			// Check backfaces?
+			if (CullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
+				return false;
+
+			// Get barycentrics
+			Vector3 s = (ray.Origin - V0.Position) / a;
+			Vector3 r = Vector3.Cross(s, edge1);
+
+			Vector3 bary = Vector3.Zero;
+			bary.X = Vector3.Dot(s, q);
+			bary.Y = Vector3.Dot(r, ray.Direction);
+			bary.Z = 1.0f - bary.X - bary.Y;
+
+			// Outside triangle?
+			if (bary.X < 0.0f || bary.Y < 0.0f || bary.Z < 0.0f)
+				return false;
+
+			// Calculate hit distance
+			float t = Vector3.Dot(edge2, r);
+			if (t < ray.TMin || t > ray.TMax)
+				return false;
+
+			// Success, so fill out the hit
+			hit = new RayHit(
+				ray.Origin + ray.Direction * t,
+				CalcNormalBarycentric(bary),
+				CalcUVBarycentric(bary),
+				t,
+				this);
+			return true;
+		}
+	}
+
 	/// <summary>
 	/// The point at which a ray hits a triangle
 	/// </summary>
@@ -62,111 +160,127 @@ namespace CSharpPathTracer
 		// Mesh data
 		private List<int> indices;
 		private List<Vertex> vertices;
+		private List<Triangle> triangles;
+		private Octree<Triangle> octree;
 
 		public Mesh(string file) : base()
 		{
 			indices = new List<int>();
 			vertices = new List<Vertex>();
+			triangles = new List<Triangle>();
 
 			LoadMesh(file);
+
+			// Now that the mesh is loaded, build the octree
+			octree = new Octree<Triangle>(AABB);
+			foreach (Triangle t in triangles)
+				octree.AddObject(t);
 		}
 
 
-		public override bool RayIntersection(Ray ray, out RayHit[] hits)
+		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
-			// Closest hit, if any
-			bool anyHit = false;
-			TriangleHit closestHit = new TriangleHit();
-			closestHit.Distance = float.PositiveInfinity;
+			return octree.RayIntersection(ray, out hit);
+			//// Closest hit, if any
+			//bool anyHit = false;
+			//TriangleHit closestHit = new TriangleHit();
+			//closestHit.Distance = float.PositiveInfinity;
 
-			// Loop through indices/triangles, looking for hits
-			for (int i = 0; i < indices.Count;)
-			{
-				// Get the three vertices for this triangle
-				Vertex v0 = vertices[indices[i++]];
-				Vertex v1 = vertices[indices[i++]];
-				Vertex v2 = vertices[indices[i++]];
+			//// Quick check of the AABB first
+			//if (!aabb.Intersects(ray).HasValue)
+			//{
+			//	hit = RayHit.None;
+			//	return false;
+			//}
 
-				// Test for intersection
-				TriangleHit triHit;
-				if (RayTriangleIntersection(ray, v0, v1, v2, out triHit))
-				{
-					// We hit a triangle, test for closest
-					if (triHit.Distance < closestHit.Distance)
-					{
-						closestHit = triHit;
-					}
+			//// Loop through indices/triangles, looking for hits
+			//for (int i = 0; i < indices.Count;)
+			//{
+			//	// Get the three vertices for this triangle
+			//	Vertex v0 = vertices[indices[i++]];
+			//	Vertex v1 = vertices[indices[i++]];
+			//	Vertex v2 = vertices[indices[i++]];
 
-					anyHit = true;
-				}
-			}
+			//	// Test for intersection
+			//	TriangleHit triHit;
+			//	if (RayTriangleIntersection(ray, v0, v1, v2, out triHit))
+			//	{
+			//		// We hit a triangle, test for closest
+			//		if (triHit.Distance < closestHit.Distance)
+			//		{
+			//			closestHit = triHit;
+			//		}
 
-			// No hits at all
-			if (!anyHit)
-			{
-				hits = new RayHit[0];
-				return false;
-			}
+			//		anyHit = true;
+			//	}
+			//}
 
-			// Got a hit
-			hits = new RayHit[1];
-			hits[0] = new RayHit(
-				closestHit.Position,
-				closestHit.CalcHitNormal(),
-				closestHit.Distance,
-				null);
-			return true;
+			//// No hits at all
+			//if (!anyHit)
+			//{
+			//	hit = RayHit.None;
+			//	return false;
+			//}
+
+			//// Got a hit
+			//hit = new RayHit(
+			//	closestHit.Position,
+			//	closestHit.CalcHitNormal(),
+			//	closestHit.CalcHitUV(),
+			//	closestHit.Distance,
+			//	null);
+			//return true;
 		}
 
-		public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit, bool cullBackfaces = true)
-		{
-			// Assume no hit
-			triHit = new TriangleHit();
+		//public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit, bool cullBackfaces = true)
+		//{
+		//	// Assume no hit
+		//	triHit = new TriangleHit();
 
-			// From: https://graphicscodex.com/Sample2-RayTriangleIntersection.pdf
-			Vector3 edge1 = v1.Position - v0.Position;
-			Vector3 edge2 = v2.Position - v0.Position;
+		//	// From: https://graphicscodex.com/Sample2-RayTriangleIntersection.pdf
+		//	Vector3 edge1 = v1.Position - v0.Position;
+		//	Vector3 edge2 = v2.Position - v0.Position;
 
-			Vector3 normal = Vector3.Cross(edge1, edge2);
-			normal.Normalize();
+		//	Vector3 normal = Vector3.Cross(edge1, edge2);
+		//	normal.Normalize();
 
-			Vector3 q = Vector3.Cross(ray.Direction, edge2);
-			float a = Vector3.Dot(edge1, q);
+		//	Vector3 q = Vector3.Cross(ray.Direction, edge2);
+		//	float a = Vector3.Dot(edge1, q);
 
-			// Parallel?
-			if (MathF.Abs(a) < 0.000001f)
-				return false;
+		//	// Parallel?
+		//	if (MathF.Abs(a) < 0.000001f)
+		//		return false;
 
-			// Check backfaces?
-			if (cullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
-				return false;
+		//	// Check backfaces?
+		//	if (cullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
+		//		return false;
 
-			// Get barycentrics
-			Vector3 s = (ray.Origin - v0.Position) / a;
-			Vector3 r = Vector3.Cross(s, edge1);
+		//	// Get barycentrics
+		//	Vector3 s = (ray.Origin - v0.Position) / a;
+		//	Vector3 r = Vector3.Cross(s, edge1);
 
-			Vector3 bary = Vector3.Zero;
-			bary.X = Vector3.Dot(s, q);
-			bary.Y = Vector3.Dot(r, ray.Direction);
-			bary.Z = 1.0f - bary.X - bary.Y;
+		//	Vector3 bary = Vector3.Zero;
+		//	bary.X = Vector3.Dot(s, q);
+		//	bary.Y = Vector3.Dot(r, ray.Direction);
+		//	bary.Z = 1.0f - bary.X - bary.Y;
 
-			// Outside triangle?
-			if (bary.X < 0.0f || bary.Y < 0.0f || bary.Z < 0.0f)
-				return false;
+		//	// Outside triangle?
+		//	if (bary.X < 0.0f || bary.Y < 0.0f || bary.Z < 0.0f)
+		//		return false;
 
-			// Calculate hit distance
-			float t = Vector3.Dot(edge2, r);
-			if (t < 0.0f)
-				return false;
+		//	// Calculate hit distance
+		//	float t = Vector3.Dot(edge2, r);
+		//	if (t < 0.0f)
+		//		return false;
 
-			triHit.V0 = v0;
-			triHit.V1 = v1;
-			triHit.V2 = v2;
-			triHit.Distance = t;
-			triHit.Position = ray.Origin + ray.Direction * t;
-			triHit.Barycentrics = bary;
-			return true;
-		}
+		//	triHit.V0 = v0;
+		//	triHit.V1 = v1;
+		//	triHit.V2 = v2;
+		//	triHit.Distance = t;
+		//	triHit.Position = ray.Origin + ray.Direction * t;
+		//	triHit.Barycentrics = bary;
+		//	return true;
+		//}
 
 		private void LoadMesh(string file)
 		{
@@ -212,7 +326,11 @@ namespace CSharpPathTracer
 						if (p.Length != 4) continue;
 
 						// Valid length, so parse the elements (skip 0)
-						positions.Add(new Vector3(float.Parse(p[1]), float.Parse(p[2]), float.Parse(p[3])));
+						Vector3 pos = new Vector3(float.Parse(p[1]), float.Parse(p[2]), float.Parse(p[3]));
+
+						// Add to the positions list as well as the AABB
+						positions.Add(pos);
+						aabb.Encompass(pos);
 					}
 					else if (line[0] == 'f') // Face
 					{
@@ -295,6 +413,9 @@ namespace CSharpPathTracer
 						indices.Add(vertCounter); vertCounter += 1;
 						indices.Add(vertCounter); vertCounter += 1;
 
+						// Add the triangle
+						triangles.Add(new Triangle(v1, v2, v3));
+
 						// Was there a 4th face?
 						if (i.Count == 12)
 						{
@@ -321,6 +442,9 @@ namespace CSharpPathTracer
 							indices.Add(vertCounter); vertCounter += 1;
 							indices.Add(vertCounter); vertCounter += 1;
 							indices.Add(vertCounter); vertCounter += 1;
+
+							// Add the triangle
+							triangles.Add(new Triangle(v1, v3, v4));
 						}
 
 					}

@@ -77,7 +77,7 @@ namespace CSharpPathTracer
 				unprojPos.Z);
 
 			// Create the ray
-			return new Ray(Position, Vector3.Normalize(worldPos - Position));
+			return new Ray(Position, Vector3.Normalize(worldPos - Position), NearClip, FarClip);
 		}
 
 		private void UpdateViewMatrix()
