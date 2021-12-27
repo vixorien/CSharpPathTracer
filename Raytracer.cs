@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Collections.Generic;
-
+using System.ComponentModel;
+using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
-
-using System.Windows.Forms;
-using System.Drawing;
+//using System.Drawing;
 
 namespace CSharpPathTracer
 {
@@ -14,30 +11,30 @@ namespace CSharpPathTracer
 		public ulong TotalRays { get; set; }
 		public int DeepestRecursion { get; set; }
 		public int MaxRecursion { get; set; }
-		public TimeSpan TotalTime { get; set; }
 
-		public void Reset()
+		public void Reset(int maxRecursion)
 		{
 			TotalRays = 0;
 			DeepestRecursion = 0;
-			MaxRecursion = 0;
-			TotalTime = TimeSpan.Zero;
+			MaxRecursion = maxRecursion;
 		}
 	}
 
 	class RaytracingParameters
 	{
 		public Scene Scene { get; set; }
-		public Bitmap RenderTarget { get; set; }
 		public Camera Camera { get; set; }
 		public int SamplesPerPixel { get; set; }
 		public int ResolutionReduction { get; set; }
 		public int MaxRecursionDepth { get; set; }
+		public int Width { get; set; }
+		public int Height { get; set; }
 
-		public RaytracingParameters(Scene scene, Bitmap renderTarget, Camera camera, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
+		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
 		{
 			Scene = scene;
-			RenderTarget = renderTarget;
+			Width = width;
+			Height = height;
 			Camera = camera;
 			SamplesPerPixel = samplesPerPixel;
 			ResolutionReduction = resolutionReduction;
@@ -45,47 +42,85 @@ namespace CSharpPathTracer
 		}
 	}
 
+	class RaytracingProgress
+	{
+		public int ScanlineIndex { get; private set; }
+		public byte[] Scanline { get; private set; }
+		public double CompletionPercent { get; private set; }
+		public RaytracingStats Stats { get; private set; }
+
+		public RaytracingProgress(int scanlineIndex, byte[] scanline, double completionPercent, RaytracingStats stats)
+		{
+			ScanlineIndex = scanlineIndex;
+			Scanline = scanline;
+			CompletionPercent = completionPercent;
+			Stats = stats;
+		}
+	}
+
 	class Raytracer
 	{
-		public delegate void CompleteDelegate(RaytracingStats stats);
-		public event CompleteDelegate RaytraceComplete;
-
-		public delegate void ScanlineDelegate(int y, RaytracingStats stats);
-		public event ScanlineDelegate RaytraceScanlineComplete;
-
 		private Random rng;
-		
+
+		private bool raytracingInProgress;
 		private RaytracingStats stats;
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
 		public Raytracer()
 		{
+			raytracingInProgress = false;
 			rng = new Random();
 		}
 
-		public void RaytraceScene(object threadParam)
+		public void RaytraceScene(object sender, DoWorkEventArgs e)
 		{
-			RaytracingParameters rtParams = threadParam as RaytracingParameters;
+			if (raytracingInProgress)
+				return;
+
+			RaytracingParameters rtParams = e.Argument as RaytracingParameters;
 			if (rtParams == null)
 				return;
 
-			int width = rtParams.RenderTarget.Width;
-			int height = rtParams.RenderTarget.Height;
+			BackgroundWorker worker = sender as BackgroundWorker;
+			if (worker == null)
+				return;
 
-			// Reset stats
-			stats.Reset();
-			stats.MaxRecursion = rtParams.MaxRecursionDepth;
-			Stopwatch sw = new Stopwatch();
-			sw.Start();
+			// Get ready
+			stats.Reset(rtParams.MaxRecursionDepth);
+			raytracingInProgress = true;
+
+			int width = rtParams.Width;
+			int height = rtParams.Height;
+
+			// Set up the results as separate scanline
+			// arrays of colors to easily faciliate returning
+			// a single scanline of colors at a time
+			const int channelsPerPixel = 3;
+			byte[][] results = new byte[height][];
+			for (int h = 0; h < height; h++)
+			{
+				results[h] = new byte[width * channelsPerPixel];
+			}
 
 			int res = rtParams.ResolutionReduction;
 
 			// Loop through pixels
 			for (int y = 0; y < height; y += res)
 			{
+				// TODO: Fix random w/ parallel for: https://devblogs.microsoft.com/pfxteam/getting-random-numbers-in-a-thread-safe-way/
+				//Parallel.For(0, width, x =>
+
 				for (int x = 0; x < width; x += res)
 				{
+					//// Check for cancellation
+					//if (worker.CancellationPending)
+					//{
+					//	e.Cancel = true;
+					//	raytracingInProgress = false;
+					//	return;
+					//}
+
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
 					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
@@ -101,21 +136,25 @@ namespace CSharpPathTracer
 					// Average the color and set the resolution block
 					totalColor /= rtParams.SamplesPerPixel;
 					for (int blockY = y; blockY < y + res && blockY < height; blockY++)
-						for(int blockX = x; blockX < x + res && blockX < width; blockX++)
-							SetColor(rtParams.RenderTarget, blockX, blockY, totalColor);
+						for (int blockX = x; blockX < x + res && blockX < width; blockX++)
+							FinalizeColor(results, x, y, channelsPerPixel, totalColor, true);
+				}
+				//});
+
+				if (worker.CancellationPending)
+				{
+					e.Cancel = true;
+					raytracingInProgress = false;
+					return;
 				}
 
-				// Update after an entire line
-				stats.TotalTime = sw.Elapsed;
-				RaytraceScanlineComplete?.Invoke(y, stats);
-				Application.DoEvents();
+				// Report this scaneline  being done
+				RaytracingProgress progress = new RaytracingProgress(y,	results[y], (double)y / height * 100, stats);
+				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
 
-			sw.Stop();
-			stats.TotalTime = sw.Elapsed;
-
-			// All done
-			RaytraceComplete?.Invoke(stats);
+			// Finished
+			raytracingInProgress = false;
 		}
 
 		private Vector3 TraceRay(Ray ray, Scene scene, int depth)
@@ -160,23 +199,20 @@ namespace CSharpPathTracer
 			}
 		}
 
-
-		private void SetColor(Bitmap bitmap, int x, int y, Vector3 color, bool gammaCorrect = true)
+		private void FinalizeColor(byte[][] results, int x, int y, int channelsPerPixel, Vector3 color, bool gammaCorrect = true)
 		{
 			if (gammaCorrect)
 			{
-				color = new Vector3(
-					MathF.Pow(MathF.Max(color.X, 0), GammaCorrectionPower),
-					MathF.Pow(MathF.Max(color.Y, 0), GammaCorrectionPower),
-					MathF.Pow(MathF.Max(color.Z, 0), GammaCorrectionPower));
+				color.X = MathF.Pow(Math.Clamp(color.X, 0, 1), GammaCorrectionPower);
+				color.Y = MathF.Pow(Math.Clamp(color.Y, 0, 1), GammaCorrectionPower);
+				color.Z = MathF.Pow(Math.Clamp(color.Z, 0, 1), GammaCorrectionPower);
 			}
 
-			bitmap.SetPixel(x, y, color.ToSystemColor());
-		}
-
-		private void SetColor(Bitmap bitmap, int x, int y, System.Drawing.Color color, bool gammaCorrect = true)
-		{
-			SetColor(bitmap, x, y, color.ToVector3(), gammaCorrect);
+			// Note: bitmap data is BGR, not RGB!
+			int pixelStart = x * channelsPerPixel;
+			results[y][pixelStart + 0] = (byte)(color.Z * 255); 
+			results[y][pixelStart + 1] = (byte)(color.Y * 255);
+			results[y][pixelStart + 2] = (byte)(color.X * 255);
 		}
 
 	}

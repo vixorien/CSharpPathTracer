@@ -143,6 +143,10 @@ namespace CSharpPathTracer
 
 		public static void IncrementNoAnimation(this ProgressBar bar, int amount)
 		{
+			// Verify the bar still exists
+			if (bar == null)
+				return;
+
 			// Are we at max?
 			if (bar.Value == bar.Maximum)
 				return;

@@ -1,22 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Data;
-using System.Threading;
+using System.Diagnostics;
 using System.Drawing;
-using System.Text;
+using System.Drawing.Imaging;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 
 namespace CSharpPathTracer
 {
 	public partial class MainForm : Form
 	{
+		private BackgroundWorker worker;
 		private Bitmap renderTarget;
 		private Raytracer raytracer;
 		private Camera camera;
 		
 		private List<Scene> scenes;
+
+		private Stopwatch stopwatch;
+		private bool raytracingInProgress;
 
 		public MainForm()
 		{
@@ -36,10 +40,7 @@ namespace CSharpPathTracer
 			}
 			comboScene.SelectedIndex = 0;
 
-			raytracer = new Raytracer();
-			raytracer.RaytraceScanlineComplete += Raytracer_RaytraceScanlineComplete;
-			raytracer.RaytraceComplete += Raytracer_RaytraceComplete;
-
+			// Camera for scene
 			camera = new Camera(
 				new Vector3(0, 5, 20),
 				Vector3.Normalize(new Vector3(0, -0.2f, -1)),
@@ -47,6 +48,11 @@ namespace CSharpPathTracer
 				MathF.PI / 4.0f,
 				0.01f,
 				1000.0f);
+
+			// Create the ray tracer before the background worker
+			raytracer = new Raytracer();
+			raytracingInProgress = false;
+			stopwatch = new Stopwatch();
 
 			// Update labels and such
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
@@ -56,14 +62,31 @@ namespace CSharpPathTracer
 			textHeight.Text = raytracingDisplay.Height.ToString();
 		}
 
+		
 		private void buttonStartRaytrace_Click(object sender, EventArgs e)
 		{
+			// If we're in progress, we simply cancel and swap text
+			if (raytracingInProgress)
+			{
+				worker.CancelAsync();
+				return;
+			}
+
+			// Set up the worker for threading
+			worker?.Dispose();
+			worker = new BackgroundWorker();
+			worker.WorkerReportsProgress = true;
+			worker.WorkerSupportsCancellation = true;
+			worker.DoWork += raytracer.RaytraceScene;
+			worker.ProgressChanged += ScanlineComplete;
+			worker.RunWorkerCompleted += RaytraceComplete;
+
 			// Update status
 			labelStatus.Text = "Status: Raytracing...";
 
 			// Create/re-create the render target using the display dimensions
 			renderTarget?.Dispose();
-			renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height);
+			renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
 			raytracingDisplay.Bitmap = renderTarget;
 
 			// Set up progress bar
@@ -77,54 +100,93 @@ namespace CSharpPathTracer
 			// Raytrace the scene
 			RaytracingParameters rtParams = new RaytracingParameters(
 				scenes[comboScene.SelectedIndex], 
-				renderTarget, 
 				camera, 
+				renderTarget.Width,
+				renderTarget.Height,
 				sliderSamplesPerPixel.Value, 
 				sliderResReduction.Value,
 				sliderMaxRecursion.Value);
-			raytracer.RaytraceScene(rtParams);
+			worker.RunWorkerAsync(rtParams);
+
+			raytracingInProgress = true;
+			buttonStartRaytrace.Text = "Cancel Raytrace";
+
+			stopwatch.Restart();
 		}
 
 
-		private void Raytracer_RaytraceComplete(RaytracingStats stats)
+		private void ScanlineComplete(object sender, ProgressChangedEventArgs e)
 		{
-			// Invalidate on complete to redisplay, in the event
-			// progress isn't being shown
-			raytracingDisplay.Invalidate();
+			RaytracingProgress progress = e.UserState as RaytracingProgress;
+			if (progress == null)
+				return;
 
-			// Update stats
-			labelStatus.Text = "Status: Complete";
-			labelTotalRays.Text = "Total Rays: " + stats.TotalRays.ToString("N0");
-			labelDeepestRecursion.Text = "Deepest Recursion: " + stats.DeepestRecursion;
-			labelTime.Text = "Total Time: " + stats.TotalTime.ToString(@"hh\:mm\:ss\.fff");
-		}
+			// Copy data to the correct scanline in the bitmap
+			BitmapData pixels = renderTarget.LockBits(
+				new System.Drawing.Rectangle(0, 0, renderTarget.Width, renderTarget.Height),
+				System.Drawing.Imaging.ImageLockMode.WriteOnly,
+				renderTarget.PixelFormat);
 
-		private void Raytracer_RaytraceScanlineComplete(int y, RaytracingStats stats)
-		{
-			if(checkDisplayProgress.Checked)
+			Marshal.Copy(
+				progress.Scanline, 
+				0, 
+				pixels.Scan0 + pixels.Stride * progress.ScanlineIndex, 
+				progress.Scanline.Length);
+
+			renderTarget.UnlockBits(pixels);
+
+			if (checkDisplayProgress.Checked)
 				raytracingDisplay.Invalidate();
-
-			// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
-			// Ideas:
-			// - Use background worker for raytracing
-			//   - DoWork starts raytrace
-			//   - Progress event is a scanline being completed
-			//   - Maybe a parallel for internally for pixels in the scanline?  Gotta test that
-			// - Move all actual bitmap processing to main thread
-			//   - Progress event spits back array of pixels
-			//   - Main thread does quick Marshal.Copy into bitmap
-			//   - Ideally no cross-thread UI touching this way!
 
 			// Update progress bar and other status
 			progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
 
-			labelStatus.Text = "Status: Raytracing..." + Math.Round((float)y / raytracingDisplay.Height * 100, 2) + "%";
-			labelTotalRays.Text = "Total Rays: " + stats.TotalRays.ToString("N0");
-			labelDeepestRecursion.Text = "Deepest Recursion: " + stats.DeepestRecursion;
-			labelTime.Text = "Total Time: " + stats.TotalTime.ToString(@"hh\:mm\:ss\.fff");
+			labelStatus.Text = "Status: Raytracing..." + Math.Round(progress.CompletionPercent, 2) + "%";
+			labelTotalRays.Text = "Total Rays: " + progress.Stats.TotalRays.ToString("N0");
+			labelDeepestRecursion.Text = "Deepest Recursion: " + progress.Stats.DeepestRecursion;
+			labelTime.Text = "Total Time: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\.fff");
 		}
 
-		
+		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
+		{
+			// Note: Can check for a cancel here!
+			if (!e.Cancelled)
+			{
+				labelStatus.Text = "Status: Complete!";
+			}
+
+			buttonStartRaytrace.Text = "Start Raytrace";
+			raytracingInProgress = false;
+			stopwatch.Stop();
+		}
+
+
+		//private void Raytracer_RaytraceScanlineComplete(int y, RaytracingStats stats)
+		//{
+		//	if(checkDisplayProgress.Checked)
+		//		raytracingDisplay.Invalidate();
+
+		//	// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
+		//	// Ideas:
+		//	// - Use background worker for raytracing
+		//	//   - DoWork starts raytrace
+		//	//   - Progress event is a scanline being completed
+		//	//   - Maybe a parallel for internally for pixels in the scanline?  Gotta test that
+		//	// - Move all actual bitmap processing to main thread
+		//	//   - Progress event spits back array of pixels
+		//	//   - Main thread does quick Marshal.Copy into bitmap
+		//	//   - Ideally no cross-thread UI touching this way!
+
+		//	// Update progress bar and other status
+		//	progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
+
+		//	labelStatus.Text = "Status: Raytracing..." + Math.Round((float)y / raytracingDisplay.Height * 100, 2) + "%";
+		//	labelTotalRays.Text = "Total Rays: " + stats.TotalRays.ToString("N0");
+		//	labelDeepestRecursion.Text = "Deepest Recursion: " + stats.DeepestRecursion;
+		//	//labelTime.Text = "Total Time: " + stats.TotalTime.ToString(@"hh\:mm\:ss\.fff");
+		//}
+
+
 		private void sliderSamplesPerPixel_Scroll(object sender, EventArgs e)
 		{
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
