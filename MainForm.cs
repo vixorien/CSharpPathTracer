@@ -104,6 +104,17 @@ namespace CSharpPathTracer
 			if(checkDisplayProgress.Checked)
 				raytracingDisplay.Invalidate();
 
+			// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
+			// Ideas:
+			// - Use background worker for raytracing
+			//   - DoWork starts raytrace
+			//   - Progress event is a scanline being completed
+			//   - Maybe a parallel for internally for pixels in the scanline?  Gotta test that
+			// - Move all actual bitmap processing to main thread
+			//   - Progress event spits back array of pixels
+			//   - Main thread does quick Marshal.Copy into bitmap
+			//   - Ideally no cross-thread UI touching this way!
+
 			// Update progress bar and other status
 			progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
 
