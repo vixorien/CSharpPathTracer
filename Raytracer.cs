@@ -113,20 +113,12 @@ namespace CSharpPathTracer
 
 				for (int x = 0; x < width; x += res)
 				{
-					//// Check for cancellation
-					//if (worker.CancellationPending)
-					//{
-					//	e.Cancel = true;
-					//	raytracingInProgress = false;
-					//	return;
-					//}
-
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
 					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
 					{
-						float adjustedX = x + rng.NextFloat(-0.5f, 0.5f);
-						float adjustedY = y + rng.NextFloat(-0.5f, 0.5f);
+						float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+						float adjustedY = y + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
 
 						// Get this ray and add to the total raytraced color
 						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
@@ -137,10 +129,11 @@ namespace CSharpPathTracer
 					totalColor /= rtParams.SamplesPerPixel;
 					for (int blockY = y; blockY < y + res && blockY < height; blockY++)
 						for (int blockX = x; blockX < x + res && blockX < width; blockX++)
-							FinalizeColor(results, x, y, channelsPerPixel, totalColor, true);
+							FinalizeColor(results, blockX, blockY, channelsPerPixel, totalColor, true);
 				}
 				//});
 
+				// Check for cancellation
 				if (worker.CancellationPending)
 				{
 					e.Cancel = true;
@@ -148,9 +141,13 @@ namespace CSharpPathTracer
 					return;
 				}
 
-				// Report this scaneline  being done
-				RaytracingProgress progress = new RaytracingProgress(y,	results[y], (double)y / height * 100, stats);
-				worker.ReportProgress((int)progress.CompletionPercent, progress);
+				// Report each scanline that was completed
+				// TODO: Make this one report with a scanline count!
+				for (int blockY = y; blockY < y + res && blockY < height; blockY++)
+				{
+					RaytracingProgress progress = new RaytracingProgress(blockY, results[blockY], (double)blockY / height * 100, stats);
+					worker.ReportProgress((int)progress.CompletionPercent, progress);
+				}
 			}
 
 			// Finished
@@ -185,8 +182,9 @@ namespace CSharpPathTracer
 				}
 				else
 				{
+					Random localRNG = ThreadSafeRandom.Instance;
 					// Non-metal, so diffuse!
-					newRay = new Ray(hit.Position, rng.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
+					newRay = new Ray(hit.Position, localRNG.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
 				}
 
 				// Take into account the hit color and trace the next ray
