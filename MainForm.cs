@@ -121,17 +121,22 @@ namespace CSharpPathTracer
 			if (progress == null)
 				return;
 
+			// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
 			// Copy data to the correct scanline in the bitmap
 			BitmapData pixels = renderTarget.LockBits(
 				new System.Drawing.Rectangle(0, 0, renderTarget.Width, renderTarget.Height),
 				System.Drawing.Imaging.ImageLockMode.WriteOnly,
 				renderTarget.PixelFormat);
 
-			Marshal.Copy(
-				progress.Scanline, 
-				0, 
-				pixels.Scan0 + pixels.Stride * progress.ScanlineIndex, 
-				progress.Scanline.Length);
+			// Duplicate the scanline as necessary
+			for (int y = progress.ScanlineIndex; y < progress.ScanlineDuplicateCount + progress.ScanlineIndex && y < renderTarget.Height; y++)
+			{
+				Marshal.Copy(
+					progress.Scanline,
+					0,
+					pixels.Scan0 + pixels.Stride * y,
+					progress.Scanline.Length);
+			}
 
 			renderTarget.UnlockBits(pixels);
 
@@ -159,32 +164,6 @@ namespace CSharpPathTracer
 			raytracingInProgress = false;
 			stopwatch.Stop();
 		}
-
-
-		//private void Raytracer_RaytraceScanlineComplete(int y, RaytracingStats stats)
-		//{
-		//	if(checkDisplayProgress.Checked)
-		//		raytracingDisplay.Invalidate();
-
-		//	// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
-		//	// Ideas:
-		//	// - Use background worker for raytracing
-		//	//   - DoWork starts raytrace
-		//	//   - Progress event is a scanline being completed
-		//	//   - Maybe a parallel for internally for pixels in the scanline?  Gotta test that
-		//	// - Move all actual bitmap processing to main thread
-		//	//   - Progress event spits back array of pixels
-		//	//   - Main thread does quick Marshal.Copy into bitmap
-		//	//   - Ideally no cross-thread UI touching this way!
-
-		//	// Update progress bar and other status
-		//	progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
-
-		//	labelStatus.Text = "Status: Raytracing..." + Math.Round((float)y / raytracingDisplay.Height * 100, 2) + "%";
-		//	labelTotalRays.Text = "Total Rays: " + stats.TotalRays.ToString("N0");
-		//	labelDeepestRecursion.Text = "Deepest Recursion: " + stats.DeepestRecursion;
-		//	//labelTime.Text = "Total Time: " + stats.TotalTime.ToString(@"hh\:mm\:ss\.fff");
-		//}
 
 
 		private void sliderSamplesPerPixel_Scroll(object sender, EventArgs e)

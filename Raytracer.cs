@@ -45,13 +45,15 @@ namespace CSharpPathTracer
 	class RaytracingProgress
 	{
 		public int ScanlineIndex { get; private set; }
+		public int ScanlineDuplicateCount { get; private set; }
 		public byte[] Scanline { get; private set; }
 		public double CompletionPercent { get; private set; }
 		public RaytracingStats Stats { get; private set; }
 
-		public RaytracingProgress(int scanlineIndex, byte[] scanline, double completionPercent, RaytracingStats stats)
+		public RaytracingProgress(int scanlineIndex, int duplicateCount, byte[] scanline, double completionPercent, RaytracingStats stats)
 		{
 			ScanlineIndex = scanlineIndex;
+			ScanlineDuplicateCount = duplicateCount;
 			Scanline = scanline;
 			CompletionPercent = completionPercent;
 			Stats = stats;
@@ -108,11 +110,11 @@ namespace CSharpPathTracer
 			// Loop through pixels
 			for (int y = 0; y < height; y += res)
 			{
-				// TODO: Fix random w/ parallel for: https://devblogs.microsoft.com/pfxteam/getting-random-numbers-in-a-thread-safe-way/
-				//Parallel.For(0, width, x =>
-
-				for (int x = 0; x < width; x += res)
+				Parallel.For(0, (int)Math.Ceiling((double)width / res), xIteration =>
 				{
+					// The actual coordinate to use
+					int x = xIteration * res;
+					
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
 					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
@@ -127,11 +129,12 @@ namespace CSharpPathTracer
 
 					// Average the color and set the resolution block
 					totalColor /= rtParams.SamplesPerPixel;
-					for (int blockY = y; blockY < y + res && blockY < height; blockY++)
-						for (int blockX = x; blockX < x + res && blockX < width; blockX++)
-							FinalizeColor(results, blockX, blockY, channelsPerPixel, totalColor, true);
-				}
-				//});
+
+					// Prepare to set the color in the array of bytes
+					Vector3 colorAsBytes = ColorAsBytes(totalColor, true);
+					for (int blockX = x; blockX < x + res && blockX < width; blockX++)
+						SetByteColor(results, blockX, y, channelsPerPixel, colorAsBytes);
+				});
 
 				// Check for cancellation
 				if (worker.CancellationPending)
@@ -142,12 +145,8 @@ namespace CSharpPathTracer
 				}
 
 				// Report each scanline that was completed
-				// TODO: Make this one report with a scanline count!
-				for (int blockY = y; blockY < y + res && blockY < height; blockY++)
-				{
-					RaytracingProgress progress = new RaytracingProgress(blockY, results[blockY], (double)blockY / height * 100, stats);
-					worker.ReportProgress((int)progress.CompletionPercent, progress);
-				}
+				RaytracingProgress progress = new RaytracingProgress(y, res, results[y], (double)y / height * 100, stats);
+				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
 
 			// Finished
@@ -197,7 +196,7 @@ namespace CSharpPathTracer
 			}
 		}
 
-		private void FinalizeColor(byte[][] results, int x, int y, int channelsPerPixel, Vector3 color, bool gammaCorrect = true)
+		private Vector3 ColorAsBytes(Vector3 color, bool gammaCorrect = true)
 		{
 			if (gammaCorrect)
 			{
@@ -206,11 +205,17 @@ namespace CSharpPathTracer
 				color.Z = MathF.Pow(Math.Clamp(color.Z, 0, 1), GammaCorrectionPower);
 			}
 
+			// Adjust to the byte range
+			return color * 255;
+		}
+
+		private void SetByteColor(byte[][] results, int x, int y, int channelsPerPixel, Vector3 colorInBytes)
+		{
 			// Note: bitmap data is BGR, not RGB!
 			int pixelStart = x * channelsPerPixel;
-			results[y][pixelStart + 0] = (byte)(color.Z * 255); 
-			results[y][pixelStart + 1] = (byte)(color.Y * 255);
-			results[y][pixelStart + 2] = (byte)(color.X * 255);
+			results[y][pixelStart + 0] = (byte)colorInBytes.Z;
+			results[y][pixelStart + 1] = (byte)colorInBytes.Y;
+			results[y][pixelStart + 2] = (byte)colorInBytes.X;
 		}
 
 	}
