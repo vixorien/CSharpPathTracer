@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace CSharpPathTracer
 {
-	public static class ExtensionMethods
+	public static class BoundingBoxExtensionMethods
 	{
 		public static BoundingBox GetTransformed(this BoundingBox aabb, Transform transform)
 		{
@@ -69,6 +69,10 @@ namespace CSharpPathTracer
 		{
 			return new BoundingBox(new Vector3(aabb.Min.X, aabb.Min.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)), aabb.Max);
 		}
+	}
+
+	public static class VectorExtensionMethods
+	{
 
 		public static Vector3 Normalized(this Vector3 v)
 		{
@@ -88,6 +92,10 @@ namespace CSharpPathTracer
 		{
 			return new Vector3((float)color.R / 255, (float)color.G / 255, (float)color.B / 255);
 		}
+	}
+
+	public static class RandomExtensionMethods
+	{
 
 		public static float NextFloat(this Random rng)
 		{
@@ -135,11 +143,15 @@ namespace CSharpPathTracer
 
 			// Are we in the wrong hemisphere?
 			float dot = Vector3.Dot(randomVec, normal);
-			if (dot < 0.0f) 
+			if (dot < 0.0f)
 				randomVec *= -1;
 
 			return randomVec;
 		}
+	}
+
+	public static class ProgressBarExtensionMethods
+	{
 
 		public static void IncrementNoAnimation(this ProgressBar bar, int amount)
 		{
@@ -164,6 +176,20 @@ namespace CSharpPathTracer
 			// Otherwise, go up an extra and back down
 			bar.Increment(amount + 1);
 			bar.Value--;
+		}
+
+		public static void StopMarquee(this ProgressBar bar)
+		{
+			// Verify the bar still exists
+			if (bar == null)
+				return;
+
+			// Slightly ridiculous way to stop the scrolling marquee when
+			// the progress bar is not moving
+			int oldMin = bar.Minimum;
+			bar.Minimum = bar.Value;
+			bar.Value = bar.Minimum;
+			bar.Minimum = oldMin;
 		}
 	}
 }

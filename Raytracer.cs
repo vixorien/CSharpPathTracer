@@ -62,24 +62,16 @@ namespace CSharpPathTracer
 
 	class Raytracer
 	{
-		private Random rng;
-
-		private bool raytracingInProgress;
 		private RaytracingStats stats;
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
 		public Raytracer()
 		{
-			raytracingInProgress = false;
-			rng = new Random();
 		}
 
 		public void RaytraceScene(object sender, DoWorkEventArgs e)
 		{
-			if (raytracingInProgress)
-				return;
-
 			RaytracingParameters rtParams = e.Argument as RaytracingParameters;
 			if (rtParams == null)
 				return;
@@ -90,7 +82,6 @@ namespace CSharpPathTracer
 
 			// Get ready
 			stats.Reset(rtParams.MaxRecursionDepth);
-			raytracingInProgress = true;
 
 			int width = rtParams.Width;
 			int height = rtParams.Height;
@@ -140,7 +131,6 @@ namespace CSharpPathTracer
 				if (worker.CancellationPending)
 				{
 					e.Cancel = true;
-					raytracingInProgress = false;
 					return;
 				}
 
@@ -148,9 +138,6 @@ namespace CSharpPathTracer
 				RaytracingProgress progress = new RaytracingProgress(y, res, results[y], (double)y / height * 100, stats);
 				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
-
-			// Finished
-			raytracingInProgress = false;
 		}
 
 		private Vector3 TraceRay(Ray ray, Scene scene, int depth)
@@ -173,7 +160,13 @@ namespace CSharpPathTracer
 				Entity hitEntity = hit.HitObject as Entity;
 
 				// We found a hit; which kind of material?
-				if (hitEntity.Material.Metal)
+				if (hitEntity.Material.Transparent)
+				{
+					// Transparent, handle refraction
+					Vector3 refraction = Refract(hit.Normal, ray.Direction, 1.333f);
+					newRay = new Ray(hit.Position, refraction, ray.TMin, ray.TMax);
+				}
+				else if (hitEntity.Material.Metal)
 				{
 					// Metal - perfect reflection
 					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
@@ -181,9 +174,8 @@ namespace CSharpPathTracer
 				}
 				else
 				{
-					Random localRNG = ThreadSafeRandom.Instance;
 					// Non-metal, so diffuse!
-					newRay = new Ray(hit.Position, localRNG.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
+					newRay = new Ray(hit.Position, ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
 				}
 
 				// Take into account the hit color and trace the next ray
@@ -194,6 +186,15 @@ namespace CSharpPathTracer
 				// No hit so use environment gradient
 				return scene.Environment.GetColorFromDirection(ray.Direction);
 			}
+		}
+
+		// Based on: https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
+		private Vector3 Refract(Vector3 normal, Vector3 incident, float indexOfRefraction)
+		{
+			float cos = Vector3.Dot(-1 * incident, normal);
+			Vector3 rPerp = indexOfRefraction * (incident + cos * normal);
+			Vector3 rParallel = -MathF.Sqrt(MathF.Abs(1.0f - rPerp.LengthSquared())) * normal;
+			return rPerp + rParallel;
 		}
 
 		private Vector3 ColorAsBytes(Vector3 color, bool gammaCorrect = true)

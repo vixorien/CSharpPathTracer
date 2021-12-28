@@ -32,8 +32,11 @@ namespace CSharpPathTracer
 			aabb.Max = center + new Vector3(radius);
 		}
 
+
 		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
+			// NOTE: Problem!  Doesn't account for the ray starting INSIDE the sphere!
+
 			// How far along ray to closest point to sphere center
 			Vector3 originToCenter = Center - ray.Origin;
 			float tCenter = Vector3.Dot(originToCenter, ray.Direction);

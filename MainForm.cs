@@ -160,6 +160,7 @@ namespace CSharpPathTracer
 				labelStatus.Text = "Status: Complete!";
 			}
 
+			progressRT.ProgressBar.StopMarquee();
 			buttonStartRaytrace.Text = "Start Raytrace";
 			raytracingInProgress = false;
 			stopwatch.Stop();
@@ -207,6 +208,7 @@ namespace CSharpPathTracer
 			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
 			Material mirror = new Material(new Vector3(1, 1, 1), true);
 			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
+			Material transparent = new Material(new Vector3(1, 1, 1), false, true);
 
 			// === Meshes ===
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
@@ -231,11 +233,16 @@ namespace CSharpPathTracer
 				right.Transform.SetPosition(5, 2, 0);
 				right.Transform.SetScale(2);
 
+				Entity close = new Entity(Sphere.Default, transparent);
+				close.Transform.SetPosition(0, 2, 3);
+				close.Transform.SetScale(2);
+
 				Scene scene = new Scene("Default", environment, sceneBounds);
 				scene.Add(ground);
 				scene.Add(left);
 				scene.Add(middle);
 				scene.Add(right);
+				scene.Add(close);
 
 				scenes.Add(scene);
 			}
@@ -248,7 +255,7 @@ namespace CSharpPathTracer
 				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
 				cube.Transform.MoveAbsolute(0, 2.0f, 0);
 
-				Entity helix = new Entity(helixMesh, mirror);
+				Entity helix = new Entity(helixMesh, blueMatte);
 				helix.Transform.MoveAbsolute(0, 1, 0);
 				helix.Transform.ScaleRelative(5.0f);
 

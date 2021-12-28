@@ -7,7 +7,7 @@ namespace CSharpPathTracer
 	class Octree<T> : IBoundable, IRayIntersectable
 		where T : IBoundable, IRayIntersectable
 	{
-		private const int DivideAt = 3;
+		private const int DivideAt = 2;
 
 		private List<T> objects;
 		private Octree<T>[] children;
@@ -106,23 +106,15 @@ namespace CSharpPathTracer
 				return;
 
 			// Time to divide - create the 8 children
-			// 0: -X, -Y, -Z
-			// 1: -X, -Y, +Z
-			// 2: -X, +Y, -Z
-			// 3: -X, +Y, +Z
-			// 4: +X, -Y, -Z
-			// 5: +X, -Y, +Z
-			// 6: +X, +Y, -Z
-			// 7: +X, +Y, +Z
 			children = new Octree<T>[8];
-			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf());
-			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf());
-			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf());
-			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf());
-			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf());
-			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf());
-			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf());
-			children[7] = new Octree<T>(AABB.RightHalf().TopHalf().BackHalf());
+			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf());	  // 0: -X, -Y, -Z
+			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf());	  // 1: -X, -Y, +Z
+			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf());		  // 2: -X, +Y, -Z
+			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf());		  // 3: -X, +Y, +Z
+			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf());	  // 4: +X, -Y, -Z
+			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf());	  // 5: +X, -Y, +Z
+			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf());	  // 6: +X, +Y, -Z
+			children[7] = new Octree<T>(AABB.RightHalf().TopHalf().BackHalf());       // 7: +X, +Y, +Z
 
 			// Attempt to move each piece of geometry to a child
 			for (int i = 0; i < objects.Count; i++)
