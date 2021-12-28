@@ -253,13 +253,14 @@ namespace CSharpPathTracer
 			// 
 			// sliderResReduction
 			// 
+			this.sliderResReduction.LargeChange = 2;
 			this.sliderResReduction.Location = new System.Drawing.Point(12, 213);
 			this.sliderResReduction.Maximum = 16;
 			this.sliderResReduction.Minimum = 1;
 			this.sliderResReduction.Name = "sliderResReduction";
 			this.sliderResReduction.Size = new System.Drawing.Size(189, 45);
 			this.sliderResReduction.TabIndex = 18;
-			this.sliderResReduction.TickFrequency = 5;
+			this.sliderResReduction.TickFrequency = 2;
 			this.sliderResReduction.Value = 1;
 			this.sliderResReduction.Scroll += new System.EventHandler(this.sliderResReduction_Scroll);
 			// 

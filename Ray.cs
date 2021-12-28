@@ -42,25 +42,32 @@ namespace CSharpPathTracer
 	}
 
 	/// <summary>
+	/// Which side of an object was hit by a ray?
+	/// </summary>
+	public enum HitSide { Inside, Outside }
+
+	/// <summary>
 	/// The result of a ray hitting geometry
 	/// </summary>
 	struct RayHit
 	{
 		public static RayHit None { get; } = new RayHit();
-		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, Vector2.Zero, float.PositiveInfinity, null);
+		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, Vector2.Zero, float.PositiveInfinity, HitSide.Outside, null);
 
 		public Vector3 Position { get; set; }
 		public Vector3 Normal { get; set; }
 		public Vector2 UV { get; set; }
 		public float Distance { get; set; }
+		public HitSide Side { get; set; }
 		public IRayIntersectable HitObject { get; set; }
 
-		public RayHit(Vector3 position, Vector3 normal, Vector2 uv, float distance, IRayIntersectable hitObj)
+		public RayHit(Vector3 position, Vector3 normal, Vector2 uv, float distance, HitSide side, IRayIntersectable hitObj)
 		{
 			Position = position;
 			Normal = normal;
 			UV = uv;
 			Distance = distance;
+			Side = side;
 			HitObject = hitObj;
 		}
 	}

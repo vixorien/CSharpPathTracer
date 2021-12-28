@@ -67,7 +67,7 @@ namespace CSharpPathTracer
 			float hitDistance = tCenter - offset; // And tCenter + offset
 
 			// Valid hit?
-			bool inside = false;
+			HitSide side = HitSide.Outside;
 			if (hitDistance < ray.TMin || hitDistance > ray.TMax)
 			{
 				// If t1 is negative (or just behind TMin), we need
@@ -83,7 +83,7 @@ namespace CSharpPathTracer
 
 				// Second point is valid - use that!
 				// Denote that we're actually inside
-				inside = true;
+				side = HitSide.Inside;
 			}
 
 			// Points of intersection
@@ -92,11 +92,11 @@ namespace CSharpPathTracer
 			// Normals
 			Vector3 n1 = p1 - Center; 
 			n1.Normalize();
-			if (inside) 
+			if (side == HitSide.Inside) 
 				n1 *= -1.0f;
 
 			// Set up return values
-			hit = new RayHit(p1, n1, Vector2.Zero, hitDistance, null);
+			hit = new RayHit(p1, n1, Vector2.Zero, hitDistance, side, null);
 			return true;
 		}
 	}

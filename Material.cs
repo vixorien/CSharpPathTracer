@@ -8,22 +8,17 @@ namespace CSharpPathTracer
 {
 	class Material
 	{
-		public Vector3 Color { get; }
-		public bool Metal { get; }
-		public bool Transparent { get; }
+		public Vector3 Color { get; set;  }
+		public bool Metal { get; set; }
+		public bool Transparent { get; set; }
+		public float IndexOfRefraction { get; set; }
 
-		public Material(Vector3 color, bool metal, bool transparent)
+		public Material(Vector3 color, bool metal, bool transparent = false, float indexOfRefraction = 1.0f)
 		{
 			Color = color;
 			Metal = metal;
 			Transparent = transparent;
-		}
-
-		public Material(Vector3 color, bool metal)
-		{
-			Color = color;
-			Metal = metal;
-			Transparent = false;
+			IndexOfRefraction = indexOfRefraction;
 		}
 	}
 }

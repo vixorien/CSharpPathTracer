@@ -90,9 +90,16 @@ namespace CSharpPathTracer
 			if (MathF.Abs(a) < 0.000001f)
 				return false;
 
-			// Check backfaces?
-			if (CullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
-				return false;
+			// Is this a backface?
+			HitSide side = HitSide.Outside;
+			if (Vector3.Dot(normal, ray.Direction) >= 0)
+			{
+				// Get out early if we're culling
+				if (CullBackfaces) return false;
+
+				// Not culling; denote that we're inside
+				side = HitSide.Inside;
+			}
 
 			// Get barycentrics
 			Vector3 s = (ray.Origin - V0.Position) / a;
@@ -112,12 +119,18 @@ namespace CSharpPathTracer
 			if (t < ray.TMin || t > ray.TMax)
 				return false;
 
+			// If we're inside, flip the normal
+			Vector3 hitNormal = CalcNormalBarycentric(bary);
+			if (side == HitSide.Inside)
+				hitNormal *= -1;
+
 			// Success, so fill out the hit
 			hit = new RayHit(
 				ray.Origin + ray.Direction * t,
-				CalcNormalBarycentric(bary),
+				hitNormal,
 				CalcUVBarycentric(bary),
 				t,
+				side,
 				this);
 			return true;
 		}

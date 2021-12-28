@@ -162,9 +162,23 @@ namespace CSharpPathTracer
 				// We found a hit; which kind of material?
 				if (hitEntity.Material.Transparent)
 				{
-					// Transparent, handle refraction
-					Vector3 refraction = Refract(hit.Normal, ray.Direction, 1.333f);
-					newRay = new Ray(hit.Position, refraction, ray.TMin, ray.TMax);
+					// Grab the index of refraction, which needs to be
+					// inverted if we're OUTSIDE the object
+					float indexOfRefraction = hitEntity.Material.IndexOfRefraction;
+					if (hit.Side == HitSide.Outside)
+						indexOfRefraction = 1.0f / indexOfRefraction;
+
+					// Random chance for reflection instead of refraction based on Fresnel
+					float NdotV = Vector3.Dot(-1 * ray.Direction, hit.Normal);
+					bool reflectFresnel = FresnelSchlick(NdotV, indexOfRefraction) > ThreadSafeRandom.Instance.NextFloat();
+
+					// Test for refraction
+					Vector3 newDir;
+					if (reflectFresnel || !Refract(ray.Direction, hit.Normal, indexOfRefraction, out newDir))
+						newDir = Vector3.Reflect(ray.Direction, hit.Normal);
+
+					// Create the new ray based on either reflection or refraction
+					newRay = new Ray(hit.Position, newDir, ray.TMin, ray.TMax);
 				}
 				else if (hitEntity.Material.Metal)
 				{
@@ -175,7 +189,7 @@ namespace CSharpPathTracer
 				else
 				{
 					// Non-metal, so diffuse!
-					newRay = new Ray(hit.Position, ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);
+					newRay = new Ray(hit.Position, ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);	
 				}
 
 				// Take into account the hit color and trace the next ray
@@ -188,13 +202,27 @@ namespace CSharpPathTracer
 			}
 		}
 
-		// Based on: https://graphics.stanford.edu/courses/cs148-10-summer/docs/2006--degreve--reflection_refraction.pdf
-		private Vector3 Refract(Vector3 normal, Vector3 incident, float indexOfRefraction)
+	
+		private bool Refract(Vector3 incident, Vector3 normal, float indexOfRefraction, out Vector3 refraction)
 		{
 			float cos = Vector3.Dot(-1 * incident, normal);
+			float sin = MathF.Sqrt(1.0f - cos * cos);
+			if (indexOfRefraction * sin > 1.0f)
+			{
+				refraction = Vector3.Zero;
+				return false;
+			}
+
 			Vector3 rPerp = indexOfRefraction * (incident + cos * normal);
 			Vector3 rParallel = -MathF.Sqrt(MathF.Abs(1.0f - rPerp.LengthSquared())) * normal;
-			return rPerp + rParallel;
+			refraction = (rPerp + rParallel).Normalized();
+			return true;
+		}
+
+		private double FresnelSchlick(float NdotV, float indexOfRefraction)
+		{
+			float r0 = MathF.Pow((1.0f - indexOfRefraction) / (1.0f + indexOfRefraction), 2.0f);
+			return r0 + (1.0f - r0) * MathF.Pow(1 - NdotV, 5.0f);
 		}
 
 		private Vector3 ColorAsBytes(Vector3 color, bool gammaCorrect = true)

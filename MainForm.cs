@@ -203,12 +203,12 @@ namespace CSharpPathTracer
 				System.Drawing.Color.White.ToVector3());
 
 			// === Materials ===
-			Material grayMatte = new Material(System.Drawing.Color.Gray.ToVector3(), false);
+			Material grayMatte = new Material(System.Drawing.Color.LightGray.ToVector3(), false);
 			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
 			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
 			Material mirror = new Material(new Vector3(1, 1, 1), true);
 			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
-			Material transparent = new Material(new Vector3(1, 1, 1), false, true);
+			Material transparent = new Material(new Vector3(1, 1, 1), false, true, 1.5f);
 
 			// === Meshes ===
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
@@ -250,13 +250,13 @@ namespace CSharpPathTracer
 			// === SCENE 1 ===
 			{
 				// Entities ===
-				Entity cube = new Entity(cubeMesh, mirror);
+				Entity cube = new Entity(cubeMesh, transparent);
 				cube.Transform.ScaleRelative(3.0f);
 				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
 				cube.Transform.MoveAbsolute(0, 2.0f, 0);
 
 				Entity helix = new Entity(helixMesh, blueMatte);
-				helix.Transform.MoveAbsolute(0, 1, 0);
+				helix.Transform.MoveAbsolute(0, 2.5f, 0);
 				helix.Transform.ScaleRelative(5.0f);
 
 				Entity sphere = new Entity(sphereMesh, mirror);
@@ -269,10 +269,10 @@ namespace CSharpPathTracer
 
 				// Create scene
 				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
-				//scene.Add(cube);
+				scene.Add(cube);
 				scene.Add(ground);
-				scene.Add(helix);
-				scene.Add(sphere);
+				//scene.Add(helix);
+				//scene.Add(sphere);
 
 				// Add to scene list
 				scenes.Add(scene);
@@ -293,9 +293,12 @@ namespace CSharpPathTracer
 				Random rng = new Random();
 				for (int i = 0; i < 100; i++)
 				{
-					Entity s = new Entity(Sphere.Default, new Material(rng.NextColor(), rng.NextBool()));
-					s.Transform.SetPosition(rng.NextFloat(-10, 10), rng.NextFloat(0, 10), rng.NextFloat(-10, 10));
-					s.Transform.SetScale(rng.NextFloat(0.1f, 1.0f));
+					// Random scale (used for height, too)
+					float scale = rng.NextFloat(0.1f, 1.0f);
+
+					Entity s = new Entity(Sphere.Default, new Material(rng.NextColor(), rng.NextBool(), rng.NextBool(), 1.5f));
+					s.Transform.SetPosition(rng.NextFloat(-20, 20), scale, rng.NextFloat(-20, 20));
+					s.Transform.SetScale(scale);
 					scene.Add(s);
 				}
 
