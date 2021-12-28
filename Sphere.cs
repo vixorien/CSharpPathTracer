@@ -63,29 +63,40 @@ namespace CSharpPathTracer
 			// Offset from tCenter to an intersection point
 			float offset = MathF.Sqrt(Radius * Radius - d * d);
 
-			// Distances to the two hit points
-			float t1 = tCenter - offset;
-			//float t2 = tCenter + offset;
+			// Distance to the hit point
+			float hitDistance = tCenter - offset; // And tCenter + offset
 
-			// Valid hits?
-			if (t1 < ray.TMin || t1 > ray.TMax)
+			// Valid hit?
+			bool inside = false;
+			if (hitDistance < ray.TMin || hitDistance > ray.TMax)
 			{
-				// Outside the valid ray range
-				hit = RayHit.None;
-				return false;
+				// If t1 is negative (or just behind TMin), we need
+				// to try the second intersection point instead and
+				// re-check for the same issue
+				hitDistance = tCenter + offset;
+				if (hitDistance < ray.TMin || hitDistance > ray.TMax)
+				{
+					// Outside the valid ray range
+					hit = RayHit.None;
+					return false;
+				}
+
+				// Second point is valid - use that!
+				// Denote that we're actually inside
+				inside = true;
 			}
 
 			// Points of intersection
-			Vector3 p1 = ray.Origin + ray.Direction * t1;
-			//Vector3 p2 = ray.Origin + ray.Direction * t2;
-
+			Vector3 p1 = ray.Origin + ray.Direction * hitDistance;
+			
 			// Normals
-			Vector3 n1 = p1 - Center; n1.Normalize();
-			//Vector3 n2 = p2 - Center; n2.Normalize();
+			Vector3 n1 = p1 - Center; 
+			n1.Normalize();
+			if (inside) 
+				n1 *= -1.0f;
 
 			// Set up return values
-			hit = new RayHit(p1, n1, Vector2.Zero, t1, null);
-			//hits[1] = new RayHit(p2, n2, Vector2.Zero, t2, null); // Secondary hit
+			hit = new RayHit(p1, n1, Vector2.Zero, hitDistance, null);
 			return true;
 		}
 	}
