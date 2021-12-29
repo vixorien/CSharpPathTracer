@@ -97,7 +97,7 @@ namespace CSharpPathTracer
 			Vector2 xz = new Vector2(n1.X, n1.Z); xz.Normalize();
 			Vector2 uv = new Vector2(
 				-MathF.Acos(Vector2.Dot(Vector2.UnitX, xz)) / MathF.PI,
-				-n1.Y * 0.5f + 0.5f);
+				MathF.Acos(Vector3.Dot(Vector3.Up, n1)) / MathF.PI);
 
 			// Set up return values
 			hit = new RayHit(p1, n1, uv, hitDistance, side, null);

@@ -11,20 +11,25 @@ namespace CSharpPathTracer
 
 		private List<T> objects;
 		private Octree<T>[] children;
-		
+
 		public bool Divided { get { return children != null; } }
 		public BoundingBox AABB { get; private set; }
+		public BoundingBox? ShrunkAABB { get; private set; }
 
 		public Octree(BoundingBox bounds)
 		{
 			AABB = bounds;
+			ShrunkAABB = null;
 			objects = new List<T>();
 		}
 
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
+			// Which AABB?
+			BoundingBox boxToCheck = ShrunkAABB.HasValue ? ShrunkAABB.Value : AABB;
+
 			// Does the ray hit this oct?
-			if (AABB.Intersects(ray).HasValue)
+			if (boxToCheck.Intersects(ray).HasValue)
 			{
 				// Closest hit could be from this quad or children
 				RayHit closestHit = RayHit.Infinity;
@@ -34,7 +39,7 @@ namespace CSharpPathTracer
 				foreach (T geo in objects)
 				{
 					// Is there and intersection and is it the closest?
-					if (geo.RayIntersection(ray, out hit) && 
+					if (geo.RayIntersection(ray, out hit) &&
 						hit.Distance < closestHit.Distance)
 					{
 						closestHit = hit;
@@ -82,7 +87,7 @@ namespace CSharpPathTracer
 				foreach (Octree<T> oct in children)
 				{
 					// Attempt to add, and if it worked, return success
-					if(oct.AddObject(obj))
+					if (oct.AddObject(obj))
 						return true;
 				}
 			}
@@ -99,21 +104,55 @@ namespace CSharpPathTracer
 			return true;
 		}
 
+		public void ShrinkToFit()
+		{
+			// Note: Should we reset here?  Or prevent this from happening twice?
+			//       Maybe finalize the oct so nothing else can be added?
+
+			// Recursively shrink child nodes first
+			if (Divided)
+			{
+				foreach (Octree<T> child in children)
+				{
+					child.ShrinkToFit();
+
+					// Add the child's shrunken AABB to this one, if necessary
+					if (child.ShrunkAABB.HasValue)
+					{
+						if (ShrunkAABB.HasValue)
+							ShrunkAABB = BoundingBox.CreateMerged(ShrunkAABB.Value, child.ShrunkAABB.Value);
+						else
+							ShrunkAABB = child.ShrunkAABB.Value;
+					}
+				}
+			}
+
+			// Any objects here?
+			foreach (T obj in objects)
+			{
+				// Is there a value?
+				if (ShrunkAABB.HasValue)
+					ShrunkAABB = BoundingBox.CreateMerged(ShrunkAABB.Value, obj.AABB);
+				else
+					ShrunkAABB = obj.AABB;
+			}
+		}
+
 		private void Divide()
 		{
 			// Necessary?
-			if (Divided) 
+			if (Divided)
 				return;
 
 			// Time to divide - create the 8 children
 			children = new Octree<T>[8];
-			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf());	  // 0: -X, -Y, -Z
-			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf());	  // 1: -X, -Y, +Z
-			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf());		  // 2: -X, +Y, -Z
-			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf());		  // 3: -X, +Y, +Z
-			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf());	  // 4: +X, -Y, -Z
-			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf());	  // 5: +X, -Y, +Z
-			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf());	  // 6: +X, +Y, -Z
+			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf());    // 0: -X, -Y, -Z
+			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf());     // 1: -X, -Y, +Z
+			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf());       // 2: -X, +Y, -Z
+			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf());        // 3: -X, +Y, +Z
+			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf());   // 4: +X, -Y, -Z
+			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf());    // 5: +X, -Y, +Z
+			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf());      // 6: +X, +Y, -Z
 			children[7] = new Octree<T>(AABB.RightHalf().TopHalf().BackHalf());       // 7: +X, +Y, +Z
 
 			// Attempt to move each piece of geometry to a child
@@ -133,7 +172,7 @@ namespace CSharpPathTracer
 
 				// If the geometry was added, the list has
 				// shifted to check the same one again
-				if (added) 
+				if (added)
 					i--;
 			}
 

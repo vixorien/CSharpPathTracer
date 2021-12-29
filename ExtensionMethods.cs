@@ -40,6 +40,12 @@ namespace CSharpPathTracer
 			if (point.Z > aabb.Max.Z) aabb.Max.Z = point.Z;
 		}
 
+		public static void Encompass(this ref BoundingBox aabb, BoundingBox other)
+		{
+			aabb.Encompass(other.Min);
+			aabb.Encompass(other.Max);
+		}
+
 		public static BoundingBox LeftHalf(this BoundingBox aabb)
 		{
 			return new BoundingBox(aabb.Min, new Vector3(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Max.Y, aabb.Max.Z));

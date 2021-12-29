@@ -37,3 +37,6 @@
 #begin Textures/crate.png
 /copy:Textures/crate.png
 
+#begin Textures/tiles.png
+/copy:Textures/tiles.png
+

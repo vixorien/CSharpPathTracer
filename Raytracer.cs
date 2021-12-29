@@ -184,6 +184,10 @@ namespace CSharpPathTracer
 				{
 					// Metal - perfect reflection
 					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
+
+					// Adjust based on roughness
+					reflection += ThreadSafeRandom.Instance.NextVector3() * hitEntity.Material.GetRoughnessAtUV(hit.UV);
+
 					newRay = new Ray(hit.Position, reflection, ray.TMin, ray.TMax);
 				}
 				else

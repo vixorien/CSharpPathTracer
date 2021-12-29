@@ -188,6 +188,9 @@ namespace CSharpPathTracer
 			octree = new Octree<Triangle>(AABB);
 			foreach (Triangle t in triangles)
 				octree.AddObject(t);
+
+			// Shrink the octree to speed up ray intersections
+			octree.ShrinkToFit();
 		}
 
 

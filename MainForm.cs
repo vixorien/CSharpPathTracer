@@ -204,12 +204,16 @@ namespace CSharpPathTracer
 
 			// === Textures ===
 			Texture crateTexture = new Texture("Content/Textures/crate.png");
+			Texture tilesTexture = new Texture("Content/Textures/tiles.png");
+			Texture tilesTextureNoGamma = new Texture("Content/Textures/tiles.png", false);
 
 			// === Materials ===
 			Material crate = new Material(Vector3.One, crateTexture, false);
+			Material tiles = new Material(new Vector3(0.2f, 1.0f, 0.2f), tilesTexture, false);
+			Material metalTiles = new Material(new Vector3(1.000f, 0.766f, 0.336f), null, tilesTextureNoGamma, true);
 			Material grayMatte = new Material(System.Drawing.Color.LightGray.ToVector3(), false);
 			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
-			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
+			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), tilesTexture, false);
 			Material mirror = new Material(new Vector3(1, 1, 1), true);
 			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
 			Material transparent = new Material(new Vector3(1, 1, 1), false, true, 1.5f);
@@ -225,7 +229,7 @@ namespace CSharpPathTracer
 				ground.Transform.SetPosition(0, -1000, 0);
 				ground.Transform.SetScale(1000);
 
-				Entity left = new Entity(Sphere.Default, greenMatte);
+				Entity left = new Entity(Sphere.Default, crate);
 				left.Transform.SetPosition(-5, 2, 0);
 				left.Transform.SetScale(2);
 
@@ -233,7 +237,7 @@ namespace CSharpPathTracer
 				middle.Transform.SetPosition(0, 4, 0);
 				middle.Transform.SetScale(2);
 
-				Entity right = new Entity(Sphere.Default, crate);// gold);
+				Entity right = new Entity(Sphere.Default, metalTiles);
 				right.Transform.SetPosition(5, 2, 0);
 				right.Transform.SetScale(2);
 
@@ -273,9 +277,9 @@ namespace CSharpPathTracer
 
 				// Create scene
 				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
-				scene.Add(cube);
+				//scene.Add(cube);
 				scene.Add(ground);
-				//scene.Add(helix);
+				scene.Add(helix);
 				//scene.Add(sphere);
 
 				// Add to scene list
@@ -309,6 +313,10 @@ namespace CSharpPathTracer
 				// Add to scene list
 				scenes.Add(scene);
 			}
+
+			// Finalize all scenes
+			foreach (Scene s in scenes)
+				s.FinalizeOctree();
 		}
 
 		

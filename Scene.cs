@@ -66,36 +66,10 @@ namespace CSharpPathTracer
 			octree.AddObject(entity);
 		}
 
-		/// <summary>
-		/// Gets the closest entity along the given ray, if any
-		/// </summary>
-		/// <param name="ray">The ray to check</param>
-		/// <param name="hit">The hit information</param>
-		/// <returns>True if a hit is encountered, false otherwise</returns>
-		//public bool ClosestHit(Ray ray, out RayHit hit)
-		//{
-		//	// No hits yet
-		//	bool anyHit = false;
-		//	hit = RayHit.Infinity;
-
-		//	// Loop through scene and check all entities
-		//	foreach (Entity e in entities)
-		//	{
-		//		RayHit currentHit;
-		//		if (e.RayIntersection(ray, out currentHit))
-		//		{
-		//			// We have a hit; was it closest?
-		//			if (currentHit.Distance < hit.Distance)
-		//			{
-		//				hit = currentHit;
-		//				anyHit = true;
-		//			}
-		//		}
-		//	}
-
-		//	return anyHit;
-		//}
-
+		public void FinalizeOctree()
+		{
+			octree.ShrinkToFit();
+		}
 
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
