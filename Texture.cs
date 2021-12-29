@@ -104,10 +104,10 @@ namespace CSharpPathTracer
 
 				case AddressMode.Wrap:
 					uv.X = uv.X - MathF.Truncate(uv.X);
-					if (uv.X < 0.0f) uv.X = 1.0f + uv.X;
+					if (uv.X < 0.0f) uv.X += 1.0f;
 
 					uv.Y = uv.Y - MathF.Truncate(uv.Y);
-					if (uv.Y < 0.0f) uv.Y = 1.0f + uv.Y;
+					if (uv.Y < 0.0f) uv.Y += 1.0f;
 					break;
 			}
 
