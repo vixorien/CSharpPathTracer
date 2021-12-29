@@ -92,6 +92,11 @@ namespace CSharpPathTracer
 		{
 			return new Vector3((float)color.R / 255, (float)color.G / 255, (float)color.B / 255);
 		}
+
+		public static Vector3 ToVector3(this Vector4 vec4)
+		{
+			return new Vector3(vec4.X, vec4.Y, vec4.Z);
+		}
 	}
 
 	public static class RandomExtensionMethods

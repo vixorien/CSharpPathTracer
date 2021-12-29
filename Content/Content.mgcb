@@ -34,3 +34,6 @@
 #begin Models/torus.obj
 /copy:Models/torus.obj
 
+#begin Textures/crate.png
+/copy:Textures/crate.png
+

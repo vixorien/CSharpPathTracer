@@ -202,7 +202,11 @@ namespace CSharpPathTracer
 				System.Drawing.Color.White.ToVector3(),
 				System.Drawing.Color.White.ToVector3());
 
+			// === Textures ===
+			Texture crateTexture = new Texture("Content/Textures/crate.png");
+
 			// === Materials ===
+			Material crate = new Material(Vector3.One, crateTexture, false);
 			Material grayMatte = new Material(System.Drawing.Color.LightGray.ToVector3(), false);
 			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
 			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), false);
@@ -229,7 +233,7 @@ namespace CSharpPathTracer
 				middle.Transform.SetPosition(0, 4, 0);
 				middle.Transform.SetScale(2);
 
-				Entity right = new Entity(Sphere.Default, gold);
+				Entity right = new Entity(Sphere.Default, crate);// gold);
 				right.Transform.SetPosition(5, 2, 0);
 				right.Transform.SetScale(2);
 

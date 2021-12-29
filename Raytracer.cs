@@ -193,7 +193,7 @@ namespace CSharpPathTracer
 				}
 
 				// Take into account the hit color and trace the next ray
-				return hitEntity.Material.Color * TraceRay(newRay, scene, depth - 1);
+				return hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
 			}
 			else
 			{

@@ -93,8 +93,14 @@ namespace CSharpPathTracer
 			if (side == HitSide.Inside) 
 				n1 *= -1.0f;
 
+			// Calculate a UV based on normal
+			Vector2 xz = new Vector2(n1.X, n1.Z); xz.Normalize();
+			Vector2 uv = new Vector2(
+				-MathF.Acos(Vector2.Dot(Vector2.UnitX, xz)) / MathF.PI,
+				-n1.Y * 0.5f + 0.5f);
+
 			// Set up return values
-			hit = new RayHit(p1, n1, Vector2.Zero, hitDistance, side, null);
+			hit = new RayHit(p1, n1, uv, hitDistance, side, null);
 			return true;
 		}
 	}
