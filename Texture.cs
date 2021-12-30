@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 using Microsoft.Xna.Framework;
 
@@ -68,8 +69,8 @@ namespace CSharpPathTracer
 			// the byte array to our 2D array of pixels
 			pixels = new Vector4[Height, Width]; // Row, Col
 
-			for (int h = 0; h < Height; h++)
-			{
+			Parallel.For(0, Height, h =>
+			{	
 				for (int w = 0; w < Width; w++)
 				{
 					// Grab a pixel worth of data and convert
@@ -89,7 +90,7 @@ namespace CSharpPathTracer
 						pixels[h, w].W = MathF.Pow(pixels[h, w].W, 2.2f);
 					}
 				}
-			}
+			});
 		}
 
 		public Vector4 Sample(Vector2 uv, AddressMode addressMode = AddressMode.Wrap)//, Filter filter = Filter.Point)

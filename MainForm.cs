@@ -42,8 +42,8 @@ namespace CSharpPathTracer
 
 			// Camera for scene
 			camera = new Camera(
-				new Vector3(0, 5, 20),
-				Vector3.Normalize(new Vector3(0, -0.2f, -1)),
+				new Vector3(0, 8, 20),
+				Vector3.Normalize(new Vector3(0, -0.3f, -1)),
 				raytracingDisplay.AspectRatio,
 				MathF.PI / 4.0f,
 				0.01f,
@@ -85,9 +85,12 @@ namespace CSharpPathTracer
 			labelStatus.Text = "Status: Raytracing...";
 
 			// Create/re-create the render target using the display dimensions
-			renderTarget?.Dispose();
-			renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
-			raytracingDisplay.Bitmap = renderTarget;
+			if (renderTarget == null || renderTarget.Width != raytracingDisplay.Width || renderTarget.Height != raytracingDisplay.Height)
+			{
+				renderTarget?.Dispose();
+				renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
+				raytracingDisplay.Bitmap = renderTarget;
+			}
 
 			// Set up progress bar
 			progressRT.Minimum = 0;
@@ -258,7 +261,7 @@ namespace CSharpPathTracer
 				right.Transform.SetScale(2);
 
 				Entity close = new Entity(Sphere.Default, transparent);
-				close.Transform.SetPosition(0, 2, 3);
+				close.Transform.SetPosition(0, 2, 5);
 				close.Transform.SetScale(2);
 
 				Scene scene = new Scene("Default", skybox, sceneBounds);

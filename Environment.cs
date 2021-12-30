@@ -101,11 +101,10 @@ namespace CSharpPathTracer
 		}
 
 
-		//https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/5337472/
+		// Referenced: https://www.gamedev.net/forums/topic/687535-implementing-a-cube-map-lookup-function/5337472/
 		public override Vector3 GetColorFromDirection(Vector3 direction)
 		{
 			// Which texture?
-			Texture face = null;
 			int faceIndex = -1;
 			float mag;
 			Vector3 absDir = direction.Abs();
@@ -113,15 +112,15 @@ namespace CSharpPathTracer
 
 			if (absDir.X >= absDir.Y && absDir.X >= absDir.Z)
 			{
-				// Left or right
+				// Left or right (flipped due to LH/RH)
 				if (direction.X >= 0)
 				{
-					faceIndex = 0;
+					faceIndex = 1; // Was 0
 					uv = new Vector2(-direction.Z, -direction.Y);
 				}
 				else
 				{
-					faceIndex = 1;
+					faceIndex = 0; // Was 1
 					uv = new Vector2(direction.Z, -direction.Y);
 				}
 
@@ -129,16 +128,16 @@ namespace CSharpPathTracer
 			}
 			else if (absDir.Y >= absDir.X && absDir.Y >= absDir.Z)
 			{
-				// Up or down
+				// Up or down (flipped UV's due to LH vs RH)
 				if (direction.Y >= 0)
 				{
 					faceIndex = 2;
-					uv = new Vector2(direction.X, direction.Z);
+					uv = new Vector2(-direction.X, -direction.Z); // Was (X, Z)
 				}
 				else
 				{
 					faceIndex = 3;
-					uv = new Vector2(direction.X, -direction.Z);
+					uv = new Vector2(-direction.X, direction.Z); // Was (X, -Z)
 				}
 
 				mag = 0.5f / absDir.Y;
@@ -148,12 +147,12 @@ namespace CSharpPathTracer
 				// Forward or back
 				if (direction.Z >= 0)
 				{
-					faceIndex = 5;
+					faceIndex = 4;
 					uv = new Vector2(direction.X, -direction.Y);
 				}
 				else
 				{
-					faceIndex = 4;
+					faceIndex = 5;
 					uv = new Vector2(-direction.X, -direction.Y);
 				}
 

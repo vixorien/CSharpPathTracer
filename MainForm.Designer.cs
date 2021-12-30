@@ -69,7 +69,7 @@ namespace CSharpPathTracer
 			// 
 			// sliderSamplesPerPixel
 			// 
-			this.sliderSamplesPerPixel.LargeChange = 128;
+			this.sliderSamplesPerPixel.LargeChange = 10;
 			this.sliderSamplesPerPixel.Location = new System.Drawing.Point(12, 82);
 			this.sliderSamplesPerPixel.Maximum = 2048;
 			this.sliderSamplesPerPixel.Minimum = 1;
@@ -85,7 +85,7 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixel.AutoSize = true;
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(12, 64);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(98, 15);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(99, 15);
 			this.labelSamplesPerPixel.TabIndex = 4;
 			this.labelSamplesPerPixel.Text = "Samples Per Pixel";
 			// 
@@ -94,7 +94,7 @@ namespace CSharpPathTracer
 			this.labelMaxRecursion.AutoSize = true;
 			this.labelMaxRecursion.Location = new System.Drawing.Point(12, 130);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
-			this.labelMaxRecursion.Size = new System.Drawing.Size(151, 15);
+			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
 			this.labelMaxRecursion.TabIndex = 6;
 			this.labelMaxRecursion.Text = "Maximum Recursion Depth";
 			// 
