@@ -196,16 +196,32 @@ namespace CSharpPathTracer
 				new Vector3(-10000),
 				new Vector3(10000));
 
-			// === Environments ===
-			Environment environment = new Environment(
-				System.Drawing.Color.CornflowerBlue.ToVector3(),
-				System.Drawing.Color.White.ToVector3(),
-				System.Drawing.Color.White.ToVector3());
-
 			// === Textures ===
 			Texture crateTexture = new Texture("Content/Textures/crate.png");
 			Texture tilesTexture = new Texture("Content/Textures/tiles.png");
 			Texture tilesTextureNoGamma = new Texture("Content/Textures/tiles.png", false);
+
+			Texture skyRight = new Texture("Content/Skies/Clouds Blue/right.png");
+			Texture skyLeft = new Texture("Content/Skies/Clouds Blue/left.png");
+			Texture skyUp = new Texture("Content/Skies/Clouds Blue/up.png");
+			Texture skyDown = new Texture("Content/Skies/Clouds Blue/down.png");
+			Texture skyBack = new Texture("Content/Skies/Clouds Blue/back.png");
+			Texture skyFront = new Texture("Content/Skies/Clouds Blue/front.png");
+
+			// === Environments ===
+			Environment environment = new EnvironmentGradient(
+				System.Drawing.Color.CornflowerBlue.ToVector3(),
+				System.Drawing.Color.White.ToVector3(),
+				System.Drawing.Color.White.ToVector3());
+
+			Environment skybox = new EnvironmentSkybox(
+				skyRight,
+				skyLeft,
+				skyUp,
+				skyDown,
+				skyBack,
+				skyFront);
+			
 
 			// === Materials ===
 			Material crate = new Material(Vector3.One, crateTexture, false);
@@ -245,7 +261,7 @@ namespace CSharpPathTracer
 				close.Transform.SetPosition(0, 2, 3);
 				close.Transform.SetScale(2);
 
-				Scene scene = new Scene("Default", environment, sceneBounds);
+				Scene scene = new Scene("Default", skybox, sceneBounds);
 				scene.Add(ground);
 				scene.Add(left);
 				scene.Add(middle);

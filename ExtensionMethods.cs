@@ -79,6 +79,13 @@ namespace CSharpPathTracer
 
 	public static class VectorExtensionMethods
 	{
+		public static Vector3 Abs(this Vector3 v)
+		{
+			return new Vector3(
+				MathF.Abs(v.X),
+				MathF.Abs(v.Y),
+				MathF.Abs(v.Z));
+		}
 
 		public static Vector3 Normalized(this Vector3 v)
 		{

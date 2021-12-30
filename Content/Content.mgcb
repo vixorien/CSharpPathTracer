@@ -34,6 +34,24 @@
 #begin Models/torus.obj
 /copy:Models/torus.obj
 
+#begin Skies/Clouds Blue/back.png
+/copy:Skies/Clouds Blue/back.png
+
+#begin Skies/Clouds Blue/down.png
+/copy:Skies/Clouds Blue/down.png
+
+#begin Skies/Clouds Blue/front.png
+/copy:Skies/Clouds Blue/front.png
+
+#begin Skies/Clouds Blue/left.png
+/copy:Skies/Clouds Blue/left.png
+
+#begin Skies/Clouds Blue/right.png
+/copy:Skies/Clouds Blue/right.png
+
+#begin Skies/Clouds Blue/up.png
+/copy:Skies/Clouds Blue/up.png
+
 #begin Textures/crate.png
 /copy:Textures/crate.png
 
