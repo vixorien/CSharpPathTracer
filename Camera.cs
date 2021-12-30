@@ -9,8 +9,7 @@ namespace CSharpPathTracer
 {
 	class Camera
 	{
-		private Vector3 position;
-		private Vector3 direction;
+		private Transform transform;
 		private float nearClip;
 		private float farClip;
 		private float aspectRatio;
@@ -18,22 +17,20 @@ namespace CSharpPathTracer
 
 		private Matrix viewMatrix;
 		private Matrix projMatrix;
-		private bool viewDirty;
 		private bool projDirty;
 
-		public Vector3 Position { get { return position; } set { position = value; viewDirty = true; } }
-		public Vector3 Direction { get { return direction; } set { direction = value; viewDirty = true; } }
+		public Transform Transform { get { return transform; } } // Not a great way to dirty the view, but it works
 		public float NearClip { get { return nearClip; } set { nearClip = value; projDirty = true; } }
 		public float FarClip { get { return farClip; } set { farClip = value; projDirty = true; } }
 		public float AspectRatio { get { return aspectRatio; } set { aspectRatio = value; projDirty = true; } }
 		public float FieldOfView { get { return fieldOfView; } set { fieldOfView = value; projDirty = true; } }
-		public Matrix View { get { if (viewDirty) UpdateViewMatrix(); return viewMatrix; } }
+		public Matrix View { get { if (transform.Dirty) UpdateViewMatrix(); return viewMatrix; } }
 		public Matrix Projection { get { if (projDirty) UpdateProjectionMatrix(); return projMatrix; } }
 		public Matrix InverseViewProjection 
 		{ 
 			get 
 			{
-				if (viewDirty) UpdateViewMatrix();
+				if (transform.Dirty) UpdateViewMatrix();
 				if (projDirty) UpdateProjectionMatrix();
 				return Matrix.Invert(View * Projection);
 			} 
@@ -41,20 +38,18 @@ namespace CSharpPathTracer
 
 		public Camera(
 			Vector3 position, 
-			Vector3 direction,
 			float aspectRatio,
 			float fieldOfView,
 			float nearClip,
 			float farClip)
 		{
-			Position = position;
-			Direction = direction;
+			transform = new Transform();
+			transform.SetPosition(position);
 			NearClip = nearClip;
 			FarClip = farClip;
 			AspectRatio = aspectRatio;
 			FieldOfView = fieldOfView;
 
-			viewDirty = true;
 			projDirty = true;
 		}
 
@@ -77,16 +72,15 @@ namespace CSharpPathTracer
 				unprojPos.Z);
 
 			// Create the ray
-			return new Ray(Position, Vector3.Normalize(worldPos - Position), NearClip, FarClip);
+			return new Ray(transform.Position, Vector3.Normalize(worldPos - transform.Position), NearClip, FarClip);
 		}
 
 		private void UpdateViewMatrix()
 		{
 			viewMatrix = Matrix.CreateLookAt(
-				Position,
-				Position + Direction,
+				transform.Position,
+				transform.Position + transform.Forward,
 				Vector3.Up);
-			viewDirty = false;
 		}
 
 		private void UpdateProjectionMatrix()

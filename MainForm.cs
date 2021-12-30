@@ -30,8 +30,7 @@ namespace CSharpPathTracer
 		private void MainForm_Load(object sender, EventArgs e)
 		{
 			// Set up scene(s)
-			scenes = new List<Scene>();
-			CreateScenes();
+			scenes = Scene.GenerateScenes();
 
 			// Populate combo box with scenes
 			foreach (Scene s in scenes)
@@ -43,11 +42,11 @@ namespace CSharpPathTracer
 			// Camera for scene
 			camera = new Camera(
 				new Vector3(0, 8, 20),
-				Vector3.Normalize(new Vector3(0, -0.3f, -1)),
 				raytracingDisplay.AspectRatio,
 				MathF.PI / 4.0f,
 				0.01f,
 				1000.0f);
+			camera.Transform.Rotate(-0.25f, 0, 0);
 
 			// Create the ray tracer before the background worker
 			raytracer = new Raytracer();
@@ -191,153 +190,26 @@ namespace CSharpPathTracer
 			textHeight.Text = raytracingDisplay.Height.ToString();
 			raytracingDisplay.Invalidate();
 		}
+		
 
-		private void CreateScenes()
+		private bool displayHasMouse = false;
+		private void raytracingDisplay_MouseDown(object sender, MouseEventArgs e)
 		{
-			// Overall scene bounds
-			BoundingBox sceneBounds = new BoundingBox(
-				new Vector3(-10000),
-				new Vector3(10000));
-
-			// === Textures ===
-			Texture crateTexture = new Texture("Content/Textures/crate.png");
-			Texture tilesTexture = new Texture("Content/Textures/tiles.png");
-			Texture tilesTextureNoGamma = new Texture("Content/Textures/tiles.png", false);
-
-			Texture skyRight = new Texture("Content/Skies/Clouds Blue/right.png");
-			Texture skyLeft = new Texture("Content/Skies/Clouds Blue/left.png");
-			Texture skyUp = new Texture("Content/Skies/Clouds Blue/up.png");
-			Texture skyDown = new Texture("Content/Skies/Clouds Blue/down.png");
-			Texture skyBack = new Texture("Content/Skies/Clouds Blue/back.png");
-			Texture skyFront = new Texture("Content/Skies/Clouds Blue/front.png");
-
-			// === Environments ===
-			Environment environment = new EnvironmentGradient(
-				System.Drawing.Color.CornflowerBlue.ToVector3(),
-				System.Drawing.Color.White.ToVector3(),
-				System.Drawing.Color.White.ToVector3());
-
-			Environment skybox = new EnvironmentSkybox(
-				skyRight,
-				skyLeft,
-				skyUp,
-				skyDown,
-				skyBack,
-				skyFront);
-			
-
-			// === Materials ===
-			Material crate = new Material(Vector3.One, crateTexture, false);
-			Material tiles = new Material(new Vector3(0.2f, 1.0f, 0.2f), tilesTexture, false);
-			Material metalTiles = new Material(new Vector3(1.000f, 0.766f, 0.336f), null, tilesTextureNoGamma, true);
-			Material grayMatte = new Material(System.Drawing.Color.LightGray.ToVector3(), false);
-			Material greenMatte = new Material(new Vector3(0.2f, 1.0f, 0.2f), false);
-			Material blueMatte = new Material(new Vector3(0.2f, 0.2f, 1.0f), tilesTexture, false);
-			Material mirror = new Material(new Vector3(1, 1, 1), true);
-			Material gold = new Material(new Vector3(1.000f, 0.766f, 0.336f), true);
-			Material transparent = new Material(new Vector3(1, 1, 1), false, true, 1.5f);
-
-			// === Meshes ===
-			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
-			Mesh helixMesh = new Mesh("Content/Models/helix.obj");
-			Mesh sphereMesh = new Mesh("Content/Models/sphere.obj");
-
-			// === SCENE 0 ===
-			{
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
-
-				Entity left = new Entity(Sphere.Default, crate);
-				left.Transform.SetPosition(-5, 2, 0);
-				left.Transform.SetScale(2);
-
-				Entity middle = new Entity(Sphere.Default, mirror);
-				middle.Transform.SetPosition(0, 4, 0);
-				middle.Transform.SetScale(2);
-
-				Entity right = new Entity(Sphere.Default, metalTiles);
-				right.Transform.SetPosition(5, 2, 0);
-				right.Transform.SetScale(2);
-
-				Entity close = new Entity(Sphere.Default, transparent);
-				close.Transform.SetPosition(0, 2, 5);
-				close.Transform.SetScale(2);
-
-				Scene scene = new Scene("Default", skybox, sceneBounds);
-				scene.Add(ground);
-				scene.Add(left);
-				scene.Add(middle);
-				scene.Add(right);
-				scene.Add(close);
-
-				scenes.Add(scene);
-			}
-
-			// === SCENE 1 ===
-			{
-				// Entities ===
-				Entity cube = new Entity(cubeMesh, transparent);
-				cube.Transform.ScaleRelative(3.0f);
-				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
-				cube.Transform.MoveAbsolute(0, 2.0f, 0);
-
-				Entity helix = new Entity(helixMesh, blueMatte);
-				helix.Transform.MoveAbsolute(0, 2.5f, 0);
-				helix.Transform.ScaleRelative(5.0f);
-
-				Entity sphere = new Entity(sphereMesh, mirror);
-				sphere.Transform.MoveAbsolute(0, 1, 0);
-				sphere.Transform.ScaleRelative(2.0f);
-
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
-
-				// Create scene
-				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
-				//scene.Add(cube);
-				scene.Add(ground);
-				scene.Add(helix);
-				//scene.Add(sphere);
-
-				// Add to scene list
-				scenes.Add(scene);
-			}
-
-			// === SCENE 2 ===
-			{
-				// Entities
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
-
-				// Create scene
-				Scene scene = new Scene("Random Spheres", environment, sceneBounds);
-				scene.Add(ground);
-
-				// Add random entities
-				Random rng = new Random();
-				for (int i = 0; i < 100; i++)
-				{
-					// Random scale (used for height, too)
-					float scale = rng.NextFloat(0.1f, 1.0f);
-
-					Entity s = new Entity(Sphere.Default, new Material(rng.NextColor(), rng.NextBool(), rng.NextBool(), 1.5f));
-					s.Transform.SetPosition(rng.NextFloat(-20, 20), scale, rng.NextFloat(-20, 20));
-					s.Transform.SetScale(scale);
-					scene.Add(s);
-				}
-
-				// Add to scene list
-				scenes.Add(scene);
-			}
-
-			// Finalize all scenes
-			foreach (Scene s in scenes)
-				s.FinalizeOctree();
+			raytracingDisplay.Focus();
+			displayHasMouse = true;
 		}
 
-		
+		private void raytracingDisplay_MouseUp(object sender, MouseEventArgs e)
+		{
+			displayHasMouse = false;
+		}
+
+		private void raytracingDisplay_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (displayHasMouse)
+			{
+				buttonStartRaytrace.BackColor = ThreadSafeRandom.Instance.NextBool() ? System.Drawing.Color.AliceBlue : System.Drawing.Color.Brown;
+			}
+		}
 	}
 }

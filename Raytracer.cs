@@ -122,9 +122,9 @@ namespace CSharpPathTracer
 					totalColor /= rtParams.SamplesPerPixel;
 
 					// Prepare to set the color in the array of bytes
-					Vector3 colorAsBytes = ColorAsBytes(totalColor, true);
+					Vector3 colorAsBytes = ColorAsBytes(ref totalColor, true);
 					for (int blockX = x; blockX < x + res && blockX < width; blockX++)
-						SetByteColor(results, blockX, y, channelsPerPixel, colorAsBytes);
+						SetByteColor(results, blockX, y, channelsPerPixel, ref colorAsBytes);
 				});
 
 				// Check for cancellation
@@ -156,80 +156,24 @@ namespace CSharpPathTracer
 			RayHit hit;
 			if (scene.RayIntersection(ray, out hit))
 			{
-				Ray newRay;
+				// Grab the entity from the hit
 				Entity hitEntity = hit.HitObject as Entity;
 
-				// We found a hit; which kind of material?
-				if (hitEntity.Material.Transparent)
-				{
-					// Grab the index of refraction, which needs to be
-					// inverted if we're OUTSIDE the object
-					float indexOfRefraction = hitEntity.Material.IndexOfRefraction;
-					if (hit.Side == HitSide.Outside)
-						indexOfRefraction = 1.0f / indexOfRefraction;
-
-					// Random chance for reflection instead of refraction based on Fresnel
-					float NdotV = Vector3.Dot(-1 * ray.Direction, hit.Normal);
-					bool reflectFresnel = FresnelSchlick(NdotV, indexOfRefraction) > ThreadSafeRandom.Instance.NextFloat();
-
-					// Test for refraction
-					Vector3 newDir;
-					if (reflectFresnel || !Refract(ray.Direction, hit.Normal, indexOfRefraction, out newDir))
-						newDir = Vector3.Reflect(ray.Direction, hit.Normal);
-
-					// Create the new ray based on either reflection or refraction
-					newRay = new Ray(hit.Position, newDir, ray.TMin, ray.TMax);
-				}
-				else if (hitEntity.Material.Metal)
-				{
-					// Metal - perfect reflection
-					Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
-
-					// Adjust based on roughness
-					reflection += ThreadSafeRandom.Instance.NextVector3() * hitEntity.Material.GetRoughnessAtUV(hit.UV);
-
-					newRay = new Ray(hit.Position, reflection, ray.TMin, ray.TMax);
-				}
-				else
-				{
-					// Non-metal, so diffuse!
-					newRay = new Ray(hit.Position, ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal), ray.TMin, ray.TMax);	
-				}
-
+				// How is this ray bouncing?
+				Ray newRay = hitEntity.Material.GetNextBounce(ray, hit);
+				
 				// Take into account the hit color and trace the next ray
 				return hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
 			}
 			else
 			{
-				// No hit so use environment gradient
+				// No hit so use environment
 				return scene.Environment.GetColorFromDirection(ray.Direction);
 			}
 		}
 
-	
-		private bool Refract(Vector3 incident, Vector3 normal, float indexOfRefraction, out Vector3 refraction)
-		{
-			float cos = Vector3.Dot(-1 * incident, normal);
-			float sin = MathF.Sqrt(1.0f - cos * cos);
-			if (indexOfRefraction * sin > 1.0f)
-			{
-				refraction = Vector3.Zero;
-				return false;
-			}
 
-			Vector3 rPerp = indexOfRefraction * (incident + cos * normal);
-			Vector3 rParallel = -MathF.Sqrt(MathF.Abs(1.0f - rPerp.LengthSquared())) * normal;
-			refraction = (rPerp + rParallel).Normalized();
-			return true;
-		}
-
-		private double FresnelSchlick(float NdotV, float indexOfRefraction)
-		{
-			float r0 = MathF.Pow((1.0f - indexOfRefraction) / (1.0f + indexOfRefraction), 2.0f);
-			return r0 + (1.0f - r0) * MathF.Pow(1 - NdotV, 5.0f);
-		}
-
-		private Vector3 ColorAsBytes(Vector3 color, bool gammaCorrect = true)
+		private Vector3 ColorAsBytes(ref Vector3 color, bool gammaCorrect = true)
 		{
 			if (gammaCorrect)
 			{
@@ -242,7 +186,7 @@ namespace CSharpPathTracer
 			return color * 255;
 		}
 
-		private void SetByteColor(byte[][] results, int x, int y, int channelsPerPixel, Vector3 colorInBytes)
+		private void SetByteColor(byte[][] results, int x, int y, int channelsPerPixel, ref Vector3 colorInBytes)
 		{
 			// Note: bitmap data is BGR, not RGB!
 			int pixelStart = x * channelsPerPixel;

@@ -27,6 +27,11 @@ namespace CSharpPathTracer
 		private List<Transform> children;
 
 		/// <summary>
+		/// Gets whether the transform's matrices are currently out of date
+		/// </summary>
+		public bool Dirty { get { return matricesDirty || vectorsDirty; } }
+
+		/// <summary>
 		/// Gets or sets the transform's position
 		/// </summary>
 		public Vector3 Position
