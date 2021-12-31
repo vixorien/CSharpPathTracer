@@ -205,6 +205,9 @@ namespace CSharpPathTracer
 
 			timerInput.Start();
 
+			// Cancel any existing rendering
+			worker?.CancelAsync();
+
 			// Reset all key states
 			Array.Clear(keyStates, 0, keyStates.Length);
 		}
@@ -246,6 +249,41 @@ namespace CSharpPathTracer
 
 			if (IsKeyDown(Keys.Space)) { camera.Transform.MoveRelative(0, speed, 0); }
 			if (IsKeyDown(Keys.X)) { camera.Transform.MoveRelative(0, -speed, 0); }
+
+
+			// Ensure the worker is done
+			if (worker == null || (worker != null && !worker.IsBusy))
+			{
+				// Set up the next frame
+				worker?.Dispose();
+				worker = new BackgroundWorker();
+				worker.WorkerReportsProgress = true;
+				worker.WorkerSupportsCancellation = true;
+				worker.DoWork += raytracer.RaytraceScene;
+				worker.ProgressChanged += ScanlineComplete;
+				worker.RunWorkerCompleted += RaytraceComplete;
+
+				// Create/re-create the render target using the display dimensions
+				if (renderTarget == null || renderTarget.Width != raytracingDisplay.Width || renderTarget.Height != raytracingDisplay.Height)
+				{
+					renderTarget?.Dispose();
+					renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
+					raytracingDisplay.Bitmap = renderTarget;
+				}
+
+				camera.AspectRatio = (float)raytracingDisplay.Width / raytracingDisplay.Height;
+
+				// Raytrace the scene very quickly
+				RaytracingParameters rtParams = new RaytracingParameters(
+					scenes[comboScene.SelectedIndex],
+					camera,
+					renderTarget.Width,
+					renderTarget.Height,
+					1, // Samples per pixel
+					8, // Resolution reduction
+					8); // Max recursion
+				worker.RunWorkerAsync(rtParams);
+			}
 
 
 			// Goals:
