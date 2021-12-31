@@ -6,31 +6,21 @@ using Microsoft.Xna.Framework;
 
 namespace CSharpPathTracer
 {
-	struct RaytracingStats
-	{
-		public ulong TotalRays { get; set; }
-		public int DeepestRecursion { get; set; }
-		public int MaxRecursion { get; set; }
-
-		public void Reset(int maxRecursion)
-		{
-			TotalRays = 0;
-			DeepestRecursion = 0;
-			MaxRecursion = maxRecursion;
-		}
-	}
-
+	/// <summary>
+	/// Parameters to begin a new raytrace
+	/// </summary>
 	class RaytracingParameters
 	{
 		public Scene Scene { get; set; }
 		public Camera Camera { get; set; }
 		public int SamplesPerPixel { get; set; }
 		public int ResolutionReduction { get; set; }
+		public int ProgressiveStep { get; set; }
 		public int MaxRecursionDepth { get; set; }
 		public int Width { get; set; }
 		public int Height { get; set; }
 
-		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
+		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth, int progressiveStep)
 		{
 			Scene = scene;
 			Width = width;
@@ -39,9 +29,13 @@ namespace CSharpPathTracer
 			SamplesPerPixel = samplesPerPixel;
 			ResolutionReduction = resolutionReduction;
 			MaxRecursionDepth = maxRecursionDepth;
+			ProgressiveStep = progressiveStep;
 		}
 	}
 
+	/// <summary>
+	/// Progress reported after a single scanline is finished
+	/// </summary>
 	class RaytracingProgress
 	{
 		public int ScanlineIndex { get; private set; }
@@ -60,9 +54,35 @@ namespace CSharpPathTracer
 		}
 	}
 
+	/// <summary>
+	/// Details on a single raytrace
+	/// </summary>
+	struct RaytracingStats
+	{
+		public ulong TotalRays { get; set; }
+		public int DeepestRecursion { get; set; }
+		public int MaxRecursion { get; set; }
+
+		public void Reset(int maxRecursion)
+		{
+			TotalRays = 0;
+			DeepestRecursion = 0;
+			MaxRecursion = maxRecursion;
+		}
+	}
+
+	/// <summary>
+	/// Handles raytracing a scene
+	/// </summary>
 	class Raytracer
 	{
 		private RaytracingStats stats;
+		private byte[][] pixels;
+
+		public const int ChannelsPerPixel = 3;
+		public const int ProgressiveStepCount = 8;
+		public static readonly int[] ProgressiveOffsets = { 0, 4, 2, 6, 1, 5, 3, 7 };
+		public static readonly int[] ProgressiveDupes   = { 8, 4, 2, 2, 1, 1, 1, 1 };
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
@@ -73,7 +93,7 @@ namespace CSharpPathTracer
 		public void RaytraceScene(object sender, DoWorkEventArgs e)
 		{
 			RaytracingParameters rtParams = e.Argument as RaytracingParameters;
-			if (rtParams == null)
+			if (rtParams == null || rtParams.Width == 0 || rtParams.Height == 0)
 				return;
 
 			BackgroundWorker worker = sender as BackgroundWorker;
@@ -86,14 +106,17 @@ namespace CSharpPathTracer
 			int width = rtParams.Width;
 			int height = rtParams.Height;
 
-			// Set up the results as separate scanline
-			// arrays of colors to easily faciliate returning
-			// a single scanline of colors at a time
-			const int channelsPerPixel = 3;
-			byte[][] results = new byte[height][];
-			for (int h = 0; h < height; h++)
+			// Do we need to set up a new array of results?
+			if (pixels == null || pixels.Length != height || pixels[0].Length != width * ChannelsPerPixel)
 			{
-				results[h] = new byte[width * channelsPerPixel];
+				// Set up the results as separate scanline
+				// arrays of colors to easily faciliate returning
+				// a single scanline of colors at a time
+				pixels = new byte[height][];
+				for (int h = 0; h < height; h++)
+				{
+					pixels[h] = new byte[width * ChannelsPerPixel];
+				}
 			}
 
 			int res = rtParams.ResolutionReduction;
@@ -124,7 +147,7 @@ namespace CSharpPathTracer
 					// Prepare to set the color in the array of bytes
 					Vector3 colorAsBytes = ColorAsBytes(ref totalColor, true);
 					for (int blockX = x; blockX < x + res && blockX < width; blockX++)
-						SetByteColor(results, blockX, y, channelsPerPixel, ref colorAsBytes);
+						SetByteColor(pixels, blockX, y, ref colorAsBytes);
 				});
 
 				// Check for cancellation
@@ -135,7 +158,7 @@ namespace CSharpPathTracer
 				}
 
 				// Report each scanline that was completed
-				RaytracingProgress progress = new RaytracingProgress(y, res, results[y], (double)y / height * 100, stats);
+				RaytracingProgress progress = new RaytracingProgress(y, res, pixels[y], (double)y / height * 100, stats);
 				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
 		}
@@ -186,10 +209,10 @@ namespace CSharpPathTracer
 			return color * 255;
 		}
 
-		private void SetByteColor(byte[][] results, int x, int y, int channelsPerPixel, ref Vector3 colorInBytes)
+		private void SetByteColor(byte[][] results, int x, int y, ref Vector3 colorInBytes)
 		{
 			// Note: bitmap data is BGR, not RGB!
-			int pixelStart = x * channelsPerPixel;
+			int pixelStart = x * ChannelsPerPixel;
 			results[y][pixelStart + 0] = (byte)colorInBytes.Z;
 			results[y][pixelStart + 1] = (byte)colorInBytes.Y;
 			results[y][pixelStart + 2] = (byte)colorInBytes.X;

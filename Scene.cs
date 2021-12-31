@@ -166,6 +166,10 @@ namespace CSharpPathTracer
 				right.Transform.SetPosition(5, 2, 0);
 				right.Transform.SetScale(2);
 
+				Entity above = new Entity(Sphere.Default, greenMatte);
+				above.Transform.SetPosition(0, 9, 0);
+				above.Transform.SetScale(2);
+
 				Entity close = new Entity(Sphere.Default, transparent);
 				close.Transform.SetPosition(0, 2, 5);
 				close.Transform.SetScale(2);
@@ -175,15 +179,15 @@ namespace CSharpPathTracer
 				scene.Add(left);
 				scene.Add(middle);
 				scene.Add(right);
+				scene.Add(above);
 				scene.Add(close);
 
+				// Copy the first scene's objects
 				Scene sceneSkybox = new Scene("Default + Skybox", skybox, sceneBounds);
-				sceneSkybox.Add(ground);
-				sceneSkybox.Add(left);
-				sceneSkybox.Add(middle);
-				sceneSkybox.Add(right);
-				sceneSkybox.Add(close);
+				for (int i = 0; i < scene.EntityCount; i++)
+					sceneSkybox.Add(scene[i]);
 
+				// Add both to the scene list
 				scenes.Add(scene);
 				scenes.Add(sceneSkybox);
 			}
@@ -191,16 +195,11 @@ namespace CSharpPathTracer
 			// === MESH SCENE ===
 			{
 				// Entities ===
-				Entity cube = new Entity(cubeMesh, transparent);
-				cube.Transform.ScaleRelative(3.0f);
-				cube.Transform.Rotate(MathHelper.PiOver4, MathHelper.PiOver4, 0.0f);
-				cube.Transform.MoveAbsolute(0, 2.0f, 0);
-
 				Entity helix = new Entity(helixMesh, blueMatte);
 				helix.Transform.MoveAbsolute(0, 2.5f, 0);
 				helix.Transform.ScaleRelative(5.0f);
 
-				Entity sphere = new Entity(sphereMesh, mirror);
+				Entity sphere = new Entity(sphereMesh, gold);
 				sphere.Transform.MoveAbsolute(0, 1, 0);
 				sphere.Transform.ScaleRelative(2.0f);
 
@@ -210,10 +209,9 @@ namespace CSharpPathTracer
 
 				// Create scene
 				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
-				//scene.Add(cube);
 				scene.Add(ground);
 				scene.Add(helix);
-				//scene.Add(sphere);
+				scene.Add(sphere);
 
 				// Add to scene list
 				scenes.Add(scene);

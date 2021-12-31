@@ -11,17 +11,40 @@ using Microsoft.Xna.Framework;
 
 namespace CSharpPathTracer
 {
+	public enum RaytracingMode
+	{
+		None,
+		Realtime,
+		Progressive,
+		Once
+	}
+
 	public partial class MainForm : Form
 	{
+		private const float CameraMoveSpeed = 0.25f;
+		private const float CameraMoveSpeedSlow = 0.05f;
+		private const float CameraMoveSpeedFast = 1.0f;
+		private const float CameraRotationSpeed = 0.01f;
+
+		private const int RealtimeSamplesPerPixel = 1;
+		private const int RealtimeResolutionReduction = 8;
+		private const int RealtimeMaxRecursion = 8;
+
+
 		private BackgroundWorker worker;
 		private Bitmap renderTarget;
 		private Raytracer raytracer;
 		private Camera camera;
-		
+
 		private List<Scene> scenes;
 
 		private Stopwatch stopwatch;
+
+		private byte[] progressColorScanline;
+
+		private RaytracingMode raytracingMode;
 		private bool raytracingInProgress;
+		private int progressiveStep;
 
 		public MainForm()
 		{
@@ -52,6 +75,8 @@ namespace CSharpPathTracer
 			// Create the ray tracer before the background worker
 			raytracer = new Raytracer();
 			raytracingInProgress = false;
+			raytracingMode = RaytracingMode.None;
+			progressiveStep = 0;
 			stopwatch = new Stopwatch();
 
 			// Update labels and such
@@ -60,18 +85,50 @@ namespace CSharpPathTracer
 			labelResReduction.Text = "Resolution Reduction: " + sliderResReduction.Value;
 			textWidth.Text = raytracingDisplay.Width.ToString();
 			textHeight.Text = raytracingDisplay.Height.ToString();
+
+			// Start the frame loop
+			timerFrameLoop.Start();
+
+			// Perform a single raytrace to fill the buffer
+			BeginRaytrace(
+				RaytracingMode.Once,
+				RealtimeSamplesPerPixel,
+				RealtimeResolutionReduction,
+				RealtimeMaxRecursion);
 		}
 
-		
+
 		private void buttonStartRaytrace_Click(object sender, EventArgs e)
 		{
-			// If we're in progress, we simply cancel and swap text
+			// If we're in progress, we're canceling the exisitng
+			// work instead, which will be caught elsewhere
 			if (raytracingInProgress)
 			{
 				worker.CancelAsync();
 				return;
 			}
 
+			// Update the UI
+			labelStatus.Text = "Status: Raytracing...";
+			buttonStartRaytrace.Text = "Cancel Raytrace";
+			progressRT.Minimum = 0;
+			progressRT.Maximum = raytracingDisplay.Height; // This is "locked in" when we start
+			progressRT.Value = 0;
+
+			// Start the full raytrace with the user's values
+			BeginRaytrace(
+				RaytracingMode.Once,
+				sliderSamplesPerPixel.Value,
+				sliderResReduction.Value,
+				sliderMaxRecursion.Value);
+
+			// Begin timing
+			// TODO: Move this into BeginRaytrace()?
+			stopwatch.Restart();
+		}
+
+		private void BeginRaytrace(RaytracingMode mode, int samplesPerPixel, int resolutionReduction, int maxRecursion)
+		{
 			// Set up the worker for threading
 			worker?.Dispose();
 			worker = new BackgroundWorker();
@@ -81,40 +138,34 @@ namespace CSharpPathTracer
 			worker.ProgressChanged += ScanlineComplete;
 			worker.RunWorkerCompleted += RaytraceComplete;
 
-			// Update status
-			labelStatus.Text = "Status: Raytracing...";
-
 			// Create/re-create the render target using the display dimensions
 			if (renderTarget == null || renderTarget.Width != raytracingDisplay.Width || renderTarget.Height != raytracingDisplay.Height)
 			{
 				renderTarget?.Dispose();
 				renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
 				raytracingDisplay.Bitmap = renderTarget;
-			}
 
-			// Set up progress bar
-			progressRT.Minimum = 0;
-			progressRT.Maximum = raytracingDisplay.Width * raytracingDisplay.Height;
-			progressRT.Value = 0;
+				progressColorScanline = new byte[renderTarget.Width * Raytracer.ChannelsPerPixel]; // Assume black
+			}
 
 			// Update camera to match new viewport
 			camera.AspectRatio = (float)raytracingDisplay.Width / raytracingDisplay.Height;
 
-			// Raytrace the scene
+			// Track our progress
+			raytracingInProgress = true;
+			raytracingMode = mode;
+
+			// Set up parameters and start the thread
 			RaytracingParameters rtParams = new RaytracingParameters(
-				scenes[comboScene.SelectedIndex], 
-				camera, 
+				scenes[comboScene.SelectedIndex],
+				camera,
 				renderTarget.Width,
 				renderTarget.Height,
-				sliderSamplesPerPixel.Value, 
-				sliderResReduction.Value,
-				sliderMaxRecursion.Value);
+				samplesPerPixel,
+				resolutionReduction,
+				maxRecursion,
+				mode == RaytracingMode.Progressive ? progressiveStep : 0);
 			worker.RunWorkerAsync(rtParams);
-
-			raytracingInProgress = true;
-			buttonStartRaytrace.Text = "Cancel Raytrace";
-
-			stopwatch.Restart();
 		}
 
 
@@ -124,15 +175,17 @@ namespace CSharpPathTracer
 			if (progress == null)
 				return;
 
-			// For threading reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
-			// Copy data to the correct scanline in the bitmap
+			// For reference: http://csharpexamples.com/tag/parallel-bitmap-processing/
+			// Lock the bits to allow for very quick memory access
 			BitmapData pixels = renderTarget.LockBits(
 				new System.Drawing.Rectangle(0, 0, renderTarget.Width, renderTarget.Height),
 				System.Drawing.Imaging.ImageLockMode.WriteOnly,
 				renderTarget.PixelFormat);
 
-			// Duplicate the scanline as necessary
-			for (int y = progress.ScanlineIndex; y < progress.ScanlineDuplicateCount + progress.ScanlineIndex && y < renderTarget.Height; y++)
+			// Copy the scanline into the render target, duplicating
+			// it as necessary based on the resolution reduction
+			int y = progress.ScanlineIndex;
+			for (; y < progress.ScanlineDuplicateCount + progress.ScanlineIndex && y < renderTarget.Height; y++)
 			{
 				Marshal.Copy(
 					progress.Scanline,
@@ -141,18 +194,30 @@ namespace CSharpPathTracer
 					progress.Scanline.Length);
 			}
 
+			// Display the "progress" line as necessary (after any duplication)
+			if (raytracingMode == RaytracingMode.Once && y < renderTarget.Height - 1)
+			{
+				Marshal.Copy(
+					progressColorScanline,
+					0,
+					pixels.Scan0 + pixels.Stride * (y + 1),
+					progressColorScanline.Length);
+			}
+
+			// Unlock the bits and invalidate the display to redraw
 			renderTarget.UnlockBits(pixels);
+			raytracingDisplay.Invalidate();
 
-			if (checkDisplayProgress.Checked)
-				raytracingDisplay.Invalidate();
+			// Update progress bar and other status if not realtime
+			if (raytracingMode != RaytracingMode.Realtime)
+			{
+				progressRT.ProgressBar.IncrementNoAnimation(progress.ScanlineDuplicateCount); // One or more rows are done
 
-			// Update progress bar and other status
-			progressRT.ProgressBar.IncrementNoAnimation(raytracingDisplay.Width * sliderResReduction.Value); // An entire row
-
-			labelStatus.Text = "Status: Raytracing..." + Math.Round(progress.CompletionPercent, 2) + "%";
-			labelTotalRays.Text = "Total Rays: " + progress.Stats.TotalRays.ToString("N0");
-			labelDeepestRecursion.Text = "Deepest Recursion: " + progress.Stats.DeepestRecursion;
-			labelTime.Text = "Total Time: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\.fff");
+				labelStatus.Text = "Status: Raytracing..." + Math.Round(progress.CompletionPercent, 2) + "%";
+				labelTotalRays.Text = "Total Rays: " + progress.Stats.TotalRays.ToString("N0");
+				labelDeepestRecursion.Text = "Deepest Recursion: " + progress.Stats.DeepestRecursion;
+				labelTime.Text = "Total Time: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\.fff");
+			}
 		}
 
 		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
@@ -164,9 +229,23 @@ namespace CSharpPathTracer
 			}
 
 			progressRT.ProgressBar.StopMarquee();
-			buttonStartRaytrace.Text = "Start Raytrace";
+			buttonStartRaytrace.Text = "Start Full Raytrace";
 			raytracingInProgress = false;
 			stopwatch.Stop();
+
+			// Check the current mode
+			if (raytracingMode == RaytracingMode.Once)
+			{
+				// Just once, so stop
+				raytracingMode = RaytracingMode.None;
+			}
+			else if (raytracingMode == RaytracingMode.Progressive && 
+				progressiveStep >= Raytracer.ProgressiveStepCount)
+			{
+				// We've reached the end of progressive
+				raytracingMode = RaytracingMode.None;
+				progressiveStep = 0;
+			}
 		}
 
 
@@ -191,7 +270,7 @@ namespace CSharpPathTracer
 			textHeight.Text = raytracingDisplay.Height.ToString();
 			raytracingDisplay.Invalidate();
 		}
-		
+
 
 		private bool displayHasMouse = false;
 		private int prevMouseX;
@@ -202,35 +281,30 @@ namespace CSharpPathTracer
 			displayHasMouse = true;
 			prevMouseX = e.X;
 			prevMouseY = e.Y;
-
-			timerInput.Start();
+			raytracingMode = RaytracingMode.Realtime;
 
 			// Cancel any existing rendering
 			worker?.CancelAsync();
-
-			// Reset all key states
-			Array.Clear(keyStates, 0, keyStates.Length);
 		}
 
 		private void raytracingDisplay_MouseUp(object sender, MouseEventArgs e)
 		{
 			displayHasMouse = false;
 
-			timerInput.Stop();
-
-			// Reset all key states
-			Array.Clear(keyStates, 0, keyStates.Length);
+			// Stop any realtime raytracing (might swap to progressive?)
+			if(raytracingMode == RaytracingMode.Realtime)
+				raytracingMode = RaytracingMode.None;
 		}
 
 		private void raytracingDisplay_MouseMove(object sender, MouseEventArgs e)
 		{
 			if (displayHasMouse)
 			{
-				buttonStartRaytrace.BackColor = ThreadSafeRandom.Instance.NextBool() ? System.Drawing.Color.AliceBlue : System.Drawing.Color.Brown;
-
-				// Adjust speed
-				float camRotSpeed = 0.01f;
-				camera.Transform.Rotate((prevMouseY - e.Y) * camRotSpeed, (prevMouseX - e.X) * camRotSpeed, 0);
+				// Rotate based on mouse movement
+				camera.Transform.Rotate(
+					(prevMouseY - e.Y) * CameraRotationSpeed,
+					(prevMouseX - e.X) * CameraRotationSpeed,
+					0);
 
 				// Remember previous location
 				prevMouseX = e.X;
@@ -238,9 +312,11 @@ namespace CSharpPathTracer
 			}
 		}
 
-		private void timerInput_Tick(object sender, EventArgs e)
+		private void timerFrameLoop_Tick(object sender, EventArgs e)
 		{
-			float speed = 0.1f;
+			float speed = CameraMoveSpeed;
+			if (IsKeyDown(Keys.ShiftKey)) { speed = CameraMoveSpeedFast; }
+			else if (IsKeyDown(Keys.ControlKey)) { speed = CameraMoveSpeedSlow; }
 
 			if (IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); }
 			if (IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); }
@@ -251,44 +327,34 @@ namespace CSharpPathTracer
 			if (IsKeyDown(Keys.X)) { camera.Transform.MoveRelative(0, -speed, 0); }
 
 
-			// Ensure the worker is done
+			// If we're in realtime mode and the worker is not currently busy (or doesn't exist yet),
+			// then we can go ahead and begin a new low-res raytracing frame
 			if (worker == null || (worker != null && !worker.IsBusy))
 			{
-				// Set up the next frame
-				worker?.Dispose();
-				worker = new BackgroundWorker();
-				worker.WorkerReportsProgress = true;
-				worker.WorkerSupportsCancellation = true;
-				worker.DoWork += raytracer.RaytraceScene;
-				worker.ProgressChanged += ScanlineComplete;
-				worker.RunWorkerCompleted += RaytraceComplete;
-
-				// Create/re-create the render target using the display dimensions
-				if (renderTarget == null || renderTarget.Width != raytracingDisplay.Width || renderTarget.Height != raytracingDisplay.Height)
+				// Check the raytracing mode
+				if (raytracingMode == RaytracingMode.Realtime)
 				{
-					renderTarget?.Dispose();
-					renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
-					raytracingDisplay.Bitmap = renderTarget;
+					BeginRaytrace(
+						RaytracingMode.Realtime,
+						RealtimeSamplesPerPixel,
+						RealtimeResolutionReduction,
+						RealtimeMaxRecursion);
+				}
+				else if (raytracingMode == RaytracingMode.Progressive)
+				{
+					BeginRaytrace(
+						RaytracingMode.Progressive,
+						sliderSamplesPerPixel.Value,
+						Raytracer.ProgressiveStepCount, // Each progressive step is 1/StepCount of the way done
+						sliderMaxRecursion.Value);
+
+					// Adjust the progressive step
+					progressiveStep++;
 				}
 
-				camera.AspectRatio = (float)raytracingDisplay.Width / raytracingDisplay.Height;
 
-				// Raytrace the scene very quickly
-				RaytracingParameters rtParams = new RaytracingParameters(
-					scenes[comboScene.SelectedIndex],
-					camera,
-					renderTarget.Width,
-					renderTarget.Height,
-					1, // Samples per pixel
-					8, // Resolution reduction
-					8); // Max recursion
-				worker.RunWorkerAsync(rtParams);
 			}
 
-
-			// Goals:
-			// - Raytrace scene at reduced quality (for speed)
-			// - Do it again as soon as the previous "frame" is completed
 		}
 
 		private bool[] keyStates = new bool[256];
@@ -304,6 +370,8 @@ namespace CSharpPathTracer
 			{
 				keyStates[e.KeyValue] = true;
 			}
+
+			e.Handled = true;
 		}
 
 		private void MainForm_KeyUp(object sender, KeyEventArgs e)
@@ -312,6 +380,8 @@ namespace CSharpPathTracer
 			{
 				keyStates[e.KeyValue] = false;
 			}
+
+			e.Handled = true;
 		}
 	}
 }
