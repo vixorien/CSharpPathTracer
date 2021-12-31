@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
+using System.Windows.Input;
 using System.Runtime.InteropServices;
 using Microsoft.Xna.Framework;
 
@@ -193,15 +194,29 @@ namespace CSharpPathTracer
 		
 
 		private bool displayHasMouse = false;
+		private int prevMouseX;
+		private int prevMouseY;
 		private void raytracingDisplay_MouseDown(object sender, MouseEventArgs e)
 		{
 			raytracingDisplay.Focus();
 			displayHasMouse = true;
+			prevMouseX = e.X;
+			prevMouseY = e.Y;
+
+			timerInput.Start();
+
+			// Reset all key states
+			Array.Clear(keyStates, 0, keyStates.Length);
 		}
 
 		private void raytracingDisplay_MouseUp(object sender, MouseEventArgs e)
 		{
 			displayHasMouse = false;
+
+			timerInput.Stop();
+
+			// Reset all key states
+			Array.Clear(keyStates, 0, keyStates.Length);
 		}
 
 		private void raytracingDisplay_MouseMove(object sender, MouseEventArgs e)
@@ -209,6 +224,55 @@ namespace CSharpPathTracer
 			if (displayHasMouse)
 			{
 				buttonStartRaytrace.BackColor = ThreadSafeRandom.Instance.NextBool() ? System.Drawing.Color.AliceBlue : System.Drawing.Color.Brown;
+
+				// Adjust speed
+				float camRotSpeed = 0.01f;
+				camera.Transform.Rotate((prevMouseY - e.Y) * camRotSpeed, (prevMouseX - e.X) * camRotSpeed, 0);
+
+				// Remember previous location
+				prevMouseX = e.X;
+				prevMouseY = e.Y;
+			}
+		}
+
+		private void timerInput_Tick(object sender, EventArgs e)
+		{
+			float speed = 0.1f;
+
+			if (IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); }
+			if (IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); }
+			if (IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); }
+			if (IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); }
+
+			if (IsKeyDown(Keys.Space)) { camera.Transform.MoveRelative(0, speed, 0); }
+			if (IsKeyDown(Keys.X)) { camera.Transform.MoveRelative(0, -speed, 0); }
+
+
+			// Goals:
+			// - Raytrace scene at reduced quality (for speed)
+			// - Do it again as soon as the previous "frame" is completed
+		}
+
+		private bool[] keyStates = new bool[256];
+
+		private bool IsKeyDown(Keys key)
+		{
+			return keyStates[(int)key];
+		}
+
+		private void MainForm_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyValue >= 0 && e.KeyValue < keyStates.Length)
+			{
+				keyStates[e.KeyValue] = true;
+			}
+		}
+
+		private void MainForm_KeyUp(object sender, KeyEventArgs e)
+		{
+			if (e.KeyValue >= 0 && e.KeyValue < keyStates.Length)
+			{
+				keyStates[e.KeyValue] = false;
 			}
 		}
 	}

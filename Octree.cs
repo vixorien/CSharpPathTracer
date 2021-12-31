@@ -8,6 +8,7 @@ namespace CSharpPathTracer
 		where T : IBoundable, IRayIntersectable
 	{
 		private const int DivideAt = 2;
+		private bool allowOverlaps;
 
 		private List<T> objects;
 		private Octree<T>[] children;
@@ -16,10 +17,13 @@ namespace CSharpPathTracer
 		public BoundingBox AABB { get; private set; }
 		public BoundingBox? ShrunkAABB { get; private set; }
 
-		public Octree(BoundingBox bounds)
+		public Octree(BoundingBox bounds, bool allowOverlaps = true)
 		{
+			this.allowOverlaps = allowOverlaps;
+
 			AABB = bounds;
 			ShrunkAABB = null;
+			
 			objects = new List<T>();
 		}
 
@@ -52,7 +56,8 @@ namespace CSharpPathTracer
 				{
 					foreach (Octree<T> child in children)
 					{
-						if (child.RayIntersection(ray, out hit) &&
+						if (child != null &&
+							child.RayIntersection(ray, out hit) &&
 							hit.Distance < closestHit.Distance)
 						{
 							closestHit = hit;
@@ -76,9 +81,21 @@ namespace CSharpPathTracer
 
 		public bool AddObject(T obj)
 		{
-			// Does the geometry fit inside this node?
-			if (AABB.Contains(obj.AABB) != ContainmentType.Contains)
-				return false;
+			// Are overlapping objects allowed?
+			if (allowOverlaps)
+			{
+				// We're allowing overlaps, so ensure the object COULD fit
+				// if it were within the oct's AABB
+				if (AABB.Contains(obj.AABB) == ContainmentType.Disjoint ||
+					!AABB.CouldFit(obj.AABB))
+					return false;
+			}
+			else
+			{
+				// No overlaps, so the object must entirely be contained
+				if (AABB.Contains(obj.AABB) != ContainmentType.Contains)
+					return false;
+			}
 
 			// Do we need to add here or a child?
 			if (Divided)
@@ -87,7 +104,7 @@ namespace CSharpPathTracer
 				foreach (Octree<T> oct in children)
 				{
 					// Attempt to add, and if it worked, return success
-					if (oct.AddObject(obj))
+					if (oct != null && oct.AddObject(obj))
 						return true;
 				}
 			}
@@ -104,7 +121,10 @@ namespace CSharpPathTracer
 			return true;
 		}
 
-		public void ShrinkToFit()
+		/// <summary>
+		/// Shrinks AABBs and prunes empty nodes
+		/// </summary>
+		public void ShrinkAndPrune()
 		{
 			// Note: Should we reset here?  Or prevent this from happening twice?
 			//       Maybe finalize the oct so nothing else can be added?
@@ -112,9 +132,26 @@ namespace CSharpPathTracer
 			// Recursively shrink child nodes first
 			if (Divided)
 			{
-				foreach (Octree<T> child in children)
+				// Track how many child octs have been pruned
+				int pruneCount = 0;
+				for(int i = 0; i < children.Length; i++)
 				{
-					child.ShrinkToFit();
+					// Grab this child
+					Octree<T> child = children[i];
+					if (child == null)
+						continue;
+
+					// Is this child a leaf node with no objects?
+					if (!child.Divided && child.objects.Count == 0)
+					{
+						// No children; prune!
+						children[i] = null;
+						pruneCount++;
+						continue;
+					}
+
+					// Attempt to shrink and prune the child
+					child.ShrinkAndPrune();
 
 					// Add the child's shrunken AABB to this one, if necessary
 					if (child.ShrunkAABB.HasValue)
@@ -124,6 +161,13 @@ namespace CSharpPathTracer
 						else
 							ShrunkAABB = child.ShrunkAABB.Value;
 					}
+				}
+
+				// Has this entire node been pruned?
+				if (pruneCount == 8)
+				{
+					// Un-divide!
+					this.children = null;
 				}
 			}
 
@@ -146,14 +190,14 @@ namespace CSharpPathTracer
 
 			// Time to divide - create the 8 children
 			children = new Octree<T>[8];
-			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf());    // 0: -X, -Y, -Z
-			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf());     // 1: -X, -Y, +Z
-			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf());       // 2: -X, +Y, -Z
-			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf());        // 3: -X, +Y, +Z
-			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf());   // 4: +X, -Y, -Z
-			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf());    // 5: +X, -Y, +Z
-			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf());      // 6: +X, +Y, -Z
-			children[7] = new Octree<T>(AABB.RightHalf().TopHalf().BackHalf());       // 7: +X, +Y, +Z
+			children[0] = new Octree<T>(AABB.LeftHalf().BottomHalf().FrontHalf(), allowOverlaps);    // 0: -X, -Y, -Z
+			children[1] = new Octree<T>(AABB.LeftHalf().BottomHalf().BackHalf(), allowOverlaps);     // 1: -X, -Y, +Z
+			children[2] = new Octree<T>(AABB.LeftHalf().TopHalf().FrontHalf(), allowOverlaps);       // 2: -X, +Y, -Z
+			children[3] = new Octree<T>(AABB.LeftHalf().TopHalf().BackHalf(), allowOverlaps);        // 3: -X, +Y, +Z
+			children[4] = new Octree<T>(AABB.RightHalf().BottomHalf().FrontHalf(), allowOverlaps);   // 4: +X, -Y, -Z
+			children[5] = new Octree<T>(AABB.RightHalf().BottomHalf().BackHalf(), allowOverlaps);    // 5: +X, -Y, +Z
+			children[6] = new Octree<T>(AABB.RightHalf().TopHalf().FrontHalf(), allowOverlaps);      // 6: +X, +Y, -Z
+			children[7] = new Octree<T>(AABB.RightHalf().TopHalf().BackHalf(), allowOverlaps);       // 7: +X, +Y, +Z
 
 			// Attempt to move each piece of geometry to a child
 			for (int i = 0; i < objects.Count; i++)

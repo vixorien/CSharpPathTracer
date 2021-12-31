@@ -75,6 +75,18 @@ namespace CSharpPathTracer
 		{
 			return new BoundingBox(new Vector3(aabb.Min.X, aabb.Min.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)), aabb.Max);
 		}
+
+		public static float Width(this BoundingBox aabb) { return aabb.Max.X - aabb.Min.X; }
+		public static float Height(this BoundingBox aabb) { return aabb.Max.Y - aabb.Min.Y; }
+		public static float Depth(this BoundingBox aabb) { return aabb.Max.Z - aabb.Min.Z; }
+
+		public static bool CouldFit(this BoundingBox aabb, BoundingBox other)
+		{
+			return 
+				aabb.Width() >= other.Width() &&
+				aabb.Height() >= other.Height() &&
+				aabb.Depth() >= other.Depth();
+		}
 	}
 
 	public static class VectorExtensionMethods

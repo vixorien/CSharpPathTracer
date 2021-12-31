@@ -136,34 +136,6 @@ namespace CSharpPathTracer
 		}
 	}
 
-	/// <summary>
-	/// The point at which a ray hits a triangle
-	/// </summary>
-	struct TriangleHit
-	{
-		public Vertex V0 { get; set; }
-		public Vertex V1 { get; set; }
-		public Vertex V2 { get; set; }
-		public float Distance { get; set; }
-		public Vector3 Position { get; set; }
-		public Vector3 Barycentrics { get; set; }
-
-		public Vector3 CalcHitNormal()
-		{
-			return
-				Barycentrics.X * V1.Normal +
-				Barycentrics.Y * V2.Normal +
-				Barycentrics.Z * V0.Normal;
-		}
-
-		public Vector2 CalcHitUV()
-		{
-			return
-				Barycentrics.X * V1.UV +
-				Barycentrics.Y * V2.UV +
-				Barycentrics.Z * V0.UV;
-		}
-	}
 
 	/// <summary>
 	/// Geometry represented by a mesh of indexed triangles
@@ -171,15 +143,15 @@ namespace CSharpPathTracer
 	class Mesh : Geometry
 	{
 		// Mesh data
-		private List<int> indices;
-		private List<Vertex> vertices;
+		//private List<int> indices;
+		//private List<Vertex> vertices;
 		private List<Triangle> triangles;
 		private Octree<Triangle> octree;
 
 		public Mesh(string file) : base()
 		{
-			indices = new List<int>();
-			vertices = new List<Vertex>();
+			//indices = new List<int>();
+			//vertices = new List<Vertex>();
 			triangles = new List<Triangle>();
 
 			LoadMesh(file);
@@ -190,113 +162,15 @@ namespace CSharpPathTracer
 				octree.AddObject(t);
 
 			// Shrink the octree to speed up ray intersections
-			octree.ShrinkToFit();
+			octree.ShrinkAndPrune();
 		}
 
 
 		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			return octree.RayIntersection(ray, out hit);
-			//// Closest hit, if any
-			//bool anyHit = false;
-			//TriangleHit closestHit = new TriangleHit();
-			//closestHit.Distance = float.PositiveInfinity;
-
-			//// Quick check of the AABB first
-			//if (!aabb.Intersects(ray).HasValue)
-			//{
-			//	hit = RayHit.None;
-			//	return false;
-			//}
-
-			//// Loop through indices/triangles, looking for hits
-			//for (int i = 0; i < indices.Count;)
-			//{
-			//	// Get the three vertices for this triangle
-			//	Vertex v0 = vertices[indices[i++]];
-			//	Vertex v1 = vertices[indices[i++]];
-			//	Vertex v2 = vertices[indices[i++]];
-
-			//	// Test for intersection
-			//	TriangleHit triHit;
-			//	if (RayTriangleIntersection(ray, v0, v1, v2, out triHit))
-			//	{
-			//		// We hit a triangle, test for closest
-			//		if (triHit.Distance < closestHit.Distance)
-			//		{
-			//			closestHit = triHit;
-			//		}
-
-			//		anyHit = true;
-			//	}
-			//}
-
-			//// No hits at all
-			//if (!anyHit)
-			//{
-			//	hit = RayHit.None;
-			//	return false;
-			//}
-
-			//// Got a hit
-			//hit = new RayHit(
-			//	closestHit.Position,
-			//	closestHit.CalcHitNormal(),
-			//	closestHit.CalcHitUV(),
-			//	closestHit.Distance,
-			//	null);
-			//return true;
 		}
 
-		//public static bool RayTriangleIntersection(Ray ray, Vertex v0, Vertex v1, Vertex v2, out TriangleHit triHit, bool cullBackfaces = true)
-		//{
-		//	// Assume no hit
-		//	triHit = new TriangleHit();
-
-		//	// From: https://graphicscodex.com/Sample2-RayTriangleIntersection.pdf
-		//	Vector3 edge1 = v1.Position - v0.Position;
-		//	Vector3 edge2 = v2.Position - v0.Position;
-
-		//	Vector3 normal = Vector3.Cross(edge1, edge2);
-		//	normal.Normalize();
-
-		//	Vector3 q = Vector3.Cross(ray.Direction, edge2);
-		//	float a = Vector3.Dot(edge1, q);
-
-		//	// Parallel?
-		//	if (MathF.Abs(a) < 0.000001f)
-		//		return false;
-
-		//	// Check backfaces?
-		//	if (cullBackfaces && Vector3.Dot(normal, ray.Direction) >= 0)
-		//		return false;
-
-		//	// Get barycentrics
-		//	Vector3 s = (ray.Origin - v0.Position) / a;
-		//	Vector3 r = Vector3.Cross(s, edge1);
-
-		//	Vector3 bary = Vector3.Zero;
-		//	bary.X = Vector3.Dot(s, q);
-		//	bary.Y = Vector3.Dot(r, ray.Direction);
-		//	bary.Z = 1.0f - bary.X - bary.Y;
-
-		//	// Outside triangle?
-		//	if (bary.X < 0.0f || bary.Y < 0.0f || bary.Z < 0.0f)
-		//		return false;
-
-		//	// Calculate hit distance
-		//	float t = Vector3.Dot(edge2, r);
-		//	if (t < 0.0f)
-		//		return false;
-
-		//	triHit.V0 = v0;
-		//	triHit.V1 = v1;
-		//	triHit.V2 = v2;
-		//	triHit.Distance = t;
-		//	triHit.Position = ray.Origin + ray.Direction * t;
-		//	triHit.Barycentrics = bary;
-		//	return true;
-		//}
 
 		private void LoadMesh(string file)
 		{
@@ -304,7 +178,7 @@ namespace CSharpPathTracer
 			List<Vector3> normals = new List<Vector3>();
 			List<Vector2> uvs = new List<Vector2>();
 
-			int vertCounter = 0;
+			//int vertCounter = 0;
 
 			using (StreamReader input = new StreamReader(file))
 			{
@@ -417,17 +291,18 @@ namespace CSharpPathTracer
 						//v3.Normal.Z *= -1.0f;
 
 						// Add the verts to the vector (flipping the winding order)
+						//////////////////vertices.Add(v1);
+						//////////////////vertices.Add(v3);
+						//////////////////vertices.Add(v2);
+						
 						//vertices.Add(v1);
-						//vertices.Add(v3);
 						//vertices.Add(v2);
-						vertices.Add(v1);
-						vertices.Add(v2);
-						vertices.Add(v3);
+						//vertices.Add(v3);
 
 						// Add three more indices
-						indices.Add(vertCounter); vertCounter += 1;
-						indices.Add(vertCounter); vertCounter += 1;
-						indices.Add(vertCounter); vertCounter += 1;
+						//indices.Add(vertCounter); vertCounter += 1;
+						//indices.Add(vertCounter); vertCounter += 1;
+						//indices.Add(vertCounter); vertCounter += 1;
 
 						// Add the triangle
 						triangles.Add(new Triangle(v1, v2, v3));
@@ -447,17 +322,17 @@ namespace CSharpPathTracer
 							//v4.Normal.Z *= -1.0f;
 
 							// Add a whole triangle (flipping the winding order)
+							///////////////////////vertices.Add(v1);
+							///////////////////////vertices.Add(v4);
+							///////////////////////vertices.Add(v3);
 							//vertices.Add(v1);
-							//vertices.Add(v4);
 							//vertices.Add(v3);
-							vertices.Add(v1);
-							vertices.Add(v3);
-							vertices.Add(v4);
+							//vertices.Add(v4);
 
 							// Add three more indices
-							indices.Add(vertCounter); vertCounter += 1;
-							indices.Add(vertCounter); vertCounter += 1;
-							indices.Add(vertCounter); vertCounter += 1;
+							//indices.Add(vertCounter); vertCounter += 1;
+							//indices.Add(vertCounter); vertCounter += 1;
+							//indices.Add(vertCounter); vertCounter += 1;
 
 							// Add the triangle
 							triangles.Add(new Triangle(v1, v3, v4));

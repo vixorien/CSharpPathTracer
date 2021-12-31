@@ -73,7 +73,7 @@ namespace CSharpPathTracer
 		/// </summary>
 		public void FinalizeOctree()
 		{
-			octree.ShrinkToFit();
+			octree.ShrinkAndPrune();
 		}
 
 		/// <summary>

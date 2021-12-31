@@ -29,6 +29,7 @@ namespace CSharpPathTracer
 		/// </summary>
 		private void InitializeComponent()
 		{
+			this.components = new System.ComponentModel.Container();
 			this.buttonStartRaytrace = new System.Windows.Forms.Button();
 			this.sliderSamplesPerPixel = new System.Windows.Forms.TrackBar();
 			this.labelSamplesPerPixel = new System.Windows.Forms.Label();
@@ -50,6 +51,7 @@ namespace CSharpPathTracer
 			this.comboScene = new System.Windows.Forms.ComboBox();
 			this.labelResReduction = new System.Windows.Forms.Label();
 			this.sliderResReduction = new System.Windows.Forms.TrackBar();
+			this.timerInput = new System.Windows.Forms.Timer(this.components);
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			this.raytracingStatus.SuspendLayout();
@@ -85,7 +87,7 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixel.AutoSize = true;
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(12, 64);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(98, 15);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(99, 15);
 			this.labelSamplesPerPixel.TabIndex = 4;
 			this.labelSamplesPerPixel.Text = "Samples Per Pixel";
 			// 
@@ -94,7 +96,7 @@ namespace CSharpPathTracer
 			this.labelMaxRecursion.AutoSize = true;
 			this.labelMaxRecursion.Location = new System.Drawing.Point(12, 130);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
-			this.labelMaxRecursion.Size = new System.Drawing.Size(151, 15);
+			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
 			this.labelMaxRecursion.TabIndex = 6;
 			this.labelMaxRecursion.Text = "Maximum Recursion Depth";
 			// 
@@ -267,6 +269,11 @@ namespace CSharpPathTracer
 			this.sliderResReduction.Value = 1;
 			this.sliderResReduction.Scroll += new System.EventHandler(this.sliderResReduction_Scroll);
 			// 
+			// timerInput
+			// 
+			this.timerInput.Interval = 16;
+			this.timerInput.Tick += new System.EventHandler(this.timerInput_Tick);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
@@ -288,10 +295,13 @@ namespace CSharpPathTracer
 			this.Controls.Add(this.labelSamplesPerPixel);
 			this.Controls.Add(this.sliderSamplesPerPixel);
 			this.Controls.Add(this.buttonStartRaytrace);
+			this.KeyPreview = true;
 			this.MinimumSize = new System.Drawing.Size(500, 400);
 			this.Name = "MainForm";
 			this.Text = "C# Path Tracer";
 			this.Load += new System.EventHandler(this.MainForm_Load);
+			this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyDown);
+			this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.MainForm_KeyUp);
 			this.Resize += new System.EventHandler(this.MainForm_Resize);
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).EndInit();
@@ -325,5 +335,6 @@ namespace CSharpPathTracer
 		private System.Windows.Forms.ComboBox comboScene;
 		private System.Windows.Forms.Label labelResReduction;
 		private System.Windows.Forms.TrackBar sliderResReduction;
+		private System.Windows.Forms.Timer timerInput;
 	}
 }
