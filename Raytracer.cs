@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
-//using System.Drawing;
+
 
 namespace CSharpPathTracer
 {

@@ -120,10 +120,11 @@ namespace CSharpPathTracer
 
 		private void BeginRaytrace(RaytracingMode mode, int samplesPerPixel, int resolutionReduction, int maxRecursion)
 		{
-			// Get the progress bar ready
+			// Update UI
 			progressRT.Minimum = 0;
 			progressRT.Maximum = raytracingDisplay.Height; // This is "locked in" when we start
 			progressRT.Value = 0;
+			buttonSave.Enabled = false;
 
 			// Set up the worker for threading
 			worker?.Dispose();
@@ -236,10 +237,11 @@ namespace CSharpPathTracer
 				raytracingMode = RaytracingMode.None;
 			}
 
-			// Stop the progress bar and stopwatch
+			// Update UI
+			raytracingInProgress = false;
+			buttonSave.Enabled = true; 
 			progressRT.ProgressBar.StopMarquee();
 			stopwatch.Stop();
-			raytracingInProgress = false;
 
 			// Update the button
 			buttonStartRaytrace.Text = "Start Full Raytrace";
@@ -377,6 +379,48 @@ namespace CSharpPathTracer
 			e.Handled = true;
 		}
 
-		
+
+
+		private void buttonSave_Click(object sender, EventArgs e)
+		{
+			// Set up the save dialog for just PNG files
+			SaveFileDialog diag = new SaveFileDialog();
+			diag.Filter = "PNG|*.png";
+			diag.AddExtension = true;
+			
+			// Show the dialog and only save on a confirmation
+			if (diag.ShowDialog() == DialogResult.OK)
+			{
+				// Get the PNG encoder
+				ImageCodecInfo pngEncoder = null;
+				ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
+				foreach (ImageCodecInfo enc in encoders)
+				{
+					if (enc.MimeType.Contains("png"))
+					{
+						pngEncoder = enc;
+						break;
+					}
+				}
+
+				// Verify it was found
+				if (pngEncoder == null)
+				{
+					MessageBox.Show(
+						"Error saving image: PNG encoder not found.", 
+						"Error Saving Image", 
+						MessageBoxButtons.OK, 
+						MessageBoxIcon.Error);
+					return;
+				}
+
+				// Set up the quality level of the save
+				EncoderParameters encParams = new EncoderParameters(1);
+				encParams.Param[0] = new EncoderParameter(Encoder.Quality, 100L);
+
+				// Perform the save
+				renderTarget.Save(diag.FileName, pngEncoder, encParams);
+			}
+		}
 	}
 }

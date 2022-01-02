@@ -51,6 +51,7 @@ namespace CSharpPathTracer
 			this.labelResReduction = new System.Windows.Forms.Label();
 			this.sliderResReduction = new System.Windows.Forms.TrackBar();
 			this.timerFrameLoop = new System.Windows.Forms.Timer(this.components);
+			this.buttonSave = new System.Windows.Forms.Button();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			this.raytracingStatus.SuspendLayout();
@@ -60,7 +61,7 @@ namespace CSharpPathTracer
 			// buttonStartRaytrace
 			// 
 			this.buttonStartRaytrace.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.buttonStartRaytrace.Location = new System.Drawing.Point(12, 429);
+			this.buttonStartRaytrace.Location = new System.Drawing.Point(10, 400);
 			this.buttonStartRaytrace.Name = "buttonStartRaytrace";
 			this.buttonStartRaytrace.Size = new System.Drawing.Size(189, 46);
 			this.buttonStartRaytrace.TabIndex = 1;
@@ -258,11 +259,22 @@ namespace CSharpPathTracer
 			this.timerFrameLoop.Interval = 16;
 			this.timerFrameLoop.Tick += new System.EventHandler(this.timerFrameLoop_Tick);
 			// 
+			// buttonSave
+			// 
+			this.buttonSave.Location = new System.Drawing.Point(10, 452);
+			this.buttonSave.Name = "buttonSave";
+			this.buttonSave.Size = new System.Drawing.Size(189, 23);
+			this.buttonSave.TabIndex = 20;
+			this.buttonSave.Text = "Save Results";
+			this.buttonSave.UseVisualStyleBackColor = true;
+			this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(828, 507);
+			this.Controls.Add(this.buttonSave);
 			this.Controls.Add(this.labelResReduction);
 			this.Controls.Add(this.sliderResReduction);
 			this.Controls.Add(this.comboScene);
@@ -318,5 +330,6 @@ namespace CSharpPathTracer
 		private System.Windows.Forms.Label labelResReduction;
 		private System.Windows.Forms.TrackBar sliderResReduction;
 		private System.Windows.Forms.Timer timerFrameLoop;
+		private System.Windows.Forms.Button buttonSave;
 	}
 }
