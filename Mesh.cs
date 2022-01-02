@@ -1,7 +1,10 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+//using Microsoft.Xna.Framework;
+using System.Numerics;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 
 namespace CSharpPathTracer
@@ -50,17 +53,17 @@ namespace CSharpPathTracer
 			V1 = v1;
 			V2 = v2;
 
-			aabb = new BoundingBox(v0.Position, v0.Position);
-			aabb.Encompass(v1.Position);
-			aabb.Encompass(v2.Position);
+			aabb = new BoundingBox(v0.Position.ToVector3_XNA(), v0.Position.ToVector3_XNA());
+			aabb.Encompass(v1.Position.ToVector3_XNA());
+			aabb.Encompass(v2.Position.ToVector3_XNA());
 		}
 
 		public Vector3 CalcNormalBarycentric(Vector3 barycentrics)
 		{
-			return
-				(barycentrics.X * V1.Normal +
+			return Vector3.Normalize(
+				barycentrics.X * V1.Normal +
 				barycentrics.Y * V2.Normal +
-				barycentrics.Z * V0.Normal).Normalized();
+				barycentrics.Z * V0.Normal);
 		}
 
 		public Vector2 CalcUVBarycentric(Vector3 barycentrics)
@@ -80,8 +83,7 @@ namespace CSharpPathTracer
 			Vector3 edge1 = V1.Position - V0.Position;
 			Vector3 edge2 = V2.Position - V0.Position;
 
-			Vector3 normal = Vector3.Cross(edge1, edge2);
-			normal.Normalize();
+			Vector3 normal = Vector3.Normalize(Vector3.Cross(edge1, edge2));
 
 			Vector3 q = Vector3.Cross(ray.Direction, edge2);
 			float a = Vector3.Dot(edge1, q);
@@ -220,7 +222,7 @@ namespace CSharpPathTracer
 
 						// Add to the positions list as well as the AABB
 						positions.Add(pos);
-						aabb.Encompass(pos);
+						aabb.Encompass(pos.ToVector3_XNA());
 					}
 					else if (line[0] == 'f') // Face
 					{

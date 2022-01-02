@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -50,8 +48,7 @@ namespace CSharpPathTracer
 		public override Vector3 GetColorFromDirection(Vector3 direction)
 		{
 			// Normalize and grab the dot product and then get the actual angle
-			direction.Normalize();
-			float dir = MathF.Acos(Vector3.Dot(Vector3.Up, direction)) / MathF.PI * -2 + 1;
+			float dir = MathF.Acos(Vector3.Dot(Vector3.UnitY, Vector3.Normalize(direction))) / MathF.PI * -2 + 1;
 
 			// Interpolate and return the gradient result
 			if (dir > 0.0f)
@@ -107,7 +104,7 @@ namespace CSharpPathTracer
 			// Which texture?
 			int faceIndex = -1;
 			float mag;
-			Vector3 absDir = direction.Abs();
+			Vector3 absDir = Vector3.Abs(direction);
 			Vector2 uv;
 
 			if (absDir.X >= absDir.Y && absDir.X >= absDir.Z)

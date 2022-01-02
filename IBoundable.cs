@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 namespace CSharpPathTracer
 {

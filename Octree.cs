@@ -1,6 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+﻿using System.Collections.Generic;
+using System.Numerics;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
+using ContainmentType = Microsoft.Xna.Framework.ContainmentType;
 
 namespace CSharpPathTracer
 {

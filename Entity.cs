@@ -1,4 +1,7 @@
-﻿using Microsoft.Xna.Framework;
+﻿
+using System.Numerics;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 namespace CSharpPathTracer
 {
@@ -20,7 +23,7 @@ namespace CSharpPathTracer
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Transform the ray into the entity's space
-			Matrix worldInv = Matrix.Invert(Transform.WorldMatrix);
+			Matrix4x4 worldInv = Transform.WorldMatrix.Invert();
 			Ray transformedRay = ray.GetTransformed(worldInv);
 
 			// Perform the intersection using the transformed ray
@@ -32,7 +35,7 @@ namespace CSharpPathTracer
 
 				// Transform params
 				hit.Position = Vector3.Transform(hit.Position, Transform.WorldMatrix);
-				hit.Normal = Vector3.TransformNormal(hit.Normal, Transform.WorldMatrix).Normalized();
+				hit.Normal = Vector3.Normalize(Vector3.TransformNormal(hit.Normal, Transform.WorldMatrix));
 
 				// Save this entity
 				hit.HitObject = this;

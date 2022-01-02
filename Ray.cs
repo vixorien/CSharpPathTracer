@@ -1,5 +1,6 @@
 ﻿using System;
-using Microsoft.Xna.Framework;
+//using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -25,11 +26,11 @@ namespace CSharpPathTracer
 			TMax = tmax;
 		}
 
-		public Ray GetTransformed(Matrix transMatrix)
+		public Ray GetTransformed(Matrix4x4 transMatrix)
 		{
 			Ray tRay = new Ray();
 			tRay.Origin = Vector3.Transform(Origin, transMatrix);
-			tRay.Direction = Vector3.TransformNormal(Direction, transMatrix).Normalized();
+			tRay.Direction = Vector3.Normalize(Vector3.TransformNormal(Direction, transMatrix));
 			tRay.TMin = Vector3.TransformNormal(Direction * TMin, transMatrix).Length();
 			tRay.TMax = Vector3.TransformNormal(Direction * TMax, transMatrix).Length();
 			return tRay;
@@ -37,7 +38,7 @@ namespace CSharpPathTracer
 
 		public static implicit operator Microsoft.Xna.Framework.Ray(Ray ray)
 		{
-			return new Microsoft.Xna.Framework.Ray(ray.Origin + ray.Direction * ray.TMin, ray.Direction);
+			return new Microsoft.Xna.Framework.Ray((ray.Origin + ray.Direction * ray.TMin).ToVector3_XNA(), ray.Direction.ToVector3_XNA());
 		}
 	}
 

@@ -2,7 +2,8 @@
 using System.Collections.Generic;
 using System.Text;
 
-using Microsoft.Xna.Framework;
+using System.Numerics;
+//using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace CSharpPathTracer
@@ -15,8 +16,8 @@ namespace CSharpPathTracer
 		private float aspectRatio;
 		private float fieldOfView;
 
-		private Matrix viewMatrix;
-		private Matrix projMatrix;
+		private Matrix4x4 viewMatrix;
+		private Matrix4x4 projMatrix;
 		private bool projDirty;
 
 		public Transform Transform { get { return transform; } } // Not a great way to dirty the view, but it works
@@ -24,15 +25,20 @@ namespace CSharpPathTracer
 		public float FarClip { get { return farClip; } set { farClip = value; projDirty = true; } }
 		public float AspectRatio { get { return aspectRatio; } set { aspectRatio = value; projDirty = true; } }
 		public float FieldOfView { get { return fieldOfView; } set { fieldOfView = value; projDirty = true; } }
-		public Matrix View { get { if (transform.Dirty) UpdateViewMatrix(); return viewMatrix; } }
-		public Matrix Projection { get { if (projDirty) UpdateProjectionMatrix(); return projMatrix; } }
-		public Matrix InverseViewProjection 
+		public Matrix4x4 View { get { if (transform.Dirty) UpdateViewMatrix(); return viewMatrix; } }
+		public Matrix4x4 Projection { get { if (projDirty) UpdateProjectionMatrix(); return projMatrix; } }
+		public Matrix4x4 InverseViewProjection 
 		{ 
 			get 
 			{
 				if (transform.Dirty) UpdateViewMatrix();
 				if (projDirty) UpdateProjectionMatrix();
-				return Matrix.Invert(View * Projection);
+
+				Matrix4x4 inv;
+				if (Matrix4x4.Invert(View * Projection, out inv))
+					return inv;
+				else
+					return Matrix4x4.Identity;
 			} 
 		}
 
@@ -77,16 +83,16 @@ namespace CSharpPathTracer
 
 		private void UpdateViewMatrix()
 		{
-			viewMatrix = Matrix.CreateLookAt(
+			viewMatrix = Matrix4x4.CreateLookAt(
 				transform.Position,
 				transform.Position + transform.Forward,
-				Vector3.Up);
+				Vector3.UnitY);
 		}
 
 		private void UpdateProjectionMatrix()
 		{
-			projMatrix = Matrix.CreatePerspectiveFieldOfView(
-				MathHelper.Pi / 4,
+			projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
+				MathF.PI / 4,
 				AspectRatio,
 				NearClip,
 				FarClip);

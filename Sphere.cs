@@ -1,5 +1,5 @@
 ﻿using System;
-using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -28,8 +28,8 @@ namespace CSharpPathTracer
 			Radius = radius;
 
 			// Set up AABB
-			aabb.Min = center - new Vector3(radius);
-			aabb.Max = center + new Vector3(radius);
+			aabb.Min = (center - new Vector3(radius)).ToVector3_XNA();
+			aabb.Max = (center + new Vector3(radius)).ToVector3_XNA();
 		}
 
 
@@ -88,16 +88,16 @@ namespace CSharpPathTracer
 			Vector3 p1 = ray.Origin + ray.Direction * hitDistance;
 			
 			// Normals
-			Vector3 n1 = p1 - Center; 
-			n1.Normalize();
+			Vector3 n1 = Vector3.Normalize(p1 - Center); 
+			
 			if (side == HitSide.Inside) 
 				n1 *= -1.0f;
 
 			// Calculate a UV based on normal
-			Vector2 xz = new Vector2(n1.X, n1.Z); xz.Normalize();
+			Vector2 xz = Vector2.Normalize(new Vector2(n1.X, n1.Z));
 			Vector2 uv = new Vector2(
 				-MathF.Acos(Vector2.Dot(Vector2.UnitX, xz)) / MathF.PI,
-				MathF.Acos(Vector3.Dot(Vector3.Up, n1)) / MathF.PI);
+				MathF.Acos(Vector3.Dot(Vector3.UnitY, n1)) / MathF.PI);
 
 			// Set up return values
 			hit = new RayHit(p1, n1, uv, hitDistance, side, null);

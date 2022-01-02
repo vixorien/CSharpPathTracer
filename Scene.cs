@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
+using System.Numerics;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 namespace CSharpPathTracer
 {
@@ -99,8 +101,8 @@ namespace CSharpPathTracer
 
 			// Overall scene bounds
 			BoundingBox sceneBounds = new BoundingBox(
-				new Vector3(-10000),
-				new Vector3(10000));
+				new Microsoft.Xna.Framework.Vector3(-10000),
+				new Microsoft.Xna.Framework.Vector3(10000));
 
 			// === Textures ===
 			Texture crateTexture = new Texture("Content/Textures/crate.png");

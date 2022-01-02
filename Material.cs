@@ -1,8 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+
+using System.Numerics;
+
 
 namespace CSharpPathTracer
 {
@@ -53,7 +52,7 @@ namespace CSharpPathTracer
 
 			Vector3 rPerp = indexOfRefraction * (incident + cos * normal);
 			Vector3 rParallel = -MathF.Sqrt(MathF.Abs(1.0f - rPerp.LengthSquared())) * normal;
-			refraction = (rPerp + rParallel).Normalized();
+			refraction = Vector3.Normalize(rPerp + rParallel);
 			return true;
 		}
 

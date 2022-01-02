@@ -1,33 +1,87 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using System.Numerics;
 using System.Windows.Forms;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
+using MathHelper = Microsoft.Xna.Framework.MathHelper;
+using Vector3XNA = Microsoft.Xna.Framework.Vector3;
 
 namespace CSharpPathTracer
 {
+	public static class SIMDExtensionMethods
+	{
+		public static Matrix4x4 Invert(this Matrix4x4 matrix)
+		{
+			Matrix4x4 result = matrix;
+			Matrix4x4.Invert(matrix, out result);
+			return result;
+		}
+
+		public static Vector3 Right(this Matrix4x4 m)
+		{
+			return new Vector3(m.M11, m.M12, m.M13);
+		}
+
+		public static Vector3 Up(this Matrix4x4 m)
+		{
+			return new Vector3(m.M21, m.M22, m.M23);
+		}
+
+		public static Vector3 Forward(this Matrix4x4 m)
+		{
+			return new Vector3(-m.M31, -m.M32, -m.M33);
+		}
+
+		public static Vector3 ToVector3(this Vector4 v)
+		{
+			return new Vector3(v.X, v.Y, v.Z);
+		}
+
+		public static Vector3XNA ToVector3_XNA(this Vector3 v)
+		{
+			return new Vector3XNA(v.X, v.Y, v.Z);
+		}
+
+		public static Vector3 ToVector3_SIMD(this Vector3XNA v)
+		{
+			return new Vector3(v.X, v.Y, v.Z);
+		}
+
+		public static System.Drawing.Color ToSystemColor(this Vector3 color)
+		{
+			return System.Drawing.Color.FromArgb(
+				(int)(Math.Clamp(color.X, 0, 1) * 255),
+				(int)(Math.Clamp(color.Y, 0, 1) * 255),
+				(int)(Math.Clamp(color.Z, 0, 1) * 255));
+		}
+
+		public static Vector3 ToVector3(this System.Drawing.Color color)
+		{
+			return new Vector3((float)color.R / 255, (float)color.G / 255, (float)color.B / 255);
+		}
+	}
+
 	public static class BoundingBoxExtensionMethods
 	{
 		public static BoundingBox GetTransformed(this BoundingBox aabb, Transform transform)
 		{
-			Vector3[] corners = aabb.GetCorners();
+			Microsoft.Xna.Framework.Vector3[] corners = aabb.GetCorners();
 
 			// Create bounding box around just the first corner
-			Vector3 transformedCorner = Vector3.Transform(corners[0], transform.WorldMatrix);
-			BoundingBox transformedAABB = new BoundingBox(transformedCorner, transformedCorner);
+			Vector3 transformedCorner = Vector3.Transform(corners[0].ToVector3_SIMD(), transform.WorldMatrix);
+			BoundingBox transformedAABB = new BoundingBox(transformedCorner.ToVector3_XNA(), transformedCorner.ToVector3_XNA());
 
 			// Loop and encompass all transformed corners
 			for (int i = 1; i < corners.Length; i++)
 			{
-				transformedCorner = Vector3.Transform(corners[i], transform.WorldMatrix);
-				transformedAABB.Encompass(transformedCorner);
+				transformedCorner = Vector3.Transform(corners[i].ToVector3_SIMD(), transform.WorldMatrix);
+				transformedAABB.Encompass(transformedCorner.ToVector3_XNA());
 			}
 
 			return transformedAABB;
 		}
 
-		public static void Encompass(this ref BoundingBox aabb, Vector3 point)
+		public static void Encompass(this ref BoundingBox aabb, Vector3XNA point)
 		{
 			// Test min
 			if (point.X < aabb.Min.X) aabb.Min.X = point.X;
@@ -48,32 +102,32 @@ namespace CSharpPathTracer
 
 		public static BoundingBox LeftHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(aabb.Min, new Vector3(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Max.Y, aabb.Max.Z));
+			return new BoundingBox(aabb.Min, new Vector3XNA(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Max.Y, aabb.Max.Z));
 		}
 
 		public static BoundingBox RightHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(new Vector3(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Min.Y, aabb.Min.Z), aabb.Max);
+			return new BoundingBox(new Vector3XNA(MathHelper.Lerp(aabb.Min.X, aabb.Max.X, 0.5f), aabb.Min.Y, aabb.Min.Z), aabb.Max);
 		}
 
 		public static BoundingBox BottomHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(aabb.Min, new Vector3(aabb.Max.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Max.Z));
+			return new BoundingBox(aabb.Min, new Vector3XNA(aabb.Max.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Max.Z));
 		}
 
 		public static BoundingBox TopHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(new Vector3(aabb.Min.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Min.Z), aabb.Max);
+			return new BoundingBox(new Vector3XNA(aabb.Min.X, MathHelper.Lerp(aabb.Min.Y, aabb.Max.Y, 0.5f), aabb.Min.Z), aabb.Max);
 		}
 
 		public static BoundingBox FrontHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(aabb.Min, new Vector3(aabb.Max.X, aabb.Max.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)));
+			return new BoundingBox(aabb.Min, new Vector3XNA(aabb.Max.X, aabb.Max.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)));
 		}
 
 		public static BoundingBox BackHalf(this BoundingBox aabb)
 		{
-			return new BoundingBox(new Vector3(aabb.Min.X, aabb.Min.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)), aabb.Max);
+			return new BoundingBox(new Vector3XNA(aabb.Min.X, aabb.Min.Y, MathHelper.Lerp(aabb.Min.Z, aabb.Max.Z, 0.5f)), aabb.Max);
 		}
 
 		public static float Width(this BoundingBox aabb) { return aabb.Max.X - aabb.Min.X; }
@@ -89,41 +143,7 @@ namespace CSharpPathTracer
 		}
 	}
 
-	public static class VectorExtensionMethods
-	{
-		public static Vector3 Abs(this Vector3 v)
-		{
-			return new Vector3(
-				MathF.Abs(v.X),
-				MathF.Abs(v.Y),
-				MathF.Abs(v.Z));
-		}
-
-		public static Vector3 Normalized(this Vector3 v)
-		{
-			v.Normalize();
-			return v;
-		}
-
-		public static System.Drawing.Color ToSystemColor(this Vector3 color)
-		{
-			return System.Drawing.Color.FromArgb(
-				(int)(Math.Clamp(color.X, 0, 1) * 255),
-				(int)(Math.Clamp(color.Y, 0, 1) * 255),
-				(int)(Math.Clamp(color.Z, 0, 1) * 255));
-		}
-
-		public static Vector3 ToVector3(this System.Drawing.Color color)
-		{
-			return new Vector3((float)color.R / 255, (float)color.G / 255, (float)color.B / 255);
-		}
-
-		public static Vector3 ToVector3(this Vector4 vec4)
-		{
-			return new Vector3(vec4.X, vec4.Y, vec4.Z);
-		}
-	}
-
+	
 	public static class RandomExtensionMethods
 	{
 
@@ -148,8 +168,7 @@ namespace CSharpPathTracer
 				(float)rng.NextDouble() * 2 - 1,
 				(float)rng.NextDouble() * 2 - 1,
 				(float)rng.NextDouble() * 2 - 1);
-			randomVec.Normalize();
-			return randomVec;
+			return Vector3.Normalize(randomVec);
 		}
 
 		public static Vector3 NextColor(this Random rng)

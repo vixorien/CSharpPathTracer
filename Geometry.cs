@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System.Numerics;
+
+using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 namespace CSharpPathTracer
 {
@@ -22,8 +24,8 @@ namespace CSharpPathTracer
 		{
 			// Set up AABB such that the first added data will be valid
 			aabb = new BoundingBox(
-				new Vector3(float.PositiveInfinity),  // Min starts at max
-				new Vector3(float.NegativeInfinity)); // Max starts at min
+				new Microsoft.Xna.Framework.Vector3(float.PositiveInfinity),  // Min starts at max
+				new Microsoft.Xna.Framework.Vector3(float.NegativeInfinity)); // Max starts at min
 		}
 
 		/// <summary>

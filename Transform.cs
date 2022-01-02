@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 
-using Microsoft.Xna.Framework;
+//using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -19,8 +20,8 @@ namespace CSharpPathTracer
 		private Vector3 forward;
 		private bool vectorsDirty;
 
-		private Matrix worldMatrix;
-		private Matrix worldInverseTransposeMatrix;
+		private Matrix4x4 worldMatrix;
+		private Matrix4x4 worldInverseTransposeMatrix;
 		private bool matricesDirty;
 
 		private Transform parent;
@@ -76,12 +77,12 @@ namespace CSharpPathTracer
 		/// <summary>
 		/// Gets the transform's overall world matrix
 		/// </summary>
-		public Matrix WorldMatrix { get { UpdateMatrices(); return worldMatrix; } }
+		public Matrix4x4 WorldMatrix { get { UpdateMatrices(); return worldMatrix; } }
 
 		/// <summary>
 		/// Gets the inverse transpose of the transform's world matrix
 		/// </summary>
-		public Matrix WorldInverseTransposeMatrix { get { UpdateMatrices(); return worldInverseTransposeMatrix; } }
+		public Matrix4x4 WorldInverseTransposeMatrix { get { UpdateMatrices(); return worldInverseTransposeMatrix; } }
 
 		/// <summary>
 		/// Gets or sets this transform's parent
@@ -106,13 +107,13 @@ namespace CSharpPathTracer
 			pitchYawRoll = Vector3.Zero;
 			scale = Vector3.One;
 
-			up = Vector3.Up;
-			right = Vector3.Right;
-			forward = Vector3.Forward;
+			up = Vector3.UnitY;
+			right = Vector3.UnitX;
+			forward = Vector3.UnitZ;
 			vectorsDirty = false;
 
-			worldMatrix = Matrix.Identity;
-			worldInverseTransposeMatrix = Matrix.Identity;
+			worldMatrix = Matrix4x4.Identity;
+			worldInverseTransposeMatrix = Matrix4x4.Identity;
 			matricesDirty = false;
 
 			parent = null;
@@ -231,18 +232,22 @@ namespace CSharpPathTracer
 			matricesDirty = true;
 		}
 
-		public void SetTransformFromMatrix(Matrix world)
+		public bool SetTransformFromMatrix(Matrix4x4 world)
 		{
 			// Decompose the matrix
 			Quaternion localRot;
-			world.Decompose(out this.scale, out localRot, out this.position);
+			bool success = Matrix4x4.Decompose(world, out this.scale, out localRot, out this.position);
+			if(success)
+			{
+				// Get the euler angles from the quaternion
+				pitchYawRoll = QuaternionToEuler(localRot);
 
-			// Get the euler angles from the quaternion
-			pitchYawRoll = QuaternionToEuler(localRot);
+				// Things have changed
+				matricesDirty = true;
+				vectorsDirty = true;
+			}
 
-			// Things have changed
-			matricesDirty = true;
-			vectorsDirty = true;
+			return success;
 		}
 
 		public void AddChild(Transform child, bool makeChildRelative = true)
@@ -260,11 +265,11 @@ namespace CSharpPathTracer
 			{
 				// Invert the parent's world matrix and
 				// apply to the child's world
-				Matrix invParent = Matrix.Invert(worldMatrix);
-				Matrix relChild = child.WorldMatrix * invParent;
+				Matrix4x4 invParent = worldMatrix.Invert();
+				Matrix4x4 relChild = child.WorldMatrix * invParent;
 
 				// Set the child's overall transform
-				child.SetTransformFromMatrix(relChild);
+				child.SetTransformFromMatrix(relChild);	
 			}
 
 			// Reciprocal set
@@ -342,12 +347,12 @@ namespace CSharpPathTracer
 				return;
 
 			// Create the three transforms
-			Matrix trans = Matrix.CreateTranslation(position);
-			Matrix rot = Matrix.CreateFromYawPitchRoll(pitchYawRoll.Y, pitchYawRoll.X, pitchYawRoll.Z);
-			Matrix sc = Matrix.CreateScale(scale);
+			Matrix4x4 trans = Matrix4x4.CreateTranslation(position);
+			Matrix4x4 rot = Matrix4x4.CreateFromYawPitchRoll(pitchYawRoll.Y, pitchYawRoll.X, pitchYawRoll.Z);
+			Matrix4x4 sc = Matrix4x4.CreateScale(scale);
 
 			// Combine for local world
-			Matrix wm = sc * rot * trans;
+			Matrix4x4 wm = sc * rot * trans;
 
 			// Is there a parent?
 			if (parent != null)
@@ -357,7 +362,7 @@ namespace CSharpPathTracer
 
 			// Store the result and create inverse transpose
 			worldMatrix = wm;
-			worldInverseTransposeMatrix = Matrix.Invert(Matrix.Transpose(wm));
+			worldInverseTransposeMatrix = Matrix4x4.Transpose(wm).Invert();
 
 			// Up to date!
 			matricesDirty = false;
@@ -369,10 +374,10 @@ namespace CSharpPathTracer
 				return;
 
 			// Update all three vectors
-			Matrix rotMat = Matrix.CreateFromYawPitchRoll(pitchYawRoll.Y, pitchYawRoll.X, pitchYawRoll.Z);
-			up = rotMat.Up;
-			right = rotMat.Right;
-			forward = rotMat.Forward;
+			Matrix4x4 rotMat = Matrix4x4.CreateFromYawPitchRoll(pitchYawRoll.Y, pitchYawRoll.X, pitchYawRoll.Z);
+			up = rotMat.Up();
+			right = rotMat.Right();
+			forward = rotMat.Forward();
 
 			// Vectors are now up to date
 			vectorsDirty = false;
@@ -395,7 +400,7 @@ namespace CSharpPathTracer
 			// the same angles that were used to create the quaternion
 
 			// Step 1: Quaternion to rotation matrix
-			Matrix rotMat = Matrix.CreateFromQuaternion(quat);
+			Matrix4x4 rotMat = Matrix4x4.CreateFromQuaternion(quat);
 
 			// Step 2: Extract each piece
 			// NOTE: May need to transpose these for MonoGame!

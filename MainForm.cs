@@ -7,7 +7,8 @@ using System.Drawing.Imaging;
 using System.Windows.Forms;
 using System.Windows.Input;
 using System.Runtime.InteropServices;
-using Microsoft.Xna.Framework;
+//using Microsoft.Xna.Framework;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -284,14 +285,13 @@ namespace CSharpPathTracer
 
 
 		private bool displayHasMouse = false;
-		private int prevMouseX;
-		private int prevMouseY;
+		private Point prevMouse;
 		private void raytracingDisplay_MouseDown(object sender, MouseEventArgs e)
 		{
+			
 			raytracingDisplay.Focus();
 			displayHasMouse = true;
-			prevMouseX = e.X;
-			prevMouseY = e.Y;
+			prevMouse = e.Location;
 			raytracingMode = RaytracingMode.Realtime;
 
 			// Cancel any existing rendering
@@ -313,13 +313,12 @@ namespace CSharpPathTracer
 			{
 				// Rotate based on mouse movement
 				camera.Transform.Rotate(
-					(prevMouseY - e.Y) * CameraRotationSpeed,
-					(prevMouseX - e.X) * CameraRotationSpeed,
+					(prevMouse.Y - e.Y) * -CameraRotationSpeed,
+					(prevMouse.X - e.X) * CameraRotationSpeed,
 					0);
 
 				// Remember previous location
-				prevMouseX = e.X;
-				prevMouseY = e.Y;
+				prevMouse = e.Location;
 			}
 		}
 
