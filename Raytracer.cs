@@ -18,9 +18,8 @@ namespace CSharpPathTracer
 		public int MaxRecursionDepth { get; set; }
 		public int Width { get; set; }
 		public int Height { get; set; }
-		public bool Progressive { get; set; }
 
-		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth, bool progressive)
+		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
 		{
 			Scene = scene;
 			Width = width;
@@ -29,7 +28,6 @@ namespace CSharpPathTracer
 			SamplesPerPixel = samplesPerPixel;
 			ResolutionReduction = resolutionReduction;
 			MaxRecursionDepth = maxRecursionDepth;
-			Progressive = progressive;
 		}
 	}
 
@@ -116,16 +114,19 @@ namespace CSharpPathTracer
 				}
 			}
 
+			// Figure out the resolution, and adjust by half so we
+			// calculate the "center" of the large pixel
 			int res = rtParams.ResolutionReduction;
+			int half = res / 2;
 
 			// Loop through scanlines
-			for (int y = 0; y < height; y += res)
+			for (int y = half; y < height; y += res)
 			{
 				// Loop through pixels on a scanline (parallel so it's async)
 				Parallel.For(0, (int)Math.Ceiling((double)width / res), xIteration =>
 				{
-					// The actual coordinate to use
-					int x = xIteration * res;
+					// The actual coordinate to use (adjusted by half due to resolution reduction)
+					int x = xIteration * res + half;
 
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
@@ -144,7 +145,7 @@ namespace CSharpPathTracer
 
 					// Prepare to set the color in the array of bytes
 					Vector3 colorAsBytes = ColorAsBytes(ref totalColor, true);
-					for (int blockX = x; blockX < x + res && blockX < width; blockX++)
+					for (int blockX = x - half; blockX < x + res - half && blockX < width; blockX++)
 						SetByteColor(pixels, blockX, y, ref colorAsBytes);
 				});
 
@@ -156,7 +157,7 @@ namespace CSharpPathTracer
 				}
 
 				// Report each scanline that was completed
-				RaytracingProgress progress = new RaytracingProgress(y, res, pixels[y], (double)y / height * 100, stats);
+				RaytracingProgress progress = new RaytracingProgress(y - half, res, pixels[y], (double)y / height * 100, stats);
 				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
 

@@ -232,6 +232,7 @@ namespace CSharpPathTracer
 			this.comboScene.Name = "comboScene";
 			this.comboScene.Size = new System.Drawing.Size(182, 23);
 			this.comboScene.TabIndex = 17;
+			this.comboScene.SelectedIndexChanged += new System.EventHandler(this.comboScene_SelectedIndexChanged);
 			// 
 			// labelResReduction
 			// 
@@ -244,15 +245,12 @@ namespace CSharpPathTracer
 			// 
 			// sliderResReduction
 			// 
-			this.sliderResReduction.LargeChange = 2;
+			this.sliderResReduction.LargeChange = 1;
 			this.sliderResReduction.Location = new System.Drawing.Point(12, 213);
-			this.sliderResReduction.Maximum = 16;
-			this.sliderResReduction.Minimum = 1;
+			this.sliderResReduction.Maximum = 4;
 			this.sliderResReduction.Name = "sliderResReduction";
 			this.sliderResReduction.Size = new System.Drawing.Size(189, 45);
 			this.sliderResReduction.TabIndex = 18;
-			this.sliderResReduction.TickFrequency = 2;
-			this.sliderResReduction.Value = 1;
 			this.sliderResReduction.Scroll += new System.EventHandler(this.sliderResReduction_Scroll);
 			// 
 			// timerFrameLoop

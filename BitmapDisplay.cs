@@ -26,7 +26,7 @@ namespace CSharpPathTracer
 			if (Bitmap != null)
 			{
 				// Some details for performance found here: https://stackoverflow.com/questions/11020710/is-graphics-drawimage-too-slow-for-bigger-images
-				pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.Bilinear;
+				pe.Graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.NearestNeighbor;
 				pe.Graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
 				pe.Graphics.DrawImage(Bitmap, this.ClientRectangle);
 			}

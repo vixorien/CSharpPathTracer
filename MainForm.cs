@@ -15,7 +15,6 @@ namespace CSharpPathTracer
 	{
 		None,
 		Realtime,
-		Progressive,
 		Once
 	}
 
@@ -45,6 +44,10 @@ namespace CSharpPathTracer
 		private RaytracingMode raytracingMode;
 		private bool raytracingInProgress;
 
+		public int MaxRecursion { get { return sliderMaxRecursion.Value; } }
+		public int SamplesPerPixel { get { return sliderSamplesPerPixel.Value; } }
+		public int ResolutionReduction { get { return (int)Math.Pow(2, sliderResReduction.Value); } }
+
 		public MainForm()
 		{
 			InitializeComponent();
@@ -52,16 +55,6 @@ namespace CSharpPathTracer
 
 		private void MainForm_Load(object sender, EventArgs e)
 		{
-			// Set up scene(s)
-			scenes = Scene.GenerateScenes();
-
-			// Populate combo box with scenes
-			foreach (Scene s in scenes)
-			{
-				comboScene.Items.Add(s.Name);
-			}
-			comboScene.SelectedIndex = 0;
-
 			// Camera for scene
 			camera = new Camera(
 				new Vector3(0, 8, 20),
@@ -79,21 +72,26 @@ namespace CSharpPathTracer
 			stopwatch = new Stopwatch();
 
 			// Update labels and such
-			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
-			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
-			labelResReduction.Text = "Resolution Reduction: " + sliderResReduction.Value;
+			labelSamplesPerPixel.Text = "Samples Per Pixel: " + SamplesPerPixel;
+			labelMaxRecursion.Text = "Max Recursion Depth: " + MaxRecursion;
+			labelResReduction.Text = "Resolution Reduction: " + ResolutionReduction;
 			textWidth.Text = raytracingDisplay.Width.ToString();
 			textHeight.Text = raytracingDisplay.Height.ToString();
 
+			// Set up scene(s)
+			scenes = Scene.GenerateScenes();
+
+			// Populate combo box with scenes
+			foreach (Scene s in scenes)
+			{
+				comboScene.Items.Add(s.Name);
+			}
+
+			// Select the first scene (which will cause a raytrace!)
+			comboScene.SelectedIndex = 0;
+
 			// Start the frame loop
 			timerFrameLoop.Start();
-
-			// Perform a single raytrace to fill the buffer
-			BeginRaytrace(
-				RaytracingMode.Once,
-				RealtimeSamplesPerPixel,
-				RealtimeResolutionReduction,
-				RealtimeMaxRecursion);
 		}
 
 
@@ -110,24 +108,23 @@ namespace CSharpPathTracer
 			// Update the UI
 			labelStatus.Text = "Status: Raytracing...";
 			buttonStartRaytrace.Text = "Cancel Raytrace";
-			progressRT.Minimum = 0;
-			progressRT.Maximum = raytracingDisplay.Height; // This is "locked in" when we start
-			progressRT.Value = 0;
+			
 
 			// Start the full raytrace with the user's values
 			BeginRaytrace(
-				RaytracingMode.Progressive,
-				sliderSamplesPerPixel.Value,
-				sliderResReduction.Value,
-				sliderMaxRecursion.Value);
-
-			// Begin timing
-			// TODO: Move this into BeginRaytrace()?
-			stopwatch.Restart();
+				RaytracingMode.Once,
+				SamplesPerPixel,
+				ResolutionReduction,
+				MaxRecursion);
 		}
 
 		private void BeginRaytrace(RaytracingMode mode, int samplesPerPixel, int resolutionReduction, int maxRecursion)
 		{
+			// Get the progress bar ready
+			progressRT.Minimum = 0;
+			progressRT.Maximum = raytracingDisplay.Height; // This is "locked in" when we start
+			progressRT.Value = 0;
+
 			// Set up the worker for threading
 			worker?.Dispose();
 			worker = new BackgroundWorker();
@@ -162,9 +159,11 @@ namespace CSharpPathTracer
 				renderTarget.Height,
 				samplesPerPixel,
 				resolutionReduction,
-				maxRecursion,
-				mode == RaytracingMode.Progressive);
+				maxRecursion);
 			worker.RunWorkerAsync(rtParams);
+
+			// Restart the stopwatch to track raytracing time
+			stopwatch.Restart();
 		}
 
 
@@ -222,38 +221,44 @@ namespace CSharpPathTracer
 		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
 		{
 			// Note: Can check for a cancel here!
-			if (!e.Cancelled)
+			if (e.Cancelled)
+			{
+				labelStatus.Text = "Status: Canceled!";
+			}
+			else // Successful raytrace
 			{
 				labelStatus.Text = "Status: Complete!";
 			}
 
-			progressRT.ProgressBar.StopMarquee();
-			buttonStartRaytrace.Text = "Start Full Raytrace";
-			raytracingInProgress = false;
-			stopwatch.Stop();
-
 			// Check the current mode
-			if (raytracingMode != RaytracingMode.Realtime)
+			if (raytracingMode == RaytracingMode.Once)
 			{
-				// Just once, so stop
 				raytracingMode = RaytracingMode.None;
 			}
+
+			// Stop the progress bar and stopwatch
+			progressRT.ProgressBar.StopMarquee();
+			stopwatch.Stop();
+			raytracingInProgress = false;
+
+			// Update the button
+			buttonStartRaytrace.Text = "Start Full Raytrace";
 		}
 
 
 		private void sliderSamplesPerPixel_Scroll(object sender, EventArgs e)
 		{
-			labelSamplesPerPixel.Text = "Samples Per Pixel: " + sliderSamplesPerPixel.Value;
+			labelSamplesPerPixel.Text = "Samples Per Pixel: " + SamplesPerPixel;
 		}
 
 		private void sliderMaxRecursion_Scroll(object sender, EventArgs e)
 		{
-			labelMaxRecursion.Text = "Max Recursion Depth: " + sliderMaxRecursion.Value;
+			labelMaxRecursion.Text = "Max Recursion Depth: " + MaxRecursion;
 		}
 
 		private void sliderResReduction_Scroll(object sender, EventArgs e)
 		{
-			labelResReduction.Text = "Resolution Reduction: " + sliderResReduction.Value;
+			labelResReduction.Text = "Resolution Reduction: " + ResolutionReduction;
 		}
 
 		private void MainForm_Resize(object sender, EventArgs e)
@@ -261,6 +266,18 @@ namespace CSharpPathTracer
 			textWidth.Text = raytracingDisplay.Width.ToString();
 			textHeight.Text = raytracingDisplay.Height.ToString();
 			raytracingDisplay.Invalidate();
+		}
+
+
+
+		private void comboScene_SelectedIndexChanged(object sender, EventArgs e)
+		{
+			// Perform a single low res raytrace now that the scene has changed
+			BeginRaytrace(
+				RaytracingMode.Once,
+				RealtimeSamplesPerPixel,
+				RealtimeResolutionReduction,
+				RealtimeMaxRecursion);
 		}
 
 
@@ -321,17 +338,14 @@ namespace CSharpPathTracer
 
 			// If we're in realtime mode and the worker is not currently busy (or doesn't exist yet),
 			// then we can go ahead and begin a new low-res raytracing frame
-			if (worker == null || (worker != null && !worker.IsBusy))
+			if (raytracingMode == RaytracingMode.Realtime &&
+				(worker == null || (worker != null && !worker.IsBusy)))
 			{
-				// Check the raytracing mode
-				if (raytracingMode == RaytracingMode.Realtime)
-				{
-					BeginRaytrace(
-						RaytracingMode.Realtime,
-						RealtimeSamplesPerPixel,
-						RealtimeResolutionReduction,
-						RealtimeMaxRecursion);
-				}
+				BeginRaytrace(
+					RaytracingMode.Realtime,
+					RealtimeSamplesPerPixel,
+					RealtimeResolutionReduction,
+					RealtimeMaxRecursion);	
 			}
 
 		}
@@ -362,5 +376,7 @@ namespace CSharpPathTracer
 
 			e.Handled = true;
 		}
+
+		
 	}
 }
