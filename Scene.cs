@@ -132,6 +132,7 @@ namespace CSharpPathTracer
 			// === Materials ===
 			Material crate = new DiffuseMaterial(Vector3.One, crateTexture);
 			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), tilesTexture);
+			Material tilesRepeat = new DiffuseMaterial(Vector3.One, tilesTexture, null, 1.0f, new Vector2(10, 10));
 			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3(), null, null, 0.5f);
 			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
 			Material blueMatte = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), tilesTexture);
@@ -147,12 +148,17 @@ namespace CSharpPathTracer
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
 			Mesh helixMesh = new Mesh("Content/Models/helix.obj");
 			Mesh sphereMesh = new Mesh("Content/Models/sphere.obj");
+			Mesh quadMesh = new Mesh("Content/Models/quad.obj");
+
 
 			// === DEFAULT SCENE with and without skybox ===
 			{
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
+				//Entity ground = new Entity(Sphere.Default, grayMatte);
+				//ground.Transform.SetPosition(0, -1000, 0);
+				//ground.Transform.SetScale(1000);
+
+				Entity ground = new Entity(quadMesh, grayMatte);
+				ground.Transform.SetScale(100.0f);
 
 				Entity left = new Entity(Sphere.Default, crate);
 				left.Transform.SetPosition(-5, 2, 0);
@@ -203,9 +209,12 @@ namespace CSharpPathTracer
 				sphere.Transform.MoveAbsolute(0, 1, 0);
 				sphere.Transform.ScaleRelative(2.0f);
 
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
+				//Entity ground = new Entity(Sphere.Default, grayMatte);
+				//ground.Transform.SetPosition(0, -1000, 0);
+				//ground.Transform.SetScale(1000);
+
+				Entity ground = new Entity(quadMesh, grayMatte);
+				ground.Transform.SetScale(100.0f);
 
 				// Create scene
 				Scene scene = new Scene("Mesh Test", environment, sceneBounds);
@@ -220,9 +229,11 @@ namespace CSharpPathTracer
 			// === RANDOM SCENE ===
 			{
 				// Entities
-				Entity ground = new Entity(Sphere.Default, grayMatte);
-				ground.Transform.SetPosition(0, -1000, 0);
-				ground.Transform.SetScale(1000);
+				//Entity ground = new Entity(Sphere.Default, grayMatte);
+				//ground.Transform.SetPosition(0, -1000, 0);
+				//ground.Transform.SetScale(1000);
+				Entity ground = new Entity(quadMesh, grayMatte);
+				ground.Transform.SetScale(100.0f);
 
 				// Create scene
 				Scene scene = new Scene("Random Spheres", environment, sceneBounds);

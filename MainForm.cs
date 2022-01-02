@@ -44,7 +44,6 @@ namespace CSharpPathTracer
 
 		private RaytracingMode raytracingMode;
 		private bool raytracingInProgress;
-		private int progressiveStep;
 
 		public MainForm()
 		{
@@ -76,7 +75,7 @@ namespace CSharpPathTracer
 			raytracer = new Raytracer();
 			raytracingInProgress = false;
 			raytracingMode = RaytracingMode.None;
-			progressiveStep = 0;
+
 			stopwatch = new Stopwatch();
 
 			// Update labels and such
@@ -117,7 +116,7 @@ namespace CSharpPathTracer
 
 			// Start the full raytrace with the user's values
 			BeginRaytrace(
-				RaytracingMode.Once,
+				RaytracingMode.Progressive,
 				sliderSamplesPerPixel.Value,
 				sliderResReduction.Value,
 				sliderMaxRecursion.Value);
@@ -164,7 +163,7 @@ namespace CSharpPathTracer
 				samplesPerPixel,
 				resolutionReduction,
 				maxRecursion,
-				mode == RaytracingMode.Progressive ? progressiveStep : 0);
+				mode == RaytracingMode.Progressive);
 			worker.RunWorkerAsync(rtParams);
 		}
 
@@ -195,7 +194,7 @@ namespace CSharpPathTracer
 			}
 
 			// Display the "progress" line as necessary (after any duplication)
-			if (raytracingMode == RaytracingMode.Once && y < renderTarget.Height - 1)
+			if (raytracingMode != RaytracingMode.Realtime && y < renderTarget.Height - 1)
 			{
 				Marshal.Copy(
 					progressColorScanline,
@@ -234,17 +233,10 @@ namespace CSharpPathTracer
 			stopwatch.Stop();
 
 			// Check the current mode
-			if (raytracingMode == RaytracingMode.Once)
+			if (raytracingMode != RaytracingMode.Realtime)
 			{
 				// Just once, so stop
 				raytracingMode = RaytracingMode.None;
-			}
-			else if (raytracingMode == RaytracingMode.Progressive && 
-				progressiveStep >= Raytracer.ProgressiveStepCount)
-			{
-				// We've reached the end of progressive
-				raytracingMode = RaytracingMode.None;
-				progressiveStep = 0;
 			}
 		}
 
@@ -340,19 +332,6 @@ namespace CSharpPathTracer
 						RealtimeResolutionReduction,
 						RealtimeMaxRecursion);
 				}
-				else if (raytracingMode == RaytracingMode.Progressive)
-				{
-					BeginRaytrace(
-						RaytracingMode.Progressive,
-						sliderSamplesPerPixel.Value,
-						Raytracer.ProgressiveStepCount, // Each progressive step is 1/StepCount of the way done
-						sliderMaxRecursion.Value);
-
-					// Adjust the progressive step
-					progressiveStep++;
-				}
-
-
 			}
 
 		}

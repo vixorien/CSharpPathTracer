@@ -19,13 +19,13 @@ namespace CSharpPathTracer
 
 		public Vector2 UVScale { get; set; }
 
-		public Material(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f)
+		public Material(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
 		{
 			Color = color;
 			Texture = texture;
 			RoughnessMap = roughnessMap;
 			Roughness = roughness;
-			UVScale = Vector2.One;
+			UVScale = uvScale ?? Vector2.One;
 		}
 
 		public Vector3 GetColorAtUV(Vector2 uv)
@@ -70,8 +70,8 @@ namespace CSharpPathTracer
 	/// </summary>
 	class DiffuseMaterial : Material
 	{
-		public DiffuseMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 1.0f)
-			: base(color, texture, roughnessMap, roughness)
+		public DiffuseMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 1.0f, Vector2? uvScale = null)
+			: base(color, texture, roughnessMap, roughness, uvScale)
 		{
 		}
 
@@ -96,8 +96,8 @@ namespace CSharpPathTracer
 	/// </summary>
 	class MetalMaterial : Material
 	{
-		public MetalMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f)
-			: base(color, texture, roughnessMap, roughness)
+		public MetalMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
+			: base(color, texture, roughnessMap, roughness, uvScale)
 		{
 		}
 
@@ -124,8 +124,8 @@ namespace CSharpPathTracer
 	{
 		public float IndexOfRefraction { get; set; }
 
-		public TransparentMaterial(Vector3 color, float indexOfRefraction, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f)
-			: base(color, texture, roughnessMap, roughness)
+		public TransparentMaterial(Vector3 color, float indexOfRefraction, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
+			: base(color, texture, roughnessMap, roughness, uvScale)
 		{
 			IndexOfRefraction = indexOfRefraction;
 		}

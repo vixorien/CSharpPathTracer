@@ -15,12 +15,12 @@ namespace CSharpPathTracer
 		public Camera Camera { get; set; }
 		public int SamplesPerPixel { get; set; }
 		public int ResolutionReduction { get; set; }
-		public int ProgressiveStep { get; set; }
 		public int MaxRecursionDepth { get; set; }
 		public int Width { get; set; }
 		public int Height { get; set; }
+		public bool Progressive { get; set; }
 
-		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth, int progressiveStep)
+		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth, bool progressive)
 		{
 			Scene = scene;
 			Width = width;
@@ -29,7 +29,7 @@ namespace CSharpPathTracer
 			SamplesPerPixel = samplesPerPixel;
 			ResolutionReduction = resolutionReduction;
 			MaxRecursionDepth = maxRecursionDepth;
-			ProgressiveStep = progressiveStep;
+			Progressive = progressive;
 		}
 	}
 
@@ -80,9 +80,6 @@ namespace CSharpPathTracer
 		private byte[][] pixels;
 
 		public const int ChannelsPerPixel = 3;
-		public const int ProgressiveStepCount = 8;
-		public static readonly int[] ProgressiveOffsets = { 0, 4, 2, 6, 1, 5, 3, 7 };
-		public static readonly int[] ProgressiveDupes   = { 8, 4, 2, 2, 1, 1, 1, 1 };
 
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
@@ -121,14 +118,15 @@ namespace CSharpPathTracer
 
 			int res = rtParams.ResolutionReduction;
 
-			// Loop through pixels
+			// Loop through scanlines
 			for (int y = 0; y < height; y += res)
 			{
+				// Loop through pixels on a scanline (parallel so it's async)
 				Parallel.For(0, (int)Math.Ceiling((double)width / res), xIteration =>
 				{
 					// The actual coordinate to use
 					int x = xIteration * res;
-					
+
 					// Multiple samples per pixel
 					Vector3 totalColor = Vector3.Zero;
 					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
@@ -161,7 +159,11 @@ namespace CSharpPathTracer
 				RaytracingProgress progress = new RaytracingProgress(y, res, pixels[y], (double)y / height * 100, stats);
 				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
+
+
+
 		}
+
 
 		private Vector3 TraceRay(Ray ray, Scene scene, int depth)
 		{
@@ -184,7 +186,7 @@ namespace CSharpPathTracer
 
 				// How is this ray bouncing?
 				Ray newRay = hitEntity.Material.GetNextBounce(ray, hit);
-				
+
 				// Take into account the hit color and trace the next ray
 				return hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
 			}
