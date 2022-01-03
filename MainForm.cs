@@ -313,7 +313,7 @@ namespace CSharpPathTracer
 			{
 				// Rotate based on mouse movement
 				camera.Transform.Rotate(
-					(prevMouse.Y - e.Y) * -CameraRotationSpeed,
+					(prevMouse.Y - e.Y) * CameraRotationSpeed,
 					(prevMouse.X - e.X) * CameraRotationSpeed,
 					0);
 

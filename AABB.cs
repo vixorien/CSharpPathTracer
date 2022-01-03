@@ -1,4 +1,4 @@
-﻿using System;
+﻿
 using System.Numerics;
 
 using MathHelper = Microsoft.Xna.Framework.MathHelper;
@@ -158,32 +158,163 @@ namespace CSharpPathTracer
 			return b1;
 		}
 
-		// Reference: https://tavianator.com/2015/ray_box_nan.html
-		public bool Intersects(Ray ray, out float tMin)
+
+		public bool Intersects(Ray ray, out float distance)
 		{
-			// Handle X
-			float t1 = (min.X - ray.Origin.X) * ray.InvDirection.X;
-			float t2 = (max.X - ray.Origin.X) * ray.InvDirection.X;
-			tMin = MathF.Min(t1, t2);
-			float tMax = MathF.Max(t1, t2);
+			// Reference: https://tavianator.com/2015/ray_box_nan.html
+			// Note: This method is SLOOOOW in C# due to Min()/Max()
+			//       having pretty horrible performance here (apparently?)
+			{
+				//// Handle X
+				//float t1 = (min.X - ray.Origin.X) * ray.InvDirection.X;
+				//float t2 = (max.X - ray.Origin.X) * ray.InvDirection.X;
+				//tMin = MathF.Min(t1, t2);
+				//float tMax = MathF.Max(t1, t2);
 
-			// Handle Y
-			t1 = (min.Y - ray.Origin.Y) * ray.InvDirection.Y;
-			t2 = (max.Y - ray.Origin.Y) * ray.InvDirection.Y;
-			tMin = MathF.Max(tMin, MathF.Min(MathF.Min(t1, t2), tMax));
-			tMax = MathF.Min(tMax, MathF.Max(MathF.Max(t1, t2), tMin));
+				//// Handle Y
+				//t1 = (min.Y - ray.Origin.Y) * ray.InvDirection.Y;
+				//t2 = (max.Y - ray.Origin.Y) * ray.InvDirection.Y;
+				//tMin = MathF.Max(tMin, MathF.Min(MathF.Min(t1, t2), tMax));
+				//tMax = MathF.Min(tMax, MathF.Max(MathF.Max(t1, t2), tMin));
 
-			// Handle Z
-			t1 = (min.Z - ray.Origin.Z) * ray.InvDirection.Z;
-			t2 = (max.Z - ray.Origin.Z) * ray.InvDirection.Z;
-			tMin = MathF.Max(tMin, MathF.Min(MathF.Min(t1, t2), tMax));
-			tMax = MathF.Min(tMax, MathF.Max(MathF.Max(t1, t2), tMin));
+				//// Handle Z
+				//t1 = (min.Z - ray.Origin.Z) * ray.InvDirection.Z;
+				//t2 = (max.Z - ray.Origin.Z) * ray.InvDirection.Z;
+				//tMin = MathF.Max(tMin, MathF.Min(MathF.Min(t1, t2), tMax));
+				//tMax = MathF.Min(tMax, MathF.Max(MathF.Max(t1, t2), tMin));
 
-			// Determine if we actually hit
-			// Note: Using >= here to handle infinitely thin boxes
-			//       See comment by Aleksei at above link!
-			return tMax >= MathF.Max(tMin, 0.0f);
+				//// Determine if we actually hit
+				//// Note: Using >= here to handle infinitely thin boxes
+				////       See comment by Aleksei at above link!
+				//return tMax >= MathF.Max(tMin, 0.0f);
+			}
+
+
+			// Directly from MonoGame, with a few tweaks to remove nullables
+			// Decent, but maybe faster if we vectorize and skip some branches?
+			{
+				//	const float Epsilon = 1e-6f;
+
+				//	distance = -1;
+				//	float tMin = 0;
+				//	float tMax = 0;
+
+				//	if (Math.Abs(ray.Direction.X) < Epsilon)
+				//	{
+				//		if (ray.Origin.X < min.X || ray.Origin.X > max.X)
+				//			return false;
+				//	}
+				//	else
+				//	{
+				//		tMin = (min.X - ray.Origin.X) / ray.Direction.X;
+				//		tMax = (max.X - ray.Origin.X) / ray.Direction.X;
+
+				//		if (tMin > tMax)
+				//		{
+				//			var temp = tMin;
+				//			tMin = tMax;
+				//			tMax = temp;
+				//		}
+				//	}
+
+				//	if (Math.Abs(ray.Direction.Y) < Epsilon)
+				//	{
+				//		if (ray.Origin.Y < min.Y || ray.Origin.Y > max.Y)
+				//			return false;
+				//	}
+				//	else
+				//	{
+				//		var tMinY = (min.Y - ray.Origin.Y) / ray.Direction.Y;
+				//		var tMaxY = (max.Y - ray.Origin.Y) / ray.Direction.Y;
+
+				//		if (tMinY > tMaxY)
+				//		{
+				//			var temp = tMinY;
+				//			tMinY = tMaxY;
+				//			tMaxY = temp;
+				//		}
+
+				//		if (tMin > tMaxY || tMinY > tMax)
+				//			return false;
+
+				//		if (tMinY > tMin) tMin = tMinY;
+				//		if (tMaxY < tMax) tMax = tMaxY;
+				//	}
+
+				//	if (Math.Abs(ray.Direction.Z) < Epsilon)
+				//	{
+				//		if (ray.Origin.Z < min.Z || ray.Origin.Z > max.Z)
+				//			return false;
+				//	}
+				//	else
+				//	{
+				//		var tMinZ = (min.Z - ray.Origin.Z) / ray.Direction.Z;
+				//		var tMaxZ = (max.Z - ray.Origin.Z) / ray.Direction.Z;
+
+				//		if (tMinZ > tMaxZ)
+				//		{
+				//			var temp = tMinZ;
+				//			tMinZ = tMaxZ;
+				//			tMaxZ = temp;
+				//		}
+
+				//		if (tMin > tMaxZ || tMinZ > tMax)
+				//			return false;
+
+				//		if (tMinZ > tMin) tMin = tMinZ;
+				//		if (tMaxZ < tMax) tMax = tMaxZ;
+				//	}
+
+				//	// having a positive tMax and a negative tMin means the ray is inside the box
+				//	// we expect the intesection distance to be 0 in that case
+				//	if (tMin < 0 && tMax > 0)
+				//	{
+				//		distance = 0;
+				//		return true;
+				//	}
+
+				//	// a negative tMin means that the intersection point is behind the ray's origin
+				//	// we discard these as not hitting the AABB
+				//	if (tMin < 0) return false;
+
+				//	distance = tMin;
+				//	return true;
+			}
+
+
+			// Reference: https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-box-intersection
+			// Let's try to vectorize this one - we have a winner!
+			{
+				distance = 0;
+
+				// Vectorize the main math
+				Vector3 tMinVec = (min - ray.Origin) * ray.InvDirection;
+				Vector3 tMaxVec = (max - ray.Origin) * ray.InvDirection;
+
+				// Check the values and swap if necessary
+				if (tMinVec.X > tMaxVec.X) { float t = tMinVec.X; tMinVec.X = tMaxVec.X; tMaxVec.X = t; }
+				if (tMinVec.Y > tMaxVec.Y) { float t = tMinVec.Y; tMinVec.Y = tMaxVec.Y; tMaxVec.Y = t; }
+				if (tMinVec.Z > tMaxVec.Z) { float t = tMinVec.Z; tMinVec.Z = tMaxVec.Z; tMaxVec.Z = t; }
+
+				// Start with X results
+				float tMin = tMinVec.X;
+				float tMax = tMaxVec.X;
+
+				// Check X against Y
+				if (tMin > tMaxVec.Y || tMinVec.Y > tMax) return false;
+				if (tMinVec.Y > tMin) tMin = tMinVec.Y;
+				if (tMaxVec.Y < tMax) tMax = tMaxVec.Y;
+
+				// Check Z against previous results
+				if (tMin > tMaxVec.Z || tMinVec.Z > tMax) return false;
+				if (tMinVec.Z > tMin) tMin = tMinVec.Z;
+				//if (tMaxVec.Z < tMax) tMax = tMaxVec.Z; // Not currently needed
+
+				distance = tMin;
+				return true;
+			}
 		}
+
 
 		public bool Intersects(Ray ray)
 		{

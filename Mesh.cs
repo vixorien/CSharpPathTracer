@@ -1,10 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Collections.Generic;
-//using Microsoft.Xna.Framework;
 using System.Numerics;
-
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 
 namespace CSharpPathTracer
@@ -147,15 +144,11 @@ namespace CSharpPathTracer
 	class Mesh : Geometry
 	{
 		// Mesh data
-		//private List<int> indices;
-		//private List<Vertex> vertices;
 		private List<Triangle> triangles;
 		private Octree<Triangle> octree;
 
 		public Mesh(string file) : base()
 		{
-			//indices = new List<int>();
-			//vertices = new List<Vertex>();
 			triangles = new List<Triangle>();
 
 			LoadMesh(file);
@@ -181,8 +174,6 @@ namespace CSharpPathTracer
 			List<Vector3> positions = new List<Vector3>();
 			List<Vector3> normals = new List<Vector3>();
 			List<Vector2> uvs = new List<Vector2>();
-
-			//int vertCounter = 0;
 
 			using (StreamReader input = new StreamReader(file))
 			{
@@ -298,15 +289,6 @@ namespace CSharpPathTracer
 						//////////////////vertices.Add(v1);
 						//////////////////vertices.Add(v3);
 						//////////////////vertices.Add(v2);
-						
-						//vertices.Add(v1);
-						//vertices.Add(v2);
-						//vertices.Add(v3);
-
-						// Add three more indices
-						//indices.Add(vertCounter); vertCounter += 1;
-						//indices.Add(vertCounter); vertCounter += 1;
-						//indices.Add(vertCounter); vertCounter += 1;
 
 						// Add the triangle
 						triangles.Add(new Triangle(v1, v2, v3));
@@ -329,14 +311,6 @@ namespace CSharpPathTracer
 							///////////////////////vertices.Add(v1);
 							///////////////////////vertices.Add(v4);
 							///////////////////////vertices.Add(v3);
-							//vertices.Add(v1);
-							//vertices.Add(v3);
-							//vertices.Add(v4);
-
-							// Add three more indices
-							//indices.Add(vertCounter); vertCounter += 1;
-							//indices.Add(vertCounter); vertCounter += 1;
-							//indices.Add(vertCounter); vertCounter += 1;
 
 							// Add the triangle
 							triangles.Add(new Triangle(v1, v3, v4));

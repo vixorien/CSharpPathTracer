@@ -22,7 +22,7 @@ namespace CSharpPathTracer
 
 			AABB = bounds;
 			ShrunkAABB = null;
-			
+
 			objects = new List<T>();
 		}
 
@@ -133,7 +133,9 @@ namespace CSharpPathTracer
 			{
 				// Track how many child octs have been pruned
 				int pruneCount = 0;
-				for(int i = 0; i < children.Length; i++)
+				int validChildCount = 0;
+				Octree<T> lastChildFound = null;
+				for (int i = 0; i < children.Length; i++)
 				{
 					// Grab this child
 					Octree<T> child = children[i];
@@ -160,13 +162,26 @@ namespace CSharpPathTracer
 						else
 							ShrunkAABB = child.ShrunkAABB.Value;
 					}
+
+					// Remember the last child
+					lastChildFound = child;
+					validChildCount++;
 				}
 
 				// Has this entire node been pruned?
 				if (pruneCount == 8)
 				{
-					// Un-divide!
+					// Just un-divide!
 					this.children = null;
+				}
+				else if (validChildCount == 1 && objects.Count == 0)
+				{
+					// We only have a single child, but that
+					// child may have more.  So lets just use
+					// that child's data instead of our own
+					this.children = lastChildFound.children;
+					this.objects = lastChildFound.objects;
+					this.ShrunkAABB = lastChildFound.ShrunkAABB.Value;
 				}
 			}
 

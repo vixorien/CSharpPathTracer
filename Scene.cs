@@ -248,14 +248,14 @@ namespace CSharpPathTracer
 					// Random scale (used for height, too)
 					float scale = rng.NextFloat(0.1f, 1.0f);
 
-					
+
 					Material m = null;
 					float randomMaterial = rng.NextFloat();
-					if (randomMaterial < 0.5f) 
+					if (randomMaterial < 0.5f)
 						m = new DiffuseMaterial(rng.NextColor());
-					else if (randomMaterial < 0.8f) 
+					else if (randomMaterial < 0.8f)
 						m = new MetalMaterial(rng.NextColor(), null, null, rng.NextFloat());
-					else 
+					else
 						m = new TransparentMaterial(Vector3.One, 1.5f);
 
 					Entity s = new Entity(Sphere.Default, m);

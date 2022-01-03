@@ -2,10 +2,6 @@
 using System.Numerics;
 using System.Windows.Forms;
 
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
-using MathHelper = Microsoft.Xna.Framework.MathHelper;
-using Vector3XNA = Microsoft.Xna.Framework.Vector3;
-
 namespace CSharpPathTracer
 {
 	public static class SIMDExtensionMethods
@@ -33,16 +29,6 @@ namespace CSharpPathTracer
 		}
 
 		public static Vector3 ToVector3(this Vector4 v)
-		{
-			return new Vector3(v.X, v.Y, v.Z);
-		}
-
-		public static Vector3XNA ToVector3_XNA(this Vector3 v)
-		{
-			return new Vector3XNA(v.X, v.Y, v.Z);
-		}
-
-		public static Vector3 ToVector3_SIMD(this Vector3XNA v)
 		{
 			return new Vector3(v.X, v.Y, v.Z);
 		}

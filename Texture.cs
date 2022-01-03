@@ -84,6 +84,8 @@ namespace CSharpPathTracer
 
 					if (gammaUncorrect)
 					{
+
+
 						pixels[h, w].X = MathF.Pow(pixels[h, w].X, 2.2f);
 						pixels[h, w].Y = MathF.Pow(pixels[h, w].Y, 2.2f);
 						pixels[h, w].Z = MathF.Pow(pixels[h, w].Z, 2.2f);
@@ -99,15 +101,16 @@ namespace CSharpPathTracer
 			switch (addressMode)
 			{
 				case AddressMode.Clamp:
-					uv.X = Math.Clamp(uv.X, 0.0f, 1.0f);
-					uv.Y = Math.Clamp(uv.Y, 0.0f, 1.0f);
+					uv = Vector2.Clamp(uv, Vector2.Zero, Vector2.One);
 					break;
 
 				case AddressMode.Wrap:
-					uv.X = uv.X - MathF.Truncate(uv.X);
+					
+					// Truncate the UV
+					uv -= new Vector2(MathF.Truncate(uv.X), MathF.Truncate(uv.Y));
+					
+					// Adjust by 1 if we're negative
 					if (uv.X < 0.0f) uv.X += 1.0f;
-
-					uv.Y = uv.Y - MathF.Truncate(uv.Y);
 					if (uv.Y < 0.0f) uv.Y += 1.0f;
 					break;
 			}
