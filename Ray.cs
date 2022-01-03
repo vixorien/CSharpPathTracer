@@ -9,8 +9,19 @@ namespace CSharpPathTracer
 	/// </summary>
 	struct Ray
 	{
+		private Vector3 direction;
+		private Vector3 invDirection; // For fast ray-box intersections
+
 		public Vector3 Origin { get; set; }
-		public Vector3 Direction { get; set; }
+		public Vector3 Direction {
+			get => direction;
+			set
+			{
+				direction = value;
+				invDirection = Vector3.One / value;
+			}
+		}
+		public Vector3 InvDirection { get => invDirection; }
 		public float TMin { get; set; }
 		public float TMax { get; set; }
 
@@ -21,7 +32,8 @@ namespace CSharpPathTracer
 		public Ray(Vector3 origin, Vector3 direction, float tmin, float tmax)
 		{
 			Origin = origin;
-			Direction = direction;
+			this.direction = direction;
+			invDirection = Vector3.One / direction;
 			TMin = tmin;
 			TMax = tmax;
 		}

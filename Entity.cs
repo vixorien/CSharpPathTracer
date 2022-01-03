@@ -1,7 +1,6 @@
 ﻿
 using System.Numerics;
 
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
 
 namespace CSharpPathTracer
 {
@@ -11,7 +10,7 @@ namespace CSharpPathTracer
 		public Geometry Geometry { get; set; }
 		public Material Material { get; set; }
 
-		public BoundingBox AABB { get { return Geometry.AABB.GetTransformed(Transform); } }
+		public AABB AABB { get { return Geometry.AABB.GetTransformed(Transform); } }
 
 		public Entity(Geometry geometry, Material material)
 		{

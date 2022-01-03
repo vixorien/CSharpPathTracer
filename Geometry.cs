@@ -10,12 +10,12 @@ namespace CSharpPathTracer
 	abstract class Geometry : IBoundable, IRayIntersectable
 	{
 		// Fields
-		protected BoundingBox aabb;
+		protected AABB aabb;
 
 		/// <summary>
 		/// Gets the local (non-transformed) AABB bounding box of this geometry
 		/// </summary>
-		public BoundingBox AABB => aabb;
+		public AABB AABB => aabb;
 
 		/// <summary>
 		/// Sets up the base-level geometry
@@ -23,9 +23,9 @@ namespace CSharpPathTracer
 		public Geometry()
 		{
 			// Set up AABB such that the first added data will be valid
-			aabb = new BoundingBox(
-				new Microsoft.Xna.Framework.Vector3(float.PositiveInfinity),  // Min starts at max
-				new Microsoft.Xna.Framework.Vector3(float.NegativeInfinity)); // Max starts at min
+			aabb = new AABB(
+				new Vector3(float.PositiveInfinity),  // Min starts at max
+				new Vector3(float.NegativeInfinity)); // Max starts at min
 		}
 
 		/// <summary>

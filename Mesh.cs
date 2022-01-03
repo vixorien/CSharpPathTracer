@@ -36,12 +36,12 @@ namespace CSharpPathTracer
 		public static bool CullBackfaces { get; set; }
 
 		// Fields
-		private BoundingBox aabb;
+		private AABB aabb;
 
 		/// <summary>
 		/// Gets the AABB bounding box of this geometry
 		/// </summary>
-		public BoundingBox AABB => aabb;
+		public AABB AABB => aabb;
 
 		public Vertex V0 { get; set; }
 		public Vertex V1 { get; set; }
@@ -53,9 +53,11 @@ namespace CSharpPathTracer
 			V1 = v1;
 			V2 = v2;
 
-			aabb = new BoundingBox(v0.Position.ToVector3_XNA(), v0.Position.ToVector3_XNA());
-			aabb.Encompass(v1.Position.ToVector3_XNA());
-			aabb.Encompass(v2.Position.ToVector3_XNA());
+			// Start with one point and encompass the others
+			// This ensures we have the correct min & max
+			aabb = new AABB(v0.Position, v0.Position);
+			aabb.Encompass(v1.Position);
+			aabb.Encompass(v2.Position);
 		}
 
 		public Vector3 CalcNormalBarycentric(Vector3 barycentrics)
@@ -222,7 +224,7 @@ namespace CSharpPathTracer
 
 						// Add to the positions list as well as the AABB
 						positions.Add(pos);
-						aabb.Encompass(pos.ToVector3_XNA());
+						aabb.Encompass(pos);
 					}
 					else if (line[0] == 'f') // Face
 					{

@@ -1,8 +1,5 @@
 ﻿using System.Collections.Generic;
-using System.Numerics;
 
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
-using ContainmentType = Microsoft.Xna.Framework.ContainmentType;
 
 namespace CSharpPathTracer
 {
@@ -16,10 +13,10 @@ namespace CSharpPathTracer
 		private Octree<T>[] children;
 
 		public bool Divided { get { return children != null; } }
-		public BoundingBox AABB { get; private set; }
-		public BoundingBox? ShrunkAABB { get; private set; }
+		public AABB AABB { get; private set; }
+		public AABB? ShrunkAABB { get; private set; }
 
-		public Octree(BoundingBox bounds, bool allowOverlaps = true)
+		public Octree(AABB bounds, bool allowOverlaps = true)
 		{
 			this.allowOverlaps = allowOverlaps;
 
@@ -32,10 +29,10 @@ namespace CSharpPathTracer
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Which AABB?
-			BoundingBox boxToCheck = ShrunkAABB.HasValue ? ShrunkAABB.Value : AABB;
+			AABB boxToCheck = ShrunkAABB.HasValue ? ShrunkAABB.Value : AABB;
 
 			// Does the ray hit this oct?
-			if (boxToCheck.Intersects(ray).HasValue)
+			if (boxToCheck.Intersects(ray))
 			{
 				// Closest hit could be from this quad or children
 				RayHit closestHit = RayHit.Infinity;
@@ -88,14 +85,14 @@ namespace CSharpPathTracer
 			{
 				// We're allowing overlaps, so ensure the object COULD fit
 				// if it were within the oct's AABB
-				if (AABB.Contains(obj.AABB) == ContainmentType.Disjoint ||
+				if (AABB.Contains(obj.AABB) == AABBContainment.NoOverlap ||
 					!AABB.CouldFit(obj.AABB))
 					return false;
 			}
 			else
 			{
 				// No overlaps, so the object must entirely be contained
-				if (AABB.Contains(obj.AABB) != ContainmentType.Contains)
+				if (AABB.Contains(obj.AABB) != AABBContainment.Contains)
 					return false;
 			}
 
@@ -159,7 +156,7 @@ namespace CSharpPathTracer
 					if (child.ShrunkAABB.HasValue)
 					{
 						if (ShrunkAABB.HasValue)
-							ShrunkAABB = BoundingBox.CreateMerged(ShrunkAABB.Value, child.ShrunkAABB.Value);
+							ShrunkAABB = AABB.Combine(ShrunkAABB.Value, child.ShrunkAABB.Value);
 						else
 							ShrunkAABB = child.ShrunkAABB.Value;
 					}
@@ -178,7 +175,7 @@ namespace CSharpPathTracer
 			{
 				// Is there a value?
 				if (ShrunkAABB.HasValue)
-					ShrunkAABB = BoundingBox.CreateMerged(ShrunkAABB.Value, obj.AABB);
+					ShrunkAABB = AABB.Combine(ShrunkAABB.Value, obj.AABB);
 				else
 					ShrunkAABB = obj.AABB;
 			}

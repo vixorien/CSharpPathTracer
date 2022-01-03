@@ -28,8 +28,8 @@ namespace CSharpPathTracer
 			Radius = radius;
 
 			// Set up AABB
-			aabb.Min = (center - new Vector3(radius)).ToVector3_XNA();
-			aabb.Max = (center + new Vector3(radius)).ToVector3_XNA();
+			aabb.Min = center - new Vector3(radius);
+			aabb.Max = center + new Vector3(radius);
 		}
 
 

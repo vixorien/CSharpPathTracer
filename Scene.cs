@@ -24,7 +24,7 @@ namespace CSharpPathTracer
 		/// <summary>
 		/// Gets the bounds of the scene
 		/// </summary>
-		public BoundingBox AABB { get; private set; }
+		public AABB AABB { get; private set; }
 
 		/// <summary>
 		/// Gets the count of entities in the scene
@@ -47,7 +47,7 @@ namespace CSharpPathTracer
 		/// <param name="name">The name of the scene</param>
 		/// <param name="env">The scene's environment</param>
 		/// <param name="bounds">The bounds of the scene for octree creation</param>
-		public Scene(string name, Environment env, BoundingBox bounds)
+		public Scene(string name, Environment env, AABB bounds)
 		{
 			Name = name;
 			Environment = env;
@@ -100,9 +100,9 @@ namespace CSharpPathTracer
 			List<Scene> scenes = new List<Scene>();
 
 			// Overall scene bounds
-			BoundingBox sceneBounds = new BoundingBox(
-				new Microsoft.Xna.Framework.Vector3(-10000),
-				new Microsoft.Xna.Framework.Vector3(10000));
+			AABB sceneBounds = new AABB(
+				new Vector3(-10000),
+				new Vector3(10000));
 
 			// === Textures ===
 			Texture crateTexture = new Texture("Content/Textures/crate.png");
