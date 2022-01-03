@@ -160,7 +160,7 @@ namespace CSharpPathTracer
 			uv = uv * mag + new Vector2(0.5f, 0.5f);
 
 			// Sample
-			return textures[faceIndex].Sample(uv, Texture.AddressMode.Clamp).ToVector3();
+			return textures[faceIndex].Sample(uv, TextureAddressMode.Clamp).ToVector3();
 		}
 	}
 }

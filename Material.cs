@@ -12,29 +12,40 @@ namespace CSharpPathTracer
 	{
 		public Vector3 Color { get; set; }
 		public Texture Texture { get; set; }
+		public TextureAddressMode AddressMode { get; set; }
+		public TextureFilter Filter { get; set; }
 
 		public float Roughness { get; set; }
 		public Texture RoughnessMap { get; set; }
 
 		public Vector2 UVScale { get; set; }
 
-		public Material(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
+		public Material(
+			Vector3 color, 
+			Texture texture = null, 
+			Texture roughnessMap = null, 
+			float roughness = 0.0f, 
+			Vector2? uvScale = null, 
+			TextureAddressMode addressMode = TextureAddressMode.Clamp,
+			TextureFilter filter = TextureFilter.Point)
 		{
 			Color = color;
 			Texture = texture;
 			RoughnessMap = roughnessMap;
 			Roughness = roughness;
 			UVScale = uvScale ?? Vector2.One;
+			AddressMode = addressMode;
+			Filter = filter;
 		}
 
 		public Vector3 GetColorAtUV(Vector2 uv)
 		{
-			return Texture == null ? Color : Texture.Sample(uv * UVScale).ToVector3() * Color;
+			return Texture == null ? Color : Texture.Sample(uv * UVScale, AddressMode, Filter).ToVector3() * Color;
 		}
 
 		public float GetRoughnessAtUV(Vector2 uv)
 		{
-			return RoughnessMap == null ? Roughness : RoughnessMap.Sample(uv * UVScale).X;
+			return RoughnessMap == null ? Roughness : RoughnessMap.Sample(uv * UVScale, AddressMode, Filter).X;
 		}
 
 		public abstract Ray GetNextBounce(Ray ray, RayHit hit);
@@ -69,8 +80,16 @@ namespace CSharpPathTracer
 	/// </summary>
 	class DiffuseMaterial : Material
 	{
-		public DiffuseMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 1.0f, Vector2? uvScale = null)
-			: base(color, texture, roughnessMap, roughness, uvScale)
+		public DiffuseMaterial(
+			Vector3 color, 
+			Texture texture = null, 
+			Texture roughnessMap = null, 
+			float roughness = 1.0f, 
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = TextureAddressMode.Clamp,
+			TextureFilter filter = TextureFilter.Point)
+			: 
+			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
 		}
 
@@ -95,8 +114,16 @@ namespace CSharpPathTracer
 	/// </summary>
 	class MetalMaterial : Material
 	{
-		public MetalMaterial(Vector3 color, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
-			: base(color, texture, roughnessMap, roughness, uvScale)
+		public MetalMaterial(
+			Vector3 color, 
+			Texture texture = null,
+			Texture roughnessMap = null, 
+			float roughness = 0.0f, 
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = TextureAddressMode.Clamp,
+			TextureFilter filter = TextureFilter.Point)
+			: 
+			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
 		}
 
@@ -123,8 +150,17 @@ namespace CSharpPathTracer
 	{
 		public float IndexOfRefraction { get; set; }
 
-		public TransparentMaterial(Vector3 color, float indexOfRefraction, Texture texture = null, Texture roughnessMap = null, float roughness = 0.0f, Vector2? uvScale = null)
-			: base(color, texture, roughnessMap, roughness, uvScale)
+		public TransparentMaterial(
+			Vector3 color, 
+			float indexOfRefraction, 
+			Texture texture = null, 
+			Texture roughnessMap = null, 
+			float roughness = 0.0f, 
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = TextureAddressMode.Clamp,
+			TextureFilter filter = TextureFilter.Point)
+			: 
+			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
 			IndexOfRefraction = indexOfRefraction;
 		}

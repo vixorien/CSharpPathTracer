@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-
-using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -33,9 +30,12 @@ namespace CSharpPathTracer
 
 		private static string GetColorString(Vector3 color)
 		{
-			int r = (int)(Math.Clamp(color.X, 0, 1) * 255);
-			int g = (int)(Math.Clamp(color.Y, 0, 1) * 255);
-			int b = (int)(Math.Clamp(color.Z, 0, 1) * 255);
+			// Perform the 0-1 clamp and convert to 0-255
+			color = Vector3.Clamp(color, Vector3.Zero, Vector3.One) * 255;
+
+			int r = (int)(color.X);
+			int g = (int)(color.Y);
+			int b = (int)(color.Z);
 
 			return $"{r} {g} {b}";
 		}

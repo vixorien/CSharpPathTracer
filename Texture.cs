@@ -8,20 +8,20 @@ using System.Numerics;
 
 namespace CSharpPathTracer
 {
+	public enum TextureFilter
+	{
+		Point,
+		Linear
+	}
+
+	public enum TextureAddressMode
+	{
+		Clamp,
+		Wrap
+	}
+
 	class Texture
 	{
-		public enum Filter
-		{
-			Point,
-			Linear
-		}
-
-		public enum AddressMode
-		{
-			Clamp,
-			Wrap
-		}
-
 		private Vector4[,] pixels;
 
 		public int Width { get; private set; }
@@ -84,8 +84,6 @@ namespace CSharpPathTracer
 
 					if (gammaUncorrect)
 					{
-
-
 						pixels[h, w].X = MathF.Pow(pixels[h, w].X, 2.2f);
 						pixels[h, w].Y = MathF.Pow(pixels[h, w].Y, 2.2f);
 						pixels[h, w].Z = MathF.Pow(pixels[h, w].Z, 2.2f);
@@ -95,17 +93,12 @@ namespace CSharpPathTracer
 			});
 		}
 
-		public Vector4 Sample(Vector2 uv, AddressMode addressMode = AddressMode.Wrap)//, Filter filter = Filter.Point)
+		public Vector4 Sample(Vector2 uv, TextureAddressMode addressMode = TextureAddressMode.Wrap, TextureFilter filter = TextureFilter.Point)
 		{
 			// Adjust uv's as necessary
 			switch (addressMode)
 			{
-				case AddressMode.Clamp:
-					uv = Vector2.Clamp(uv, Vector2.Zero, Vector2.One);
-					break;
-
-				case AddressMode.Wrap:
-					
+				case TextureAddressMode.Wrap:
 					// Truncate the UV
 					uv -= new Vector2(MathF.Truncate(uv.X), MathF.Truncate(uv.Y));
 					
@@ -113,15 +106,49 @@ namespace CSharpPathTracer
 					if (uv.X < 0.0f) uv.X += 1.0f;
 					if (uv.Y < 0.0f) uv.Y += 1.0f;
 					break;
+
+				default:
+				case TextureAddressMode.Clamp:
+					uv = Vector2.Clamp(uv, Vector2.Zero, Vector2.One);
+					break;
+
 			}
 
-			// Convert uv to pixel location
-			// TODO: Handle filtering
-			int x = (int)(uv.X * (Width - 1));
-			int y = (int)(uv.Y * (Height - 1));
+			// Handle filtering
+			switch (filter)
+			{
+				case TextureFilter.Linear:
 
-			// Return the requested pixel
-			return this[x, y];
+					// Calculate the two integer values
+					float scaledU = uv.X * (Width - 1);
+					float scaledV = uv.Y * (Height - 1);
+					int xLow = (int)MathF.Floor(scaledU);
+					int yLow = (int)MathF.Floor(scaledV);
+					int xHigh = xLow == Width - 1 ? 0 : xLow + 1;
+					int yHigh = yLow == Height - 1 ? 0 : yLow + 1;
+
+					// Get the 4 pixels
+					Vector4 tl = this[xLow, yLow];
+					Vector4 bl = this[xLow, yHigh];
+					Vector4 tr = this[xHigh, yLow];
+					Vector4 br = this[xHigh, yHigh];
+
+					// Interpolate left/right
+					float interpU = scaledU - xLow;
+					Vector4 top = Vector4.Lerp(tl, tr, interpU);
+					Vector4 bot = Vector4.Lerp(bl, br, interpU);
+
+					// Final interpolation
+					float interpV = scaledV - yLow;
+					return Vector4.Lerp(top, bot, interpV);
+
+				default:
+				case TextureFilter.Point:
+					// Convert uv to pixel location
+					int x = (int)(uv.X * (Width - 1));
+					int y = (int)(uv.Y * (Height - 1));
+					return this[x, y];
+			}
 		}
 
 	}
