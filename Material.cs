@@ -10,6 +10,9 @@ namespace CSharpPathTracer
 	/// </summary>
 	abstract class Material
 	{
+		protected const TextureAddressMode DefaultAddressMode = TextureAddressMode.Wrap;
+		protected const TextureFilter DefaultFilterMode = TextureFilter.Point;
+
 		public Vector3 Color { get; set; }
 		public Texture Texture { get; set; }
 		public TextureAddressMode AddressMode { get; set; }
@@ -26,8 +29,8 @@ namespace CSharpPathTracer
 			Texture roughnessMap = null, 
 			float roughness = 0.0f, 
 			Vector2? uvScale = null, 
-			TextureAddressMode addressMode = TextureAddressMode.Clamp,
-			TextureFilter filter = TextureFilter.Point)
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
 		{
 			Color = color;
 			Texture = texture;
@@ -86,8 +89,8 @@ namespace CSharpPathTracer
 			Texture roughnessMap = null, 
 			float roughness = 1.0f, 
 			Vector2? uvScale = null,
-			TextureAddressMode addressMode = TextureAddressMode.Clamp,
-			TextureFilter filter = TextureFilter.Point)
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
 			: 
 			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
@@ -120,8 +123,8 @@ namespace CSharpPathTracer
 			Texture roughnessMap = null, 
 			float roughness = 0.0f, 
 			Vector2? uvScale = null,
-			TextureAddressMode addressMode = TextureAddressMode.Clamp,
-			TextureFilter filter = TextureFilter.Point)
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
 			: 
 			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
@@ -157,8 +160,8 @@ namespace CSharpPathTracer
 			Texture roughnessMap = null, 
 			float roughness = 0.0f, 
 			Vector2? uvScale = null,
-			TextureAddressMode addressMode = TextureAddressMode.Clamp,
-			TextureFilter filter = TextureFilter.Point)
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
 			: 
 			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{

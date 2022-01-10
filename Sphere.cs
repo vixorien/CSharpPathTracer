@@ -89,16 +89,15 @@ namespace CSharpPathTracer
 			
 			// Normals
 			Vector3 n1 = Vector3.Normalize(p1 - Center); 
-			
 			if (side == HitSide.Inside) 
 				n1 *= -1.0f;
 
 			// Calculate a UV based on normal
 			Vector2 xz = Vector2.Normalize(new Vector2(n1.X, n1.Z));
 			Vector2 uv = new Vector2(
-				-MathF.Acos(Vector2.Dot(Vector2.UnitX, xz)) / MathF.PI,
+				-MathF.Atan2(xz.Y, xz.X) / MathF.PI + 1,//MathF.Acos(Vector2.Dot(Vector2.UnitX, xz) * 0.5f + 0.5f) / MathF.PI,
 				MathF.Acos(Vector3.Dot(Vector3.UnitY, n1)) / MathF.PI);
-
+			
 			// Set up return values
 			hit = new RayHit(p1, n1, uv, hitDistance, side, null);
 			return true;

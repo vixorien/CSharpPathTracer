@@ -139,7 +139,7 @@ namespace CSharpPathTracer
 			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
 			Material blueMatte = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), tilesTexture);
 
-			Material metalTiles = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), null, tilesTextureNoGamma);
+			Material metalTiles = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), null, tilesTextureNoGamma, 0, new Vector2(3, 3));
 			Material mirror = new MetalMaterial(new Vector3(1, 1, 1));
 			Material gold = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f));
 
