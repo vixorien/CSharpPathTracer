@@ -324,18 +324,22 @@ namespace CSharpPathTracer
 
 		private void timerFrameLoop_Tick(object sender, EventArgs e)
 		{
-			float speed = CameraMoveSpeed;
-			if (IsKeyDown(Keys.ShiftKey)) { speed = CameraMoveSpeedFast; }
-			else if (IsKeyDown(Keys.ControlKey)) { speed = CameraMoveSpeedSlow; }
+			// Only handle keyboard input for the camera while
+			// the display has the mouse (while the mouse is down)
+			if (displayHasMouse)
+			{
+				float speed = CameraMoveSpeed;
+				if (IsKeyDown(Keys.ShiftKey)) { speed = CameraMoveSpeedFast; }
+				else if (IsKeyDown(Keys.ControlKey)) { speed = CameraMoveSpeedSlow; }
 
-			if (IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); }
-			if (IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); }
-			if (IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); }
-			if (IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); }
+				if (IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); }
+				if (IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); }
+				if (IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); }
+				if (IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); }
 
-			if (IsKeyDown(Keys.Space)) { camera.Transform.MoveRelative(0, speed, 0); }
-			if (IsKeyDown(Keys.X)) { camera.Transform.MoveRelative(0, -speed, 0); }
-
+				if (IsKeyDown(Keys.Space)) { camera.Transform.MoveRelative(0, speed, 0); }
+				if (IsKeyDown(Keys.X)) { camera.Transform.MoveRelative(0, -speed, 0); }
+			}
 
 			// If we're in realtime mode and the worker is not currently busy (or doesn't exist yet),
 			// then we can go ahead and begin a new low-res raytracing frame

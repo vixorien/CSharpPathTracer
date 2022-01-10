@@ -201,15 +201,19 @@ namespace CSharpPathTracer
 
 		private Vector3 ColorAsBytes(ref Vector3 color, bool gammaCorrect = true)
 		{
+			// Perform a clamp between 0 and 1 first
+			Vector3 result = Vector3.Clamp(color, Vector3.Zero, Vector3.One);
+
+			// Raise to a power if we're gamma correcting
 			if (gammaCorrect)
 			{
-				color.X = MathF.Pow(Math.Clamp(color.X, 0, 1), GammaCorrectionPower);
-				color.Y = MathF.Pow(Math.Clamp(color.Y, 0, 1), GammaCorrectionPower);
-				color.Z = MathF.Pow(Math.Clamp(color.Z, 0, 1), GammaCorrectionPower);
+				result.X = MathF.Pow(result.X, GammaCorrectionPower);
+				result.Y = MathF.Pow(result.Y, GammaCorrectionPower);
+				result.Z = MathF.Pow(result.Z, GammaCorrectionPower);
 			}
 
 			// Adjust to the byte range
-			return color * 255;
+			return result * 255;
 		}
 
 		private void SetByteColor(byte[][] results, int x, int y, ref Vector3 colorInBytes)
