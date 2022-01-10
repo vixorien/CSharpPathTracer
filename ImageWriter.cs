@@ -4,8 +4,16 @@ using System.Numerics;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// Writes out a very basic image file
+	/// </summary>
 	static class ImageWriter
 	{
+		/// <summary>
+		/// Writes the PPM image file given a 2D array of pixel colors
+		/// </summary>
+		/// <param name="file">The file to write</param>
+		/// <param name="pixels">The 2D array of colors</param>
 		public static void WritePPMImageFile(string file, Vector3[,] pixels)
 		{
 			using (StreamWriter output = new StreamWriter(file))
@@ -28,6 +36,11 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Creates a string from a color
+		/// </summary>
+		/// <param name="color">The color to convert</param>
+		/// <returns>The string representation of the color</returns>
 		private static string GetColorString(Vector3 color)
 		{
 			// Perform the 0-1 clamp and convert to 0-255

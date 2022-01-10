@@ -77,14 +77,26 @@ namespace CSharpPathTracer
 		private RaytracingStats stats;
 		private byte[][] pixels;
 
+		/// <summary>
+		/// Numbers of channels per pixel for our results
+		/// </summary>
 		public const int ChannelsPerPixel = 3;
 
+		/// <summary>
+		/// Gamma correction value so we don't have to re-divide
+		/// </summary>
 		private const float GammaCorrectionPower = 1.0f / 2.2f;
 
-		public Raytracer()
-		{
-		}
+		/// <summary>
+		/// Creates a new raytracer
+		/// </summary>
+		public Raytracer() { }
 
+		/// <summary>
+		/// Raytraces a scene - this is assumed to be launched by a BackgroundWorker
+		/// </summary>
+		/// <param name="sender">The object that launched the raytrace</param>
+		/// <param name="e">Work parameters</param>
 		public void RaytraceScene(object sender, DoWorkEventArgs e)
 		{
 			RaytracingParameters rtParams = e.Argument as RaytracingParameters;
@@ -160,12 +172,15 @@ namespace CSharpPathTracer
 				RaytracingProgress progress = new RaytracingProgress(y - half, res, pixels[y], (double)y / height * 100, stats);
 				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
-
-
-
 		}
 
-
+		/// <summary>
+		/// Recursively traces a single ray in the given scene
+		/// </summary>
+		/// <param name="ray">The ray to trace</param>
+		/// <param name="scene">The scene to use</param>
+		/// <param name="depth">Current recursion depth</param>
+		/// <returns>Resulting color of the trace</returns>
 		private Vector3 TraceRay(Ray ray, Scene scene, int depth)
 		{
 			// Check depth for stats
@@ -198,7 +213,12 @@ namespace CSharpPathTracer
 			}
 		}
 
-
+		/// <summary>
+		/// Converts a color from the 0-1 range to the 0-255 range
+		/// </summary>
+		/// <param name="color">The color to convert</param>
+		/// <param name="gammaCorrect">Should the color be gamma corrected?</param>
+		/// <returns>The resulting 0-255 color</returns>
 		private Vector3 ColorAsBytes(ref Vector3 color, bool gammaCorrect = true)
 		{
 			// Perform a clamp between 0 and 1 first
@@ -216,13 +236,20 @@ namespace CSharpPathTracer
 			return result * 255;
 		}
 
+		/// <summary>
+		/// Sets a 0-255 color as bytes in the given array
+		/// </summary>
+		/// <param name="results">Where to store the bytes</param>
+		/// <param name="x">The pixel's x coord</param>
+		/// <param name="y">The pixel's y coord</param>
+		/// <param name="colorInBytes">The 0-255 color</param>
 		private void SetByteColor(byte[][] results, int x, int y, ref Vector3 colorInBytes)
 		{
 			// Note: bitmap data is BGR, not RGB!
 			int pixelStart = x * ChannelsPerPixel;
-			results[y][pixelStart + 0] = (byte)colorInBytes.Z;
-			results[y][pixelStart + 1] = (byte)colorInBytes.Y;
-			results[y][pixelStart + 2] = (byte)colorInBytes.X;
+			results[y][pixelStart + 0] = (byte)colorInBytes.Z; // B
+			results[y][pixelStart + 1] = (byte)colorInBytes.Y; // G
+			results[y][pixelStart + 2] = (byte)colorInBytes.X; // R
 		}
 
 	}

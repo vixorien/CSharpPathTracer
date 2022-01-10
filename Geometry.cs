@@ -1,7 +1,5 @@
 ﻿using System.Numerics;
 
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
-
 namespace CSharpPathTracer
 {
 	/// <summary>

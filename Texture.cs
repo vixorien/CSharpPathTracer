@@ -8,30 +8,57 @@ using System.Numerics;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// Texture filter mode
+	/// </summary>
 	public enum TextureFilter
 	{
 		Point,
 		Linear
 	}
 
+	/// <summary>
+	/// Address mode for UV's outside 0-1
+	/// </summary>
 	public enum TextureAddressMode
 	{
 		Clamp,
 		Wrap
 	}
 
+	/// <summary>
+	/// Represents a 2D grid of pixels that can be sampled
+	/// </summary>
 	class Texture
 	{
 		private Vector4[,] pixels;
 
+		/// <summary>
+		/// Gets the width of the texture
+		/// </summary>
 		public int Width { get; private set; }
+
+		/// <summary>
+		/// Gets the height of the texture
+		/// </summary>
 		public int Height { get; private set; }
 
+		/// <summary>
+		/// Gets the color at the given pixel coords
+		/// </summary>
+		/// <param name="x">The X coord</param>
+		/// <param name="y">The Y coord</param>
+		/// <returns>A single pixel color</returns>
 		public Vector4 this[int x, int y]
 		{
 			get { return pixels[y, x]; }
 		}
 
+		/// <summary>
+		/// Loads a new texture from a file
+		/// </summary>
+		/// <param name="filepath">The file to load</param>
+		/// <param name="gammaUncorrect">Should the colors be converted back to linear color space?</param>
 		public Texture(string filepath, bool gammaUncorrect = true)
 		{
 			byte[] pixelBytes;
@@ -69,6 +96,7 @@ namespace CSharpPathTracer
 			// the byte array to our 2D array of pixels
 			pixels = new Vector4[Height, Width]; // Row, Col
 
+			// Speeds up the processing a bit!
 			Parallel.For(0, Height, h =>
 			{	
 				for (int w = 0; w < Width; w++)
@@ -93,6 +121,13 @@ namespace CSharpPathTracer
 			});
 		}
 
+		/// <summary>
+		/// Samples the given texture at the specified coordinates
+		/// </summary>
+		/// <param name="uv">The UV coords for sampling</param>
+		/// <param name="addressMode">The address mode for UV's outside 0-1</param>
+		/// <param name="filter">The filter mode</param>
+		/// <returns>The 4-component color from the texture</returns>
 		public Vector4 Sample(Vector2 uv, TextureAddressMode addressMode = TextureAddressMode.Wrap, TextureFilter filter = TextureFilter.Point)
 		{
 			// Adjust uv's as necessary
@@ -117,6 +152,16 @@ namespace CSharpPathTracer
 			// Handle filtering
 			switch (filter)
 			{
+				// Linear filtering
+				// Two horizontal and one vertical interpolation
+				//
+				//  o <-- 1 --> o
+				//        ^
+				//        |
+				//        3
+				//        |
+				//        v
+				//  o <-- 2 --> o
 				case TextureFilter.Linear:
 
 					// Calculate the two integer values

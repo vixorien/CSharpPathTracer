@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
 using System.Numerics;
-//using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// A 3D camera
+	/// </summary>
 	class Camera
 	{
 		private Transform transform;
@@ -20,13 +18,44 @@ namespace CSharpPathTracer
 		private Matrix4x4 projMatrix;
 		private bool projDirty;
 
-		public Transform Transform { get { return transform; } } // Not a great way to dirty the view, but it works
+		/// <summary>
+		/// Gets the camera's transform
+		/// </summary>
+		public Transform Transform { get { return transform; } }
+
+		/// <summary>
+		/// Gets or sets the camera's near clip plane distance
+		/// </summary>
 		public float NearClip { get { return nearClip; } set { nearClip = value; projDirty = true; } }
+
+		/// <summary>
+		/// Gets or sets the camera's far clip plane distance
+		/// </summary>
 		public float FarClip { get { return farClip; } set { farClip = value; projDirty = true; } }
+
+		/// <summary>
+		/// Gets or sets the camera's aspect ratio
+		/// </summary>
 		public float AspectRatio { get { return aspectRatio; } set { aspectRatio = value; projDirty = true; } }
+
+		/// <summary>
+		/// Gets or sets the camera's field of view (in Y)
+		/// </summary>
 		public float FieldOfView { get { return fieldOfView; } set { fieldOfView = value; projDirty = true; } }
+
+		/// <summary>
+		/// Gets the camera's view matrix
+		/// </summary>
 		public Matrix4x4 View { get { if (transform.Dirty) UpdateViewMatrix(); return viewMatrix; } }
+
+		/// <summary>
+		/// Gets the camera's projection matrix
+		/// </summary>
 		public Matrix4x4 Projection { get { if (projDirty) UpdateProjectionMatrix(); return projMatrix; } }
+
+		/// <summary>
+		/// Gets the inverse of the combined view and projection matrices
+		/// </summary>
 		public Matrix4x4 InverseViewProjection 
 		{ 
 			get 
@@ -42,6 +71,14 @@ namespace CSharpPathTracer
 			} 
 		}
 
+		/// <summary>
+		/// Creates a new camera
+		/// </summary>
+		/// <param name="position">The starting position of the camera</param>
+		/// <param name="aspectRatio">The aspect ratio (w/h)</param>
+		/// <param name="fieldOfView">The field of view (in Y)</param>
+		/// <param name="nearClip">The near clip plane distance</param>
+		/// <param name="farClip">The far clip plane distance</param>
 		public Camera(
 			Vector3 position, 
 			float aspectRatio,
@@ -59,6 +96,14 @@ namespace CSharpPathTracer
 			projDirty = true;
 		}
 
+		/// <summary>
+		/// Gets a ray that goes through the given pixel
+		/// </summary>
+		/// <param name="x">The x coord of the pixel</param>
+		/// <param name="y">The y coord of the pixel</param>
+		/// <param name="screenWidth">The overall screen width</param>
+		/// <param name="screenHeight">The overall screen height</param>
+		/// <returns>A ray whose origin is the camera that travels through the given pixel</returns>
 		public Ray GetRayThroughPixel(float x, float y, int screenWidth, int screenHeight)
 		{
 			// Calculate NDCs
@@ -81,6 +126,9 @@ namespace CSharpPathTracer
 			return new Ray(transform.Position, Vector3.Normalize(worldPos - transform.Position), NearClip, FarClip);
 		}
 
+		/// <summary>
+		/// Updates the view matrix
+		/// </summary>
 		private void UpdateViewMatrix()
 		{
 			viewMatrix = Matrix4x4.CreateLookAt(
@@ -89,8 +137,14 @@ namespace CSharpPathTracer
 				Vector3.UnitY);
 		}
 
+		/// <summary>
+		/// Updates the projection matrix
+		/// </summary>
 		private void UpdateProjectionMatrix()
 		{
+			if (!projDirty)
+				return;
+
 			projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
 				MathF.PI / 4,
 				AspectRatio,

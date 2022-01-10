@@ -5,13 +5,14 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
-using System.Windows.Input;
 using System.Runtime.InteropServices;
-//using Microsoft.Xna.Framework;
 using System.Numerics;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// Possible raytracing modes
+	/// </summary>
 	public enum RaytracingMode
 	{
 		None,
@@ -19,41 +20,63 @@ namespace CSharpPathTracer
 		Once
 	}
 
+	/// <summary>
+	/// The main form of the application
+	/// </summary>
 	public partial class MainForm : Form
 	{
+		// Camera constants
 		private const float CameraMoveSpeed = 0.25f;
 		private const float CameraMoveSpeedSlow = 0.05f;
 		private const float CameraMoveSpeedFast = 1.0f;
 		private const float CameraRotationSpeed = 0.01f;
 
+		// Options for real-time movement
 		private const int RealtimeSamplesPerPixel = 1;
 		private const int RealtimeResolutionReduction = 8;
 		private const int RealtimeMaxRecursion = 8;
 
-
+		// Threading and UI
 		private BackgroundWorker worker;
 		private Bitmap renderTarget;
-		private Raytracer raytracer;
-		private Camera camera;
-
-		private List<Scene> scenes;
-
-		private Stopwatch stopwatch;
-
 		private byte[] progressColorScanline;
 
+		// Scene and rendering
+		private Camera camera;
+		private List<Scene> scenes;
+		private Raytracer raytracer; 
 		private RaytracingMode raytracingMode;
 		private bool raytracingInProgress;
 
+		// Timing
+		private Stopwatch stopwatch;
+
+		/// <summary>
+		/// Gets the current maximum recursion value
+		/// </summary>
 		public int MaxRecursion { get { return sliderMaxRecursion.Value; } }
+
+		/// <summary>
+		/// Gets the current samples per pixel
+		/// </summary>
 		public int SamplesPerPixel { get { return sliderSamplesPerPixel.Value; } }
+
+		/// <summary>
+		/// Gets the current resolution reduction
+		/// </summary>
 		public int ResolutionReduction { get { return (int)Math.Pow(2, sliderResReduction.Value); } }
 
+		/// <summary>
+		/// Creates the form
+		/// </summary>
 		public MainForm()
 		{
 			InitializeComponent();
 		}
 
+		/// <summary>
+		/// Form loaded setup
+		/// </summary>
 		private void MainForm_Load(object sender, EventArgs e)
 		{
 			// Camera for scene
@@ -95,7 +118,9 @@ namespace CSharpPathTracer
 			timerFrameLoop.Start();
 		}
 
-
+		/// <summary>
+		/// Button click for starting a full raytrace
+		/// </summary>
 		private void buttonStartRaytrace_Click(object sender, EventArgs e)
 		{
 			// If we're in progress, we're canceling the exisitng
@@ -119,8 +144,18 @@ namespace CSharpPathTracer
 				MaxRecursion);
 		}
 
+		/// <summary>
+		/// Begins an actual raytrace using a background worker
+		/// </summary>
+		/// <param name="mode">Which mode?</param>
+		/// <param name="samplesPerPixel">How many samples per pixel?</param>
+		/// <param name="resolutionReduction">What's the resolution reduction amount?</param>
+		/// <param name="maxRecursion">What's the max allowable recursion depth?</param>
 		private void BeginRaytrace(RaytracingMode mode, int samplesPerPixel, int resolutionReduction, int maxRecursion)
 		{
+			if (mode == RaytracingMode.None)
+				return;
+
 			// Update UI
 			progressRT.Minimum = 0;
 			progressRT.Maximum = raytracingDisplay.Height; // This is "locked in" when we start
@@ -168,7 +203,9 @@ namespace CSharpPathTracer
 			stopwatch.Restart();
 		}
 
-
+		/// <summary>
+		/// Handles when a scanline is completed by the raytracer
+		/// </summary>
 		private void ScanlineComplete(object sender, ProgressChangedEventArgs e)
 		{
 			RaytracingProgress progress = e.UserState as RaytracingProgress;
@@ -220,6 +257,9 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Handles when the raytracing is complete (or canceled)
+		/// </summary>
 		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
 		{
 			// Note: Can check for a cancel here!
@@ -248,22 +288,33 @@ namespace CSharpPathTracer
 			buttonStartRaytrace.Text = "Start Full Raytrace";
 		}
 
-
+		/// <summary>
+		/// Update the samples text label
+		/// </summary>
 		private void sliderSamplesPerPixel_Scroll(object sender, EventArgs e)
 		{
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + SamplesPerPixel;
 		}
 
+		/// <summary>
+		/// Update the recursion text label
+		/// </summary>
 		private void sliderMaxRecursion_Scroll(object sender, EventArgs e)
 		{
 			labelMaxRecursion.Text = "Max Recursion Depth: " + MaxRecursion;
 		}
 
+		/// <summary>
+		/// Update the resolution reduction text label
+		/// </summary>
 		private void sliderResReduction_Scroll(object sender, EventArgs e)
 		{
 			labelResReduction.Text = "Resolution Reduction: " + ResolutionReduction;
 		}
 
+		/// <summary>
+		/// Adjusts the display now that the form has been resized
+		/// </summary>
 		private void MainForm_Resize(object sender, EventArgs e)
 		{
 			textWidth.Text = raytracingDisplay.Width.ToString();
@@ -272,7 +323,9 @@ namespace CSharpPathTracer
 		}
 
 
-
+		/// <summary>
+		/// Re-renders a low-res version when the scene is changed
+		/// </summary>
 		private void comboScene_SelectedIndexChanged(object sender, EventArgs e)
 		{
 			// Perform a single low res raytrace now that the scene has changed
@@ -283,12 +336,64 @@ namespace CSharpPathTracer
 				RealtimeMaxRecursion);
 		}
 
+		/// <summary>
+		/// Saves the current render target image to a 100% quality PNG
+		/// </summary>
+		private void buttonSave_Click(object sender, EventArgs e)
+		{
+			// Set up the save dialog for just PNG files
+			SaveFileDialog diag = new SaveFileDialog();
+			diag.Filter = "PNG|*.png";
+			diag.AddExtension = true;
+
+			// Show the dialog and only save on a confirmation
+			if (diag.ShowDialog() == DialogResult.OK)
+			{
+				// Get the PNG encoder
+				ImageCodecInfo pngEncoder = null;
+				ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
+				foreach (ImageCodecInfo enc in encoders)
+				{
+					if (enc.MimeType.Contains("png"))
+					{
+						pngEncoder = enc;
+						break;
+					}
+				}
+
+				// Verify it was found
+				if (pngEncoder == null)
+				{
+					MessageBox.Show(
+						"Error saving image: PNG encoder not found.",
+						"Error Saving Image",
+						MessageBoxButtons.OK,
+						MessageBoxIcon.Error);
+					return;
+				}
+
+				// Set up the quality level of the save
+				EncoderParameters encParams = new EncoderParameters(1);
+				encParams.Param[0] = new EncoderParameter(Encoder.Quality, 100L);
+
+				// Perform the save
+				renderTarget.Save(diag.FileName, pngEncoder, encParams);
+			}
+		}
+
+
+		// ================================================
+		//  Mouse input
+		// ================================================
 
 		private bool displayHasMouse = false;
 		private Point prevMouse;
+
+		/// <summary>
+		/// Handles the mouse being clicked in the display area
+		/// </summary>
 		private void raytracingDisplay_MouseDown(object sender, MouseEventArgs e)
 		{
-			
 			raytracingDisplay.Focus();
 			displayHasMouse = true;
 			prevMouse = e.Location;
@@ -298,6 +403,9 @@ namespace CSharpPathTracer
 			worker?.CancelAsync();
 		}
 
+		/// <summary>
+		/// Handles the mouse being released after being clicked in the display area
+		/// </summary>
 		private void raytracingDisplay_MouseUp(object sender, MouseEventArgs e)
 		{
 			displayHasMouse = false;
@@ -307,6 +415,10 @@ namespace CSharpPathTracer
 				raytracingMode = RaytracingMode.None;
 		}
 
+		/// <summary>
+		/// Handles the mouse moving in the display area, which rotates the
+		/// camera if the mouse button is currently down
+		/// </summary>
 		private void raytracingDisplay_MouseMove(object sender, MouseEventArgs e)
 		{
 			if (displayHasMouse)
@@ -322,6 +434,10 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// The timer-based frame loop tick, which checks for keyboard
+		/// input and updates real-time raytracing frames
+		/// </summary>
 		private void timerFrameLoop_Tick(object sender, EventArgs e)
 		{
 			// Only handle keyboard input for the camera while
@@ -355,13 +471,25 @@ namespace CSharpPathTracer
 
 		}
 
+		// ================================================
+		//  Keyboard input
+		// ================================================
+
 		private bool[] keyStates = new bool[256];
 
+		/// <summary>
+		/// Is the given key down?
+		/// </summary>
+		/// <param name="key">The key to check</param>
+		/// <returns>True if the key is down, false if it's up</returns>
 		private bool IsKeyDown(Keys key)
 		{
 			return keyStates[(int)key];
 		}
 
+		/// <summary>
+		/// Handles a key being pressed and tracks the state
+		/// </summary>
 		private void MainForm_KeyDown(object sender, KeyEventArgs e)
 		{
 			if (e.KeyValue >= 0 && e.KeyValue < keyStates.Length)
@@ -372,6 +500,9 @@ namespace CSharpPathTracer
 			e.Handled = true;
 		}
 
+		/// <summary>
+		/// Handles a key being released and tracks the state
+		/// </summary>
 		private void MainForm_KeyUp(object sender, KeyEventArgs e)
 		{
 			if (e.KeyValue >= 0 && e.KeyValue < keyStates.Length)
@@ -384,46 +515,6 @@ namespace CSharpPathTracer
 
 
 
-		private void buttonSave_Click(object sender, EventArgs e)
-		{
-			// Set up the save dialog for just PNG files
-			SaveFileDialog diag = new SaveFileDialog();
-			diag.Filter = "PNG|*.png";
-			diag.AddExtension = true;
-			
-			// Show the dialog and only save on a confirmation
-			if (diag.ShowDialog() == DialogResult.OK)
-			{
-				// Get the PNG encoder
-				ImageCodecInfo pngEncoder = null;
-				ImageCodecInfo[] encoders = ImageCodecInfo.GetImageEncoders();
-				foreach (ImageCodecInfo enc in encoders)
-				{
-					if (enc.MimeType.Contains("png"))
-					{
-						pngEncoder = enc;
-						break;
-					}
-				}
-
-				// Verify it was found
-				if (pngEncoder == null)
-				{
-					MessageBox.Show(
-						"Error saving image: PNG encoder not found.", 
-						"Error Saving Image", 
-						MessageBoxButtons.OK, 
-						MessageBoxIcon.Error);
-					return;
-				}
-
-				// Set up the quality level of the save
-				EncoderParameters encParams = new EncoderParameters(1);
-				encParams.Param[0] = new EncoderParameter(Encoder.Quality, 100L);
-
-				// Perform the save
-				renderTarget.Save(diag.FileName, pngEncoder, encParams);
-			}
-		}
+		
 	}
 }

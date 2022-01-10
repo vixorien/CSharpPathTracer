@@ -11,11 +11,32 @@ namespace CSharpPathTracer
 	/// </summary>
 	public struct Vertex
 	{
+		/// <summary>
+		/// Gets or sets the vertex's position
+		/// </summary>
 		public Vector3 Position { get; set; }
+
+		/// <summary>
+		/// Gets or sets the vertex's normal
+		/// </summary>
 		public Vector3 Normal { get; set; }
+
+		/// <summary>
+		/// Gets or sets the vertex's tangent
+		/// </summary>
 		public Vector3 Tangent { get; set; }
+
+		/// <summary>
+		/// Gets or sets the vertex's UV
+		/// </summary>
 		public Vector2 UV { get; set; }
 
+		/// <summary>
+		/// Creates a new vertex
+		/// </summary>
+		/// <param name="position">Position in 3D space</param>
+		/// <param name="normal">Surface normal (assumed to be normalized)</param>
+		/// <param name="uv">UV coords</param>
 		public Vertex(Vector3 position, Vector3 normal, Vector2 uv)
 		{
 			Position = position;
@@ -25,10 +46,13 @@ namespace CSharpPathTracer
 		}
 	}
 
+	/// <summary>
+	/// A single triangle in a triangle mesh
+	/// </summary>
 	struct Triangle : IBoundable, IRayIntersectable
 	{
 		/// <summary>
-		/// Gets or sets whether triangle backfaces should be culled
+		/// Gets or sets whether triangle backfaces should be culled in the whole system
 		/// </summary>
 		public static bool CullBackfaces { get; set; }
 
@@ -40,10 +64,27 @@ namespace CSharpPathTracer
 		/// </summary>
 		public AABB AABB => aabb;
 
+		/// <summary>
+		/// Gets or sets the first vertex
+		/// </summary>
 		public Vertex V0 { get; set; }
+
+		/// <summary>
+		/// Gets or sets the second vertex
+		/// </summary>
 		public Vertex V1 { get; set; }
+
+		/// <summary>
+		/// Gets or sets the third vertex
+		/// </summary>
 		public Vertex V2 { get; set; }
 
+		/// <summary>
+		/// Creates a new triangle from three vertices
+		/// </summary>
+		/// <param name="v0">The first vertex</param>
+		/// <param name="v1">The second vertex</param>
+		/// <param name="v2">The third vertex</param>
 		public Triangle(Vertex v0, Vertex v1, Vertex v2)
 		{
 			V0 = v0;
@@ -57,6 +98,11 @@ namespace CSharpPathTracer
 			aabb.Encompass(v2.Position);
 		}
 
+		/// <summary>
+		/// Calculates a normal given barycentric coords
+		/// </summary>
+		/// <param name="barycentrics">The barycentric coords for interpolation</param>
+		/// <returns>The interpolated normal</returns>
 		public Vector3 CalcNormalBarycentric(Vector3 barycentrics)
 		{
 			return Vector3.Normalize(
@@ -65,6 +111,11 @@ namespace CSharpPathTracer
 				barycentrics.Z * V0.Normal);
 		}
 
+		/// <summary>
+		/// Calculates a uv given barycentric coords
+		/// </summary>
+		/// <param name="barycentrics">The barycentric coords for interpolation</param>
+		/// <returns>The interpolated uv</returns>
 		public Vector2 CalcUVBarycentric(Vector3 barycentrics)
 		{
 			return
@@ -73,6 +124,12 @@ namespace CSharpPathTracer
 				barycentrics.Z * V0.UV;
 		}
 
+		/// <summary>
+		/// Performs a ray intersection on this triangle
+		/// </summary>
+		/// <param name="ray">The ray for the intersection test</param>
+		/// <param name="hits">The hit info</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Assume no hit
@@ -147,10 +204,12 @@ namespace CSharpPathTracer
 		private List<Triangle> triangles;
 		private Octree<Triangle> octree;
 
+		/// <summary>
+		/// Creates a new mesh loaded from a file and builds an octree for it
+		/// </summary>
+		/// <param name="file">The file to load</param>
 		public Mesh(string file) : base()
 		{
-			triangles = new List<Triangle>();
-
 			LoadMesh(file);
 
 			// Now that the mesh is loaded, build the octree
@@ -162,15 +221,28 @@ namespace CSharpPathTracer
 			octree.ShrinkAndPrune();
 		}
 
-
+		/// <summary>
+		/// Performs a ray intersection on this mesh
+		/// </summary>
+		/// <param name="ray">The ray for the intersection test</param>
+		/// <param name="hits">The hit info</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
+			// Just use the octree
 			return octree.RayIntersection(ray, out hit);
 		}
 
-
+		/// <summary>
+		/// Loads a mesh from a wavefront .obj model file
+		/// </summary>
+		/// <param name="file">The file to load</param>
 		private void LoadMesh(string file)
 		{
+			// Start with a fresh list of triangles
+			triangles = new List<Triangle>();
+
+			// Lists of data we find
 			List<Vector3> positions = new List<Vector3>();
 			List<Vector3> normals = new List<Vector3>();
 			List<Vector2> uvs = new List<Vector2>();

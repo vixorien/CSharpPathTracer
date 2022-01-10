@@ -1,6 +1,5 @@
 ﻿using System;
 
-
 namespace CSharpPathTracer
 {
 	/// <summary>
@@ -10,19 +9,26 @@ namespace CSharpPathTracer
 	/// </summary>
 	static class ThreadSafeRandom
 	{
+		// A single global random used to seed the thread-specific objects
 		private static Random _global = new Random();
 
+		// A local random object per thread
 		[ThreadStatic]
 		private static Random _local;
 
+		/// <summary>
+		/// Gets a thread-specific random object
+		/// </summary>
 		public static Random Instance
 		{
 			get
 			{
+				// If this thread doesn't have its object yet, make it
 				if (_local == null)
 				{
 					int seed;
-					lock (_global) seed = _global.Next();
+					lock (_global) 
+						seed = _global.Next();
 					_local = new Random(seed);
 				}
 

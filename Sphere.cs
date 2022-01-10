@@ -8,9 +8,19 @@ namespace CSharpPathTracer
 	/// </summary>
 	class Sphere : Geometry
 	{
+		/// <summary>
+		/// Creates a new, default sphere with a radius of 1 at (0,0,0)
+		/// </summary>
 		public static Sphere Default { get { return new Sphere(); } }
 
+		/// <summary>
+		/// Gets or sets the center of the sphere
+		/// </summary>
 		public Vector3 Center { get; set; }
+
+		/// <summary>
+		/// Gets or sets the sphere's radius
+		/// </summary>
 		public float Radius { get; set; }
 
 		/// <summary>
@@ -21,6 +31,11 @@ namespace CSharpPathTracer
 		{
 		}
 
+		/// <summary>
+		/// Creates a new sphere
+		/// </summary>
+		/// <param name="center">Sphere's center</param>
+		/// <param name="radius">Sphere's radius</param>
 		public Sphere(Vector3 center, float radius) : base()
 		{
 			// Save sphere details
@@ -32,7 +47,12 @@ namespace CSharpPathTracer
 			aabb.Max = center + new Vector3(radius);
 		}
 
-
+		/// <summary>
+		/// Performs a ray intersection on this sphere
+		/// </summary>
+		/// <param name="ray">The ray for the intersection test</param>
+		/// <param name="hits">The hit info</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public override bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// How far along ray to closest point to sphere center
@@ -95,7 +115,7 @@ namespace CSharpPathTracer
 			// Calculate a UV based on normal
 			Vector2 xz = Vector2.Normalize(new Vector2(n1.X, n1.Z));
 			Vector2 uv = new Vector2(
-				-MathF.Atan2(xz.Y, xz.X) / MathF.PI + 1,//MathF.Acos(Vector2.Dot(Vector2.UnitX, xz) * 0.5f + 0.5f) / MathF.PI,
+				-MathF.Atan2(xz.Y, xz.X) / MathF.PI + 1,
 				MathF.Acos(Vector3.Dot(Vector3.UnitY, n1)) / MathF.PI);
 			
 			// Set up return values

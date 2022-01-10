@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using System.Numerics;
 
-using BoundingBox = Microsoft.Xna.Framework.BoundingBox;
-
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// A 3D scene that can be raytraced
+	/// </summary>
 	class Scene:  IBoundable, IRayIntersectable
 	{
 		private List<Entity> entities;

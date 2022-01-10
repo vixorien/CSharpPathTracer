@@ -1,21 +1,48 @@
 ﻿using System.Collections.Generic;
 
-
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// A tree of AABBs
+	/// </summary>
+	/// <typeparam name="T">The type of object to store in the octree</typeparam>
 	class Octree<T> : IBoundable, IRayIntersectable
 		where T : IBoundable, IRayIntersectable
 	{
+		/// <summary>
+		/// The amount of objects at which an oct attempts to divide
+		/// </summary>
 		private const int DivideAt = 2;
+
+		// Should overlapping objects be allowed in an oct node?
 		private bool allowOverlaps;
 
+		// The objects stored in this node
 		private List<T> objects;
+
+		// The child nodes
 		private Octree<T>[] children;
 
+		/// <summary>
+		/// Gets whether or not this oct has been divided
+		/// </summary>
 		public bool Divided { get { return children != null; } }
+
+		/// <summary>
+		/// Gets the overall AABB of this oct
+		/// </summary>
 		public AABB AABB { get; private set; }
+
+		/// <summary>
+		/// Gets the shrunken AABB of this oct, if it exists
+		/// </summary>
 		public AABB? ShrunkAABB { get; private set; }
 
+		/// <summary>
+		/// Creates a new Octree node
+		/// </summary>
+		/// <param name="bounds">The bounds of this new node</param>
+		/// <param name="allowOverlaps">Are overlapping objects allowed?</param>
 		public Octree(AABB bounds, bool allowOverlaps = true)
 		{
 			this.allowOverlaps = allowOverlaps;
@@ -26,6 +53,12 @@ namespace CSharpPathTracer
 			objects = new List<T>();
 		}
 
+		/// <summary>
+		/// Recursively performs a ray intersection on this octree node
+		/// </summary>
+		/// <param name="ray">The ray for the intersection test</param>
+		/// <param name="hits">The hit info</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Which AABB?
@@ -78,6 +111,11 @@ namespace CSharpPathTracer
 			return false;
 		}
 
+		/// <summary>
+		/// Adds an object to this node
+		/// </summary>
+		/// <param name="obj">The object to add</param>
+		/// <returns>True if the object is successfully added, false otherwise</returns>
 		public bool AddObject(T obj)
 		{
 			// Are overlapping objects allowed?
@@ -196,6 +234,9 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Divides the octree into 8 children
+		/// </summary>
 		private void Divide()
 		{
 			// Necessary?

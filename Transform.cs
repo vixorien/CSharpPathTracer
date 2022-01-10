@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-
-//using Microsoft.Xna.Framework;
 using System.Numerics;
 
 namespace CSharpPathTracer
@@ -120,6 +118,12 @@ namespace CSharpPathTracer
 			children = new List<Transform>();
 		}
 
+		/// <summary>
+		/// Moves the position along the global XYZ axes by the specified amounts
+		/// </summary>
+		/// <param name="x">Amount to move in x</param>
+		/// <param name="y">Amount to move in y</param>
+		/// <param name="z">Amount to move in z</param>
 		public void MoveAbsolute(float x, float y, float z)
 		{
 			position.X += x;
@@ -128,17 +132,31 @@ namespace CSharpPathTracer
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Moves the position along the global XYZ axes by the specified amounts
+		/// </summary>
+		/// <param name="offset">The axis-aligned offset</param>
 		public void MoveAbsolute(Vector3 offset)
 		{
 			position += offset;
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Moves the position along its local XYZ axes by the specified amounts		
+		/// </summary>
+		/// <param name="x">Amount to move in x</param>
+		/// <param name="y">Amount to move in y</param>
+		/// <param name="z">Amount to move in z</param>
 		public void MoveRelative(float x, float y, float z)
 		{
 			MoveRelative(new Vector3(x, y, z));
 		}
 
+		/// <summary>
+		/// Moves the position along its local XYZ axes by the specified amounts		
+		/// </summary>
+		/// <param name="offset">The offsets to move</param>
 		public void MoveRelative(Vector3 offset)
 		{
 			// Create the rotation quaternion
@@ -152,6 +170,12 @@ namespace CSharpPathTracer
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Rotates by the given pitch, yaw and roll values
+		/// </summary>
+		/// <param name="p">Pitch rotation</param>
+		/// <param name="y">Yaw rotation</param>
+		/// <param name="r">Roll rotation</param>
 		public void Rotate(float p, float y, float r)
 		{
 			pitchYawRoll.X += p;
@@ -161,6 +185,10 @@ namespace CSharpPathTracer
 			vectorsDirty = true;
 		}
 
+		/// <summary>
+		/// Rotates by the given pitch, yaw and roll values
+		/// </summary>
+		/// <param name="pitchYawRoll">Rotation values</param>
 		public void Rotate(Vector3 pitchYawRoll)
 		{
 			pitchYawRoll += pitchYawRoll;
@@ -168,12 +196,22 @@ namespace CSharpPathTracer
 			vectorsDirty = true;
 		}
 
+		/// <summary>
+		/// Scales the transform relatively (i.e., 2 is twice as large)
+		/// </summary>
+		/// <param name="uniformScale">The single value to apply to all axes</param>
 		public void ScaleRelative(float uniformScale)
 		{
 			scale *= uniformScale;
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Scales the transform relatively (i.e., 2 is twice as large)
+		/// </summary>
+		/// <param name="x">Amount to scale in x</param>
+		/// <param name="y">Amount to scale in y</param>
+		/// <param name="z">Amount to scale in z</param>
 		public void ScaleRelative(float x, float y, float z)
 		{
 			scale.X *= x;
@@ -182,24 +220,44 @@ namespace CSharpPathTracer
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Scales the transform relatively (i.e., 2 is twice as large)
+		/// </summary>
+		/// <param name="offset">Amounts to scale</param>
 		public void ScaleRelative(Vector3 offset)
 		{
 			scale *= offset;
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current position
+		/// </summary>
+		/// <param name="x">New x position</param>
+		/// <param name="y">New y position</param>
+		/// <param name="z">New z position</param>
 		public void SetPosition(float x, float y, float z)
 		{
 			position = new Vector3(x, y, z);
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current position
+		/// </summary>
+		/// <param name="pos">The new position</param>
 		public void SetPosition(Vector3 pos)
 		{
 			position = pos;
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current rotation
+		/// </summary>
+		/// <param name="p">The new pitch value</param>
+		/// <param name="y">The new yaw value</param>
+		/// <param name="r">The new roll value</param>
 		public void SetRotation(float p, float y, float r)
 		{
 			pitchYawRoll = new Vector3(p, y, r);
@@ -207,6 +265,10 @@ namespace CSharpPathTracer
 			vectorsDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current rotation
+		/// </summary>
+		/// <param name="pitchYawRoll">New rotation values</param>
 		public void SetRotation(Vector3 pitchYawRoll)
 		{
 			this.pitchYawRoll = pitchYawRoll;
@@ -214,24 +276,43 @@ namespace CSharpPathTracer
 			vectorsDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current scale
+		/// </summary>
+		/// <param name="uniformScale">The single value for all three axes</param>
 		public void SetScale(float uniformScale)
 		{
 			this.scale = new Vector3(uniformScale, uniformScale, uniformScale);
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current scale
+		/// </summary>
+		/// <param name="x">New x scale</param>
+		/// <param name="y">New y scale</param>
+		/// <param name="z">New z scale</param>
 		public void SetScale(float x, float y, float z)
 		{
 			this.scale = new Vector3(x, y, z);
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Overwrites the current scale
+		/// </summary>
+		/// <param name="scale">New scale values</param>
 		public void SetScale(Vector3 scale)
 		{
 			this.scale = scale;
 			matricesDirty = true;
 		}
 
+		/// <summary>
+		/// Sets the position, rotation and scale from a single world matrix
+		/// </summary>
+		/// <param name="world">The world matrix to decompose</param>
+		/// <returns>True if it works, false if the world matrix cannot be decomposed</returns>
 		public bool SetTransformFromMatrix(Matrix4x4 world)
 		{
 			// Decompose the matrix
@@ -250,6 +331,11 @@ namespace CSharpPathTracer
 			return success;
 		}
 
+		/// <summary>
+		/// Adds a transform as a child
+		/// </summary>
+		/// <param name="child">The new child transform</param>
+		/// <param name="makeChildRelative">Should the child's transform change to keep it in the same spot relative to the parent?</param>
 		public void AddChild(Transform child, bool makeChildRelative = true)
 		{
 			// Verify child is valid
@@ -281,6 +367,11 @@ namespace CSharpPathTracer
 			child.MarkChildTransformsDirty();
 		}
 
+		/// <summary>
+		/// Removes a child from this transform if possible
+		/// </summary>
+		/// <param name="child">The child to remove</param>
+		/// <param name="applyParentTransform">Should the parent transform be applied so it stays put?</param>
 		public void RemoveChild(Transform child, bool applyParentTransform = true)
 		{
 			// Is the child valid?
@@ -308,6 +399,11 @@ namespace CSharpPathTracer
 			child.MarkChildTransformsDirty();
 		}
 
+		/// <summary>
+		/// Sets the parent of this transform
+		/// </summary>
+		/// <param name="newParent">The new parent</param>
+		/// <param name="makeChildRelative">Should this transform be adjust so it stays put?</param>
 		public void SetParent(Transform newParent, bool makeChildRelative = true)
 		{
 			// Unparent if necessary
@@ -323,6 +419,11 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Gets the specified child
+		/// </summary>
+		/// <param name="index">The index of the child</param>
+		/// <returns>The child transform, or null if the index is invalid</returns>
 		public Transform GetChild(int index)
 		{
 			if (index < 0 || index >= children.Count)
@@ -331,6 +432,11 @@ namespace CSharpPathTracer
 			return children[index];
 		}
 
+		/// <summary>
+		/// Gets the index of a child transform
+		/// </summary>
+		/// <param name="child">The child to check for</param>
+		/// <returns>The index, or -1 if child isn't found</returns>
 		public int GetChildIndex(Transform child)
 		{
 			// Verify child
@@ -341,6 +447,9 @@ namespace CSharpPathTracer
 			return children.IndexOf(child);
 		}
 
+		/// <summary>
+		/// Updates the matrices of the transform if they're dirty
+		/// </summary>
 		private void UpdateMatrices()
 		{
 			if (!matricesDirty)
@@ -368,6 +477,9 @@ namespace CSharpPathTracer
 			matricesDirty = false;
 		}
 
+		/// <summary>
+		/// Updates the local vectors if they're dirty
+		/// </summary>
 		private void UpdateVectors()
 		{
 			if (!vectorsDirty)
@@ -383,6 +495,9 @@ namespace CSharpPathTracer
 			vectorsDirty = false;
 		}
 
+		/// <summary>
+		/// Recursively marks child transforms dirty
+		/// </summary>
 		private void MarkChildTransformsDirty()
 		{
 			// Recursively set each child dirty
@@ -393,6 +508,11 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Converts a quaternion to Euler angles
+		/// </summary>
+		/// <param name="quat">The quaternion to convert</param>
+		/// <returns>The pitch, yaw and roll values</returns>
 		private Vector3 QuaternionToEuler(Quaternion quat)
 		{
 			// Convert quaternion to euler angles

@@ -5,6 +5,9 @@ using MathHelper = Microsoft.Xna.Framework.MathHelper;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// How two AABBs overlap
+	/// </summary>
 	public enum AABBContainment
 	{
 		NoOverlap,
@@ -12,6 +15,9 @@ namespace CSharpPathTracer
 		Intersects
 	}
 
+	/// <summary>
+	/// An axis-aligned bounding box
+	/// </summary>
 	struct AABB
 	{
 		private Vector3 min;
@@ -24,12 +30,21 @@ namespace CSharpPathTracer
 		public float Height { get => max.Y - min.Y; }
 		public float Depth { get => max.Z - min.Z; }
 
+		/// <summary>
+		/// Creates a new AABB with the specified extents
+		/// </summary>
+		/// <param name="min">The minimum values on x, y and z</param>
+		/// <param name="max">The maximum values on x, y and z</param>
 		public AABB(Vector3 min, Vector3 max)
 		{
 			this.min = min;
 			this.max = max;
 		}
 
+		/// <summary>
+		/// Expands the AABB to include the given point
+		/// </summary>
+		/// <param name="point">The point to now include in the AABB</param>
 		public void Encompass(Vector3 point)
 		{
 			// Test min
@@ -43,42 +58,76 @@ namespace CSharpPathTracer
 			if (point.Z > Max.Z) max.Z = point.Z;
 		}
 
+		/// <summary>
+		/// Expands the AABB to include an entire other AABB
+		/// </summary>
+		/// <param name="other">The other AABB to include</param>
 		public void Encompass(AABB other)
 		{
 			Encompass(other.min);
 			Encompass(other.max);
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the left half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on X</returns>
 		public AABB LeftHalf()
 		{
 			return new AABB(min, new Vector3(MathHelper.Lerp(min.X, max.X, 0.5f), max.Y, max.Z));
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the right half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on X</returns>
 		public AABB RightHalf()
 		{
 			return new AABB(new Vector3(MathHelper.Lerp(min.X, max.X, 0.5f), min.Y, min.Z), max);
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the bottom half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on Y</returns>
 		public AABB BottomHalf()
 		{
 			return new AABB(min, new Vector3(max.X, MathHelper.Lerp(min.Y, max.Y, 0.5f), max.Z));
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the top half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on Y</returns>
 		public AABB TopHalf()
 		{
 			return new AABB(new Vector3(min.X, MathHelper.Lerp(min.Y, max.Y, 0.5f), min.Z), max);
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the front half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on Z</returns>
 		public AABB FrontHalf()
 		{
 			return new AABB(min, new Vector3(max.X, max.Y, MathHelper.Lerp(min.Z, max.Z, 0.5f)));
 		}
 
+		/// <summary>
+		/// Creates a new AABB whose volume is the back half of this one
+		/// </summary>
+		/// <returns>A new AABB that is half the size of the original on Z</returns>
 		public AABB BackHalf()
 		{
 			return new AABB(new Vector3(min.X, min.Y, MathHelper.Lerp(min.Z, max.Z, 0.5f)), max);
 		}
 
+		/// <summary>
+		/// Determines if another AABB could fully fit into this one.  Note that this only
+		/// compares sizes, and does not explicitely check for an overlap.
+		/// </summary>
+		/// <param name="other">The other AABB to check</param>
+		/// <returns>True if the specified AABB could fit inside this one, false otherwise</returns>
 		public bool CouldFit(AABB other)
 		{
 			return
@@ -87,6 +136,11 @@ namespace CSharpPathTracer
 				this.Depth >= other.Depth;
 		}
 
+		/// <summary>
+		/// Returns the position of the specified corner of the AABB
+		/// </summary>
+		/// <param name="cornerIndex">The index of the corner, 0-7</param>
+		/// <returns>A 3D vector holding the position of the specified corner</returns>
 		public Vector3 GetCorner(int cornerIndex)
 		{
 			switch (cornerIndex)
@@ -103,6 +157,11 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Creates a new AABB that encompasses the transformed version of this AABB
+		/// </summary>
+		/// <param name="transform">The transform to apply</param>
+		/// <returns>A new AABB that encompasses this one after a transformation</returns>
 		public AABB GetTransformed(Transform transform)
 		{
 			// Get the transformed min, which is GetCorner[0]
@@ -121,6 +180,11 @@ namespace CSharpPathTracer
 			return transformedAABB;
 		}
 
+		/// <summary>
+		/// Determines if this AABB contains or overlaps another AABB
+		/// </summary>
+		/// <param name="other">The other AABB to check</param>
+		/// <returns>The containment type</returns>
 		public AABBContainment Contains(AABB other)
 		{
 			// First check if there is space between them
@@ -152,13 +216,24 @@ namespace CSharpPathTracer
 			return AABBContainment.Intersects;
 		}
 
+		/// <summary>
+		/// Creates a new AABB that encompasses both of the given AABBs
+		/// </summary>
+		/// <param name="b1">The first AABB</param>
+		/// <param name="b2">The second AABB</param>
+		/// <returns>A new AABB that encompasses both of the given AABBs</returns>
 		public static AABB Combine(AABB b1, AABB b2)
 		{
 			b1.Encompass(b2);
 			return b1;
 		}
 
-
+		/// <summary>
+		/// Determines if and where the given ray intersects this AABB
+		/// </summary>
+		/// <param name="ray">The ray to check</param>
+		/// <param name="distance">The distance of the hit from the ray's origin</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public bool Intersects(Ray ray, out float distance)
 		{
 			// Reference: https://tavianator.com/2015/ray_box_nan.html
@@ -315,7 +390,11 @@ namespace CSharpPathTracer
 			}
 		}
 
-
+		/// <summary>
+		/// Determines if the given ray intersects this AABB
+		/// </summary>
+		/// <param name="ray">The ray to check</param>
+		/// <returns>True if an intersection occurs, false otherwise</returns>
 		public bool Intersects(Ray ray)
 		{
 			float ignore;
