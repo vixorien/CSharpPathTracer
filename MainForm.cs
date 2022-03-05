@@ -196,7 +196,8 @@ namespace CSharpPathTracer
 				renderTarget.Height,
 				samplesPerPixel,
 				resolutionReduction,
-				maxRecursion);
+				maxRecursion,
+				checkProgressive.Checked);
 			worker.RunWorkerAsync(rtParams);
 
 			// Restart the stopwatch to track raytracing time
@@ -230,7 +231,7 @@ namespace CSharpPathTracer
 					pixels.Scan0 + pixels.Stride * y,
 					progress.Scanline.Length);
 			}
-
+			
 			// Display the "progress" line as necessary (after any duplication)
 			if (raytracingMode != RaytracingMode.Realtime && y < renderTarget.Height - 1)
 			{
@@ -248,9 +249,10 @@ namespace CSharpPathTracer
 			// Update progress bar and other status if not realtime
 			if (raytracingMode != RaytracingMode.Realtime)
 			{
-				progressRT.ProgressBar.IncrementNoAnimation(progress.ScanlineDuplicateCount); // One or more rows are done
+				//progressRT.ProgressBar.IncrementNoAnimation(progress.ScanlineDuplicateCount); // One or more rows are done
+				progressRT.ProgressBar.SetPercentage(progress.CompletionPercent);
 
-				labelStatus.Text = "Status: Raytracing..." + Math.Round(progress.CompletionPercent, 2) + "%";
+				labelStatus.Text = "Status: Raytracing..." + Math.Round(progress.CompletionPercent * 100, 2) + "%";
 				labelTotalRays.Text = "Total Rays: " + progress.Stats.TotalRays.ToString("N0");
 				labelDeepestRecursion.Text = "Deepest Recursion: " + progress.Stats.DeepestRecursion;
 				labelTime.Text = "Total Time: " + stopwatch.Elapsed.ToString(@"hh\:mm\:ss\.fff");
@@ -469,6 +471,7 @@ namespace CSharpPathTracer
 					RealtimeMaxRecursion);	
 			}
 
+			Application.DoEvents();
 		}
 
 		// ================================================

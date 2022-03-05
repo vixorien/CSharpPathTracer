@@ -52,6 +52,7 @@ namespace CSharpPathTracer
 			this.sliderResReduction = new System.Windows.Forms.TrackBar();
 			this.timerFrameLoop = new System.Windows.Forms.Timer(this.components);
 			this.buttonSave = new System.Windows.Forms.Button();
+			this.checkProgressive = new System.Windows.Forms.CheckBox();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			this.raytracingStatus.SuspendLayout();
@@ -87,9 +88,9 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixel.AutoSize = true;
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(12, 64);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(99, 15);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(79, 15);
 			this.labelSamplesPerPixel.TabIndex = 4;
-			this.labelSamplesPerPixel.Text = "Samples Per Pixel";
+			this.labelSamplesPerPixel.Text = "Rays Per Pixel";
 			// 
 			// labelMaxRecursion
 			// 
@@ -270,11 +271,22 @@ namespace CSharpPathTracer
 			this.buttonSave.UseVisualStyleBackColor = true;
 			this.buttonSave.Click += new System.EventHandler(this.buttonSave_Click);
 			// 
+			// checkProgressive
+			// 
+			this.checkProgressive.AutoSize = true;
+			this.checkProgressive.Location = new System.Drawing.Point(12, 359);
+			this.checkProgressive.Name = "checkProgressive";
+			this.checkProgressive.Size = new System.Drawing.Size(86, 19);
+			this.checkProgressive.TabIndex = 21;
+			this.checkProgressive.Text = "Progressive";
+			this.checkProgressive.UseVisualStyleBackColor = true;
+			// 
 			// MainForm
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.ClientSize = new System.Drawing.Size(828, 491);
+			this.Controls.Add(this.checkProgressive);
 			this.Controls.Add(this.buttonSave);
 			this.Controls.Add(this.labelResReduction);
 			this.Controls.Add(this.sliderResReduction);
@@ -332,5 +344,6 @@ namespace CSharpPathTracer
 		private System.Windows.Forms.TrackBar sliderResReduction;
 		private System.Windows.Forms.Timer timerFrameLoop;
 		private System.Windows.Forms.Button buttonSave;
+		private System.Windows.Forms.CheckBox checkProgressive;
 	}
 }

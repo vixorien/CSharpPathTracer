@@ -205,6 +205,27 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Sets the progress bar's value as a percentage of completion
+		/// </summary>
+		/// <param name="bar">This bar</param>
+		/// <param name="percent">The percentage from 0 - 1</param>
+		public static void SetPercentage(this ProgressBar bar, double percent)
+		{
+			if (bar == null)
+				return;
+
+			// Calculate the new maximum value and verify bounds
+			int newValue = bar.Minimum + (int)((bar.Maximum - bar.Minimum) * percent);
+			newValue = Math.Clamp(newValue, bar.Minimum, bar.Maximum);
+
+			// Set the value now that we know it's value, then decrease
+			// and increase to stop the damn animation
+			bar.Value = newValue;
+			bar.Increment(-1);
+			bar.Increment(1);
+		}
+
+		/// <summary>
 		/// Attempts to stop the scrolling marquee animation
 		/// </summary>
 		/// <param name="bar">The bar itself</param>

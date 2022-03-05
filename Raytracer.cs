@@ -13,13 +13,14 @@ namespace CSharpPathTracer
 	{
 		public Scene Scene { get; set; }
 		public Camera Camera { get; set; }
+		public int Width { get; set; }
+		public int Height { get; set; }
 		public int SamplesPerPixel { get; set; }
 		public int ResolutionReduction { get; set; }
 		public int MaxRecursionDepth { get; set; }
-		public int Width { get; set; }
-		public int Height { get; set; }
+		public bool Progressive { get; set; }
 
-		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
+		public RaytracingParameters(Scene scene, Camera camera, int width, int height, int samplesPerPixel, int resolutionReduction, int maxRecursionDepth, bool progressive)
 		{
 			Scene = scene;
 			Width = width;
@@ -28,6 +29,7 @@ namespace CSharpPathTracer
 			SamplesPerPixel = samplesPerPixel;
 			ResolutionReduction = resolutionReduction;
 			MaxRecursionDepth = maxRecursionDepth;
+			Progressive = progressive;
 		}
 	}
 
@@ -76,6 +78,7 @@ namespace CSharpPathTracer
 	{
 		private RaytracingStats stats;
 		private byte[][] pixels;
+		private Vector3[][] progressiveColors;
 
 		/// <summary>
 		/// Numbers of channels per pixel for our results
@@ -120,58 +123,93 @@ namespace CSharpPathTracer
 				// arrays of colors to easily faciliate returning
 				// a single scanline of colors at a time
 				pixels = new byte[height][];
+				progressiveColors = new Vector3[height][];
 				for (int h = 0; h < height; h++)
 				{
 					pixels[h] = new byte[width * ChannelsPerPixel];
+					progressiveColors[h] = new Vector3[width];
 				}
 			}
+
+			// Reset progressive colors
+			for (int h = 0; h < height; h++)
+				for (int w = 0; w < width; w++)
+					progressiveColors[h][w] = new Vector3();
 
 			// Figure out the resolution, and adjust by half so we
 			// calculate the "center" of the large pixel
 			int res = rtParams.ResolutionReduction;
 			int half = res / 2;
 
-			// Loop through scanlines
-			for (int y = half; y < height; y += res)
+			// Values we'll be using for rays
+			int progressiveSteps = rtParams.Progressive ? rtParams.SamplesPerPixel : 1;
+			int raysPerPixel = rtParams.Progressive ? 1 : rtParams.SamplesPerPixel;
+
+			// Progressive loop (as necessary)
+			for (int p = 0; p < progressiveSteps; p++)
 			{
-				// Loop through pixels on a scanline (parallel so it's async)
-				Parallel.For(0, (int)Math.Ceiling((double)width / res), xIteration =>
+				// Loop through scanlines
+				for (int y = half; y < height; y += res)
 				{
-					// The actual coordinate to use (adjusted by half due to resolution reduction)
-					int x = xIteration * res + half;
-
-					// Multiple samples per pixel
-					Vector3 totalColor = Vector3.Zero;
-					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
+					// Loop through pixels on a scanline (parallel so it's async)
+					Parallel.For(0, (int)Math.Ceiling((double)width / res), xIteration =>
 					{
-						float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
-						float adjustedY = y + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+						// The actual coordinate to use (adjusted by half due to resolution reduction)
+						int x = xIteration * res + half;
 
-						// Get this ray and add to the total raytraced color
-						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
-						totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
+						// Multiple samples per pixel
+						Vector3 totalColor = Vector3.Zero;
+						for (int s = 0; s < raysPerPixel; s++)
+						{
+							float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+							float adjustedY = y + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+
+							// Get this ray and add to the total raytraced color
+							Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
+								totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
+						}
+
+						// Average the color and set the resolution block
+						if(raysPerPixel > 1)
+							totalColor /= raysPerPixel;
+
+						// What's the best value to use for X?
+						int bestX = Math.Min(xIteration, width);
+
+						// Add to the progressive color, average and convert to bytes
+						progressiveColors[y][bestX] += totalColor;
+						Vector3 avgResult = progressiveColors[y][bestX] / (p + 1);
+						Vector3 colorAsBytes = ColorAsBytes(ref avgResult, true);
+
+						// Set the block of pixels necessary for the reduced pixel count
+						for (int blockX = x - half; blockX < x + res - half && blockX < width; blockX++)
+						{
+							SetByteColor(pixels, blockX, y, ref colorAsBytes);
+						}
+					});
+
+					// Check for cancellation
+					if (worker.CancellationPending)
+					{
+						e.Cancel = true;
+						return;
 					}
 
-					// Average the color and set the resolution block
-					totalColor /= rtParams.SamplesPerPixel;
-
-					// Prepare to set the color in the array of bytes
-					Vector3 colorAsBytes = ColorAsBytes(ref totalColor, true);
-					for (int blockX = x - half; blockX < x + res - half && blockX < width; blockX++)
-						SetByteColor(pixels, blockX, y, ref colorAsBytes);
-				});
-
-				// Check for cancellation
-				if (worker.CancellationPending)
-				{
-					e.Cancel = true;
-					return;
+					// Report each scanline that was completed
+					double onePassPercentage = 1.0 / progressiveSteps;
+					double percentComplete = (double)p / progressiveSteps;
+					percentComplete += ((double)y / height) * onePassPercentage;
+					
+					RaytracingProgress progress = new RaytracingProgress(
+						y - half, 
+						res, 
+						pixels[y],
+						percentComplete, 
+						stats);
+					worker.ReportProgress((int)progress.CompletionPercent, progress);
 				}
-
-				// Report each scanline that was completed
-				RaytracingProgress progress = new RaytracingProgress(y - half, res, pixels[y], (double)y / height * 100, stats);
-				worker.ReportProgress((int)progress.CompletionPercent, progress);
 			}
+
 		}
 
 		/// <summary>
