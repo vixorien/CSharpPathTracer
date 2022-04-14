@@ -32,9 +32,9 @@ namespace CSharpPathTracer
 		private const float CameraRotationSpeed = 0.01f;
 
 		// Options for real-time movement
-		private const int RealtimeSamplesPerPixel = 1;
-		private const int RealtimeResolutionReduction = 8;
-		private const int RealtimeMaxRecursion = 8;
+		//private const int RealtimeSamplesPerPixel = 1;
+		//private const int RealtimeResolutionReduction = 8;
+		//private const int RealtimeMaxRecursion = 8;
 
 		// Threading and UI
 		private BackgroundWorker worker;
@@ -65,6 +65,21 @@ namespace CSharpPathTracer
 		/// Gets the current resolution reduction
 		/// </summary>
 		public int ResolutionReduction { get { return (int)Math.Pow(2, sliderResReduction.Value); } }
+
+		/// <summary>
+		/// Gets the current maximum recursion value
+		/// </summary>
+		public int MaxRecursionLive { get { return sliderMaxRecursionLive.Value; } }
+
+		/// <summary>
+		/// Gets the current samples per pixel
+		/// </summary>
+		public int SamplesPerPixelLive { get { return sliderSamplesPerPixelLive.Value; } }
+
+		/// <summary>
+		/// Gets the current resolution reduction
+		/// </summary>
+		public int ResolutionReductionLive { get { return (int)Math.Pow(2, sliderResReductionLive.Value); } }
 
 		/// <summary>
 		/// Creates the form
@@ -99,6 +114,9 @@ namespace CSharpPathTracer
 			labelSamplesPerPixel.Text = "Samples Per Pixel: " + SamplesPerPixel;
 			labelMaxRecursion.Text = "Max Recursion Depth: " + MaxRecursion;
 			labelResReduction.Text = "Resolution Reduction: " + ResolutionReduction;
+			labelSamplesPerPixelLive.Text = "Samples Per Pixel: " + SamplesPerPixelLive;
+			labelMaxRecursionLive.Text = "Max Recursion Depth: " + MaxRecursionLive;
+			labelResReductionLive.Text = "Resolution Reduction: " + ResolutionReductionLive;
 			textWidth.Text = raytracingDisplay.Width.ToString();
 			textHeight.Text = raytracingDisplay.Height.ToString();
 
@@ -134,7 +152,9 @@ namespace CSharpPathTracer
 			// Update the UI
 			labelStatus.Text = "Status: Raytracing...";
 			buttonStartRaytrace.Text = "Cancel Raytrace";
-			
+
+			// Swap to the full tab
+			tabTraceOptions.SelectedTab = tabPageFullTrace;
 
 			// Start the full raytrace with the user's values
 			BeginRaytrace(
@@ -315,6 +335,30 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Update the live samples text label
+		/// </summary>
+		private void sliderSamplesPerPixelLive_Scroll(object sender, EventArgs e)
+		{
+			labelSamplesPerPixelLive.Text = "Samples Per Pixel: " + SamplesPerPixelLive;
+		}
+
+		/// <summary>
+		/// Update the live recursion text label
+		/// </summary>
+		private void sliderMaxRecursionLive_Scroll(object sender, EventArgs e)
+		{
+			labelMaxRecursionLive.Text = "Max Recursion Depth: " + MaxRecursionLive;
+		}
+
+		/// <summary>
+		/// Update the live resolution reduction text label
+		/// </summary>
+		private void sliderResReductionLive_Scroll(object sender, EventArgs e)
+		{
+			labelResReductionLive.Text = "Resolution Reduction: " + ResolutionReductionLive;
+		}
+
+		/// <summary>
 		/// Adjusts the display now that the form has been resized
 		/// </summary>
 		private void MainForm_Resize(object sender, EventArgs e)
@@ -333,9 +377,9 @@ namespace CSharpPathTracer
 			// Perform a single low res raytrace now that the scene has changed
 			BeginRaytrace(
 				RaytracingMode.Once,
-				RealtimeSamplesPerPixel,
-				RealtimeResolutionReduction,
-				RealtimeMaxRecursion);
+				SamplesPerPixelLive,
+				ResolutionReductionLive,
+				MaxRecursionLive);
 		}
 
 		/// <summary>
@@ -400,6 +444,9 @@ namespace CSharpPathTracer
 			displayHasMouse = true;
 			prevMouse = e.Location;
 			raytracingMode = RaytracingMode.Realtime;
+
+			// Swap to the real-time tab
+			tabTraceOptions.SelectedTab = tabPageRealTime;
 
 			// Cancel any existing rendering
 			worker?.CancelAsync();
@@ -466,9 +513,9 @@ namespace CSharpPathTracer
 			{
 				BeginRaytrace(
 					RaytracingMode.Realtime,
-					RealtimeSamplesPerPixel,
-					RealtimeResolutionReduction,
-					RealtimeMaxRecursion);	
+					SamplesPerPixelLive,
+					ResolutionReductionLive,
+					MaxRecursionLive);
 			}
 
 			Application.DoEvents();
@@ -516,8 +563,6 @@ namespace CSharpPathTracer
 			e.Handled = true;
 		}
 
-
-
-		
+	
 	}
 }
