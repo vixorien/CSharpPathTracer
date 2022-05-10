@@ -13,6 +13,9 @@ namespace CSharpPathTracer
 		private float farClip;
 		private float aspectRatio;
 		private float fieldOfView;
+		private float aperture;
+		private float lensRadius;
+		private float focalDistance;
 
 		private Matrix4x4 viewMatrix;
 		private Matrix4x4 projMatrix;
@@ -42,6 +45,16 @@ namespace CSharpPathTracer
 		/// Gets or sets the camera's field of view (in Y)
 		/// </summary>
 		public float FieldOfView { get { return fieldOfView; } set { fieldOfView = value; projDirty = true; } }
+
+		/// <summary>
+		/// Gets or sets the camera's aperture
+		/// </summary>
+		public float Aperture { get { return aperture; } set { aperture = value; lensRadius = aperture / 2.0f; } }
+
+		/// <summary>
+		/// Gets or sets the focal plane distance of the camera
+		/// </summary>
+		public float FocalDistance { get { return focalDistance; } set { focalDistance = value; projDirty = true; } }
 
 		/// <summary>
 		/// Gets the camera's view matrix
@@ -79,12 +92,16 @@ namespace CSharpPathTracer
 		/// <param name="fieldOfView">The field of view (in Y)</param>
 		/// <param name="nearClip">The near clip plane distance</param>
 		/// <param name="farClip">The far clip plane distance</param>
+		/// <param name="aperture">The aperture of the camera lens</param>
+		/// <param name="focalDistance">The focal plane distance of the camera</param>
 		public Camera(
 			Vector3 position, 
 			float aspectRatio,
 			float fieldOfView,
 			float nearClip,
-			float farClip)
+			float farClip,
+			float aperture,
+			float focalDistance)
 		{
 			transform = new Transform();
 			transform.SetPosition(position);
@@ -92,6 +109,8 @@ namespace CSharpPathTracer
 			FarClip = farClip;
 			AspectRatio = aspectRatio;
 			FieldOfView = fieldOfView;
+			Aperture = aperture;
+			FocalDistance = focalDistance;
 
 			projDirty = true;
 		}
@@ -122,8 +141,12 @@ namespace CSharpPathTracer
 				unprojPos.Y,
 				unprojPos.Z);
 
+			// Calculate the depth of field offset
+			Vector3 randCircle = ThreadSafeRandom.Instance.NextVectorInCircle(lensRadius);
+			Vector3 depthOfFieldOffset = transform.Right * randCircle.X + transform.Up * randCircle.Y;
+
 			// Create the ray
-			return new Ray(transform.Position, Vector3.Normalize(worldPos - transform.Position), NearClip, FarClip);
+			return new Ray(transform.Position + depthOfFieldOffset, Vector3.Normalize(worldPos - transform.Position - depthOfFieldOffset), NearClip, FarClip);
 		}
 
 		/// <summary>
@@ -148,7 +171,7 @@ namespace CSharpPathTracer
 			projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
 				MathF.PI / 4,
 				AspectRatio,
-				NearClip,
+				NearClip + FocalDistance,
 				FarClip);
 			projDirty = false;
 		}

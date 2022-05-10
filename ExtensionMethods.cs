@@ -166,6 +166,26 @@ namespace CSharpPathTracer
 
 			return randomVec;
 		}
+
+		/// <summary>
+		/// Generates a 3D vector with random x & y components within a 
+		/// circle of the given radius, and a z component of zero
+		/// </summary>
+		/// <param name="rng">The random object itself</param>
+		/// <param name="radius">The radius of the circle</param>
+		/// <returns>A vector with length less than the given radius</returns>
+		public static Vector3 NextVectorInCircle(this Random rng, float radius)
+		{
+			// Start with random values in x and y
+			Vector3 randomVec = new Vector3(
+				rng.NextFloat(-1.0f, 1.0f),
+				rng.NextFloat(-1.0f, 1.0f),
+				0.0f);
+
+			// Normalize and adjust radius randomly
+			return Vector3.Normalize(randomVec) * rng.NextFloat(radius);
+		}
+
 	}
 
 	/// <summary>

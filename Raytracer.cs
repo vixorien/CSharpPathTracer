@@ -166,7 +166,7 @@ namespace CSharpPathTracer
 
 							// Get this ray and add to the total raytraced color
 							Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, width, height);
-								totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
+							totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
 						}
 
 						// Average the color and set the resolution block

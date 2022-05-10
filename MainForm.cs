@@ -100,7 +100,9 @@ namespace CSharpPathTracer
 				raytracingDisplay.AspectRatio,
 				MathF.PI / 4.0f,
 				0.01f,
-				1000.0f);
+				1000.0f,
+				1.0f,
+				20.0f);
 			camera.Transform.Rotate(-0.25f, 0, 0);
 
 			// Create the ray tracer before the background worker
