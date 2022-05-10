@@ -102,6 +102,17 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Gets the emission color at the specified uv coord
+		/// </summary>
+		/// <param name="uv">The uv to sample</param>
+		/// <returns>An emissive color</returns>
+		public virtual Vector3 GetEmissionAtUV(Vector2 uv)
+		{
+			// No emission by default
+			return Vector3.Zero;
+		}
+
+		/// <summary>
 		/// Generates a new ray after the given ray has hit this material
 		/// </summary>
 		/// <param name="ray">The ray to further bounce</param>
@@ -308,6 +319,31 @@ namespace CSharpPathTracer
 
 			// Create the new ray based on either reflection or refraction
 			return new Ray(hit.Position, newDir, ray.TMin, ray.TMax);
+		}
+	}
+
+	/// <summary>
+	/// A material that emits light
+	/// </summary>
+	class EmissiveMaterial : DiffuseMaterial
+	{
+		/// <summary>
+		/// Creates a new perfectly diffuse material
+		/// </summary>
+		/// <param name="emissiveColor">Color emitted by the surface</param>
+		public EmissiveMaterial(Vector3 emissiveColor)
+			: base(emissiveColor)
+		{
+		}
+
+		/// <summary>
+		/// Returns the material's color for emission
+		/// </summary>
+		/// <param name="uv">The uv for sampling</param>
+		/// <returns>The emitted color</returns>
+		public override Vector3 GetEmissionAtUV(Vector2 uv)
+		{
+			return Color;
 		}
 	}
 }

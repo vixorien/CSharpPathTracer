@@ -7,7 +7,7 @@ namespace CSharpPathTracer
 	/// <summary>
 	/// A 3D scene that can be raytraced
 	/// </summary>
-	class Scene:  IBoundable, IRayIntersectable
+	class Scene : IBoundable, IRayIntersectable
 	{
 		private List<Entity> entities;
 		private Octree<Entity> octree;
@@ -123,6 +123,8 @@ namespace CSharpPathTracer
 				System.Drawing.Color.White.ToVector3(),
 				System.Drawing.Color.White.ToVector3());
 
+			Environment blackEnv = new EnvironmentSolid(Vector3.Zero);
+
 			Environment skybox = new EnvironmentSkybox(
 				skyRight,
 				skyLeft,
@@ -147,6 +149,11 @@ namespace CSharpPathTracer
 			Material transparent = new TransparentMaterial(new Vector3(1, 1, 1), 1.5f);
 			Material transparentRough = new TransparentMaterial(Vector3.One, 1.5f, null, tilesTextureNoGamma);
 
+			Material whiteLight = new EmissiveMaterial(new Vector3(1, 1, 1));
+			Material redLight = new EmissiveMaterial(new Vector3(1, 0, 0));
+			Material greenLight = new EmissiveMaterial(new Vector3(0, 1, 0));
+			Material blueLight = new EmissiveMaterial(new Vector3(0, 0, 1));
+
 			// === Meshes ===
 			Mesh cubeMesh = new Mesh("Content/Models/cube.obj");
 			Mesh helixMesh = new Mesh("Content/Models/helix.obj");
@@ -156,10 +163,6 @@ namespace CSharpPathTracer
 
 			// === DEFAULT SCENE with and without skybox ===
 			{
-				//Entity ground = new Entity(Sphere.Default, grayMatte);
-				//ground.Transform.SetPosition(0, -1000, 0);
-				//ground.Transform.SetScale(1000);
-
 				Entity ground = new Entity(quadMesh, grayMatte);
 				ground.Transform.SetScale(100.0f);
 
@@ -269,8 +272,36 @@ namespace CSharpPathTracer
 				scenes.Add(scene);
 			}
 
+			// === EMISSIVE SCENE ===
+			{
+				Entity ground = new Entity(quadMesh, grayMatte);
+				ground.Transform.SetScale(100.0f);
+
+				Entity left = new Entity(Sphere.Default, whiteLight);
+				left.Transform.SetPosition(-5, 2, 0);
+				left.Transform.SetScale(2);
+
+				Entity middle = new Entity(Sphere.Default, mirror);
+				middle.Transform.SetPosition(0, 4, 0);
+				middle.Transform.SetScale(2);
+
+				Entity right = new Entity(Sphere.Default, metalTiles);
+				right.Transform.SetPosition(5, 2, 0);
+				right.Transform.SetScale(2);
+
+				Scene scene = new Scene("Emissive", blackEnv, sceneBounds);
+				scene.Add(ground);
+				scene.Add(left);
+				scene.Add(middle);
+				scene.Add(right);
+
+				// Add to scene list
+				scenes.Add(scene);
+			}
+
+
 			// Finalize all scenes and return
-			foreach (Scene s in scenes)	
+			foreach (Scene s in scenes)
 				s.FinalizeOctree();
 			return scenes;
 		}

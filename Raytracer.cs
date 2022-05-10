@@ -242,7 +242,9 @@ namespace CSharpPathTracer
 				Ray newRay = hitEntity.Material.GetNextBounce(ray, hit);
 				
 				// Take into account the hit color and trace the next ray
-				return hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
+				return 
+					hitEntity.Material.GetEmissionAtUV(hit.UV) + 
+					hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
 			}
 			else
 			{
