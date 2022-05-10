@@ -109,7 +109,7 @@ namespace CSharpPathTracer
 			this.labelWidth.Location = new System.Drawing.Point(17, 522);
 			this.labelWidth.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelWidth.Name = "labelWidth";
-			this.labelWidth.Size = new System.Drawing.Size(122, 25);
+			this.labelWidth.Size = new System.Drawing.Size(80, 15);
 			this.labelWidth.TabIndex = 8;
 			this.labelWidth.Text = "Output Width";
 			// 
@@ -119,7 +119,7 @@ namespace CSharpPathTracer
 			this.labelHeight.Location = new System.Drawing.Point(157, 522);
 			this.labelHeight.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelHeight.Name = "labelHeight";
-			this.labelHeight.Size = new System.Drawing.Size(127, 25);
+			this.labelHeight.Size = new System.Drawing.Size(84, 15);
 			this.labelHeight.TabIndex = 9;
 			this.labelHeight.Text = "Output Height";
 			// 
@@ -132,10 +132,10 @@ namespace CSharpPathTracer
             this.labelTotalRays,
             this.labelDeepestRecursion,
             this.labelTime});
-			this.raytracingStatus.Location = new System.Drawing.Point(0, 787);
+			this.raytracingStatus.Location = new System.Drawing.Point(0, 806);
 			this.raytracingStatus.Name = "raytracingStatus";
 			this.raytracingStatus.Padding = new System.Windows.Forms.Padding(1, 0, 20, 0);
-			this.raytracingStatus.Size = new System.Drawing.Size(1183, 32);
+			this.raytracingStatus.Size = new System.Drawing.Size(1183, 30);
 			this.raytracingStatus.TabIndex = 13;
 			this.raytracingStatus.Text = "statusStrip1";
 			// 
@@ -183,7 +183,7 @@ namespace CSharpPathTracer
 			this.textWidth.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.textWidth.Name = "textWidth";
 			this.textWidth.ReadOnly = true;
-			this.textWidth.Size = new System.Drawing.Size(115, 31);
+			this.textWidth.Size = new System.Drawing.Size(115, 23);
 			this.textWidth.TabIndex = 14;
 			this.textWidth.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
 			// 
@@ -193,7 +193,7 @@ namespace CSharpPathTracer
 			this.textHeight.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.textHeight.Name = "textHeight";
 			this.textHeight.ReadOnly = true;
-			this.textHeight.Size = new System.Drawing.Size(115, 31);
+			this.textHeight.Size = new System.Drawing.Size(115, 23);
 			this.textHeight.TabIndex = 15;
 			this.textHeight.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
 			// 
@@ -203,7 +203,7 @@ namespace CSharpPathTracer
 			this.labelScene.Location = new System.Drawing.Point(17, 15);
 			this.labelScene.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelScene.Name = "labelScene";
-			this.labelScene.Size = new System.Drawing.Size(58, 25);
+			this.labelScene.Size = new System.Drawing.Size(38, 15);
 			this.labelScene.TabIndex = 16;
 			this.labelScene.Text = "Scene";
 			// 
@@ -214,7 +214,7 @@ namespace CSharpPathTracer
 			this.comboScene.Location = new System.Drawing.Point(17, 45);
 			this.comboScene.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.comboScene.Name = "comboScene";
-			this.comboScene.Size = new System.Drawing.Size(258, 33);
+			this.comboScene.Size = new System.Drawing.Size(258, 23);
 			this.comboScene.TabIndex = 17;
 			this.comboScene.SelectedIndexChanged += new System.EventHandler(this.comboScene_SelectedIndexChanged);
 			// 
@@ -239,10 +239,10 @@ namespace CSharpPathTracer
 			// 
 			this.checkProgressive.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.checkProgressive.AutoSize = true;
-			this.checkProgressive.Location = new System.Drawing.Point(17, 599);
+			this.checkProgressive.Location = new System.Drawing.Point(17, 609);
 			this.checkProgressive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.checkProgressive.Name = "checkProgressive";
-			this.checkProgressive.Size = new System.Drawing.Size(129, 29);
+			this.checkProgressive.Size = new System.Drawing.Size(86, 19);
 			this.checkProgressive.TabIndex = 21;
 			this.checkProgressive.Text = "Progressive";
 			this.checkProgressive.UseVisualStyleBackColor = true;
@@ -266,10 +266,10 @@ namespace CSharpPathTracer
 			this.tabPageRealTime.Controls.Add(this.sliderMaxRecursionLive);
 			this.tabPageRealTime.Controls.Add(this.labelSamplesPerPixelLive);
 			this.tabPageRealTime.Controls.Add(this.sliderSamplesPerPixelLive);
-			this.tabPageRealTime.Location = new System.Drawing.Point(4, 34);
+			this.tabPageRealTime.Location = new System.Drawing.Point(4, 24);
 			this.tabPageRealTime.Name = "tabPageRealTime";
 			this.tabPageRealTime.Padding = new System.Windows.Forms.Padding(3);
-			this.tabPageRealTime.Size = new System.Drawing.Size(253, 372);
+			this.tabPageRealTime.Size = new System.Drawing.Size(253, 382);
 			this.tabPageRealTime.TabIndex = 0;
 			this.tabPageRealTime.Text = "Live (Real-Time)";
 			// 
@@ -279,7 +279,7 @@ namespace CSharpPathTracer
 			this.labelResReductionLive.Location = new System.Drawing.Point(10, 238);
 			this.labelResReductionLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelResReductionLive.Name = "labelResReductionLive";
-			this.labelResReductionLive.Size = new System.Drawing.Size(179, 25);
+			this.labelResReductionLive.Size = new System.Drawing.Size(120, 15);
 			this.labelResReductionLive.TabIndex = 31;
 			this.labelResReductionLive.Text = "Resolution Reduction";
 			// 
@@ -290,7 +290,7 @@ namespace CSharpPathTracer
 			this.sliderResReductionLive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderResReductionLive.Maximum = 4;
 			this.sliderResReductionLive.Name = "sliderResReductionLive";
-			this.sliderResReductionLive.Size = new System.Drawing.Size(226, 69);
+			this.sliderResReductionLive.Size = new System.Drawing.Size(226, 45);
 			this.sliderResReductionLive.TabIndex = 30;
 			this.sliderResReductionLive.Value = 3;
 			this.sliderResReductionLive.Scroll += new System.EventHandler(this.sliderResReductionLive_Scroll);
@@ -301,7 +301,7 @@ namespace CSharpPathTracer
 			this.labelMaxRecursionLive.Location = new System.Drawing.Point(10, 130);
 			this.labelMaxRecursionLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelMaxRecursionLive.Name = "labelMaxRecursionLive";
-			this.labelMaxRecursionLive.Size = new System.Drawing.Size(226, 25);
+			this.labelMaxRecursionLive.Size = new System.Drawing.Size(152, 15);
 			this.labelMaxRecursionLive.TabIndex = 29;
 			this.labelMaxRecursionLive.Text = "Maximum Recursion Depth";
 			// 
@@ -312,7 +312,7 @@ namespace CSharpPathTracer
 			this.sliderMaxRecursionLive.Maximum = 50;
 			this.sliderMaxRecursionLive.Minimum = 1;
 			this.sliderMaxRecursionLive.Name = "sliderMaxRecursionLive";
-			this.sliderMaxRecursionLive.Size = new System.Drawing.Size(226, 69);
+			this.sliderMaxRecursionLive.Size = new System.Drawing.Size(226, 45);
 			this.sliderMaxRecursionLive.TabIndex = 28;
 			this.sliderMaxRecursionLive.TickFrequency = 5;
 			this.sliderMaxRecursionLive.Value = 8;
@@ -324,7 +324,7 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixelLive.Location = new System.Drawing.Point(10, 22);
 			this.labelSamplesPerPixelLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelSamplesPerPixelLive.Name = "labelSamplesPerPixelLive";
-			this.labelSamplesPerPixelLive.Size = new System.Drawing.Size(118, 25);
+			this.labelSamplesPerPixelLive.Size = new System.Drawing.Size(79, 15);
 			this.labelSamplesPerPixelLive.TabIndex = 27;
 			this.labelSamplesPerPixelLive.Text = "Rays Per Pixel";
 			// 
@@ -336,7 +336,7 @@ namespace CSharpPathTracer
 			this.sliderSamplesPerPixelLive.Maximum = 16;
 			this.sliderSamplesPerPixelLive.Minimum = 1;
 			this.sliderSamplesPerPixelLive.Name = "sliderSamplesPerPixelLive";
-			this.sliderSamplesPerPixelLive.Size = new System.Drawing.Size(226, 69);
+			this.sliderSamplesPerPixelLive.Size = new System.Drawing.Size(226, 45);
 			this.sliderSamplesPerPixelLive.TabIndex = 26;
 			this.sliderSamplesPerPixelLive.Value = 1;
 			this.sliderSamplesPerPixelLive.Scroll += new System.EventHandler(this.sliderSamplesPerPixelLive_Scroll);
@@ -350,10 +350,10 @@ namespace CSharpPathTracer
 			this.tabPageFullTrace.Controls.Add(this.sliderMaxRecursion);
 			this.tabPageFullTrace.Controls.Add(this.labelSamplesPerPixel);
 			this.tabPageFullTrace.Controls.Add(this.sliderSamplesPerPixel);
-			this.tabPageFullTrace.Location = new System.Drawing.Point(4, 34);
+			this.tabPageFullTrace.Location = new System.Drawing.Point(4, 24);
 			this.tabPageFullTrace.Name = "tabPageFullTrace";
 			this.tabPageFullTrace.Padding = new System.Windows.Forms.Padding(3);
-			this.tabPageFullTrace.Size = new System.Drawing.Size(253, 372);
+			this.tabPageFullTrace.Size = new System.Drawing.Size(253, 382);
 			this.tabPageFullTrace.TabIndex = 1;
 			this.tabPageFullTrace.Text = "Full (Slow)";
 			// 
@@ -363,7 +363,7 @@ namespace CSharpPathTracer
 			this.labelResReduction.Location = new System.Drawing.Point(10, 238);
 			this.labelResReduction.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelResReduction.Name = "labelResReduction";
-			this.labelResReduction.Size = new System.Drawing.Size(179, 25);
+			this.labelResReduction.Size = new System.Drawing.Size(120, 15);
 			this.labelResReduction.TabIndex = 25;
 			this.labelResReduction.Text = "Resolution Reduction";
 			// 
@@ -374,8 +374,9 @@ namespace CSharpPathTracer
 			this.sliderResReduction.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderResReduction.Maximum = 4;
 			this.sliderResReduction.Name = "sliderResReduction";
-			this.sliderResReduction.Size = new System.Drawing.Size(226, 69);
+			this.sliderResReduction.Size = new System.Drawing.Size(226, 45);
 			this.sliderResReduction.TabIndex = 24;
+			this.sliderResReduction.Scroll += new System.EventHandler(this.sliderResReduction_Scroll);
 			// 
 			// labelMaxRecursion
 			// 
@@ -383,7 +384,7 @@ namespace CSharpPathTracer
 			this.labelMaxRecursion.Location = new System.Drawing.Point(10, 130);
 			this.labelMaxRecursion.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
-			this.labelMaxRecursion.Size = new System.Drawing.Size(226, 25);
+			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
 			this.labelMaxRecursion.TabIndex = 23;
 			this.labelMaxRecursion.Text = "Maximum Recursion Depth";
 			// 
@@ -394,10 +395,11 @@ namespace CSharpPathTracer
 			this.sliderMaxRecursion.Maximum = 50;
 			this.sliderMaxRecursion.Minimum = 1;
 			this.sliderMaxRecursion.Name = "sliderMaxRecursion";
-			this.sliderMaxRecursion.Size = new System.Drawing.Size(226, 69);
+			this.sliderMaxRecursion.Size = new System.Drawing.Size(226, 45);
 			this.sliderMaxRecursion.TabIndex = 22;
 			this.sliderMaxRecursion.TickFrequency = 5;
 			this.sliderMaxRecursion.Value = 25;
+			this.sliderMaxRecursion.Scroll += new System.EventHandler(this.sliderMaxRecursion_Scroll);
 			// 
 			// labelSamplesPerPixel
 			// 
@@ -405,7 +407,7 @@ namespace CSharpPathTracer
 			this.labelSamplesPerPixel.Location = new System.Drawing.Point(10, 22);
 			this.labelSamplesPerPixel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
-			this.labelSamplesPerPixel.Size = new System.Drawing.Size(118, 25);
+			this.labelSamplesPerPixel.Size = new System.Drawing.Size(79, 15);
 			this.labelSamplesPerPixel.TabIndex = 21;
 			this.labelSamplesPerPixel.Text = "Rays Per Pixel";
 			// 
@@ -417,15 +419,16 @@ namespace CSharpPathTracer
 			this.sliderSamplesPerPixel.Maximum = 2048;
 			this.sliderSamplesPerPixel.Minimum = 1;
 			this.sliderSamplesPerPixel.Name = "sliderSamplesPerPixel";
-			this.sliderSamplesPerPixel.Size = new System.Drawing.Size(226, 69);
+			this.sliderSamplesPerPixel.Size = new System.Drawing.Size(226, 45);
 			this.sliderSamplesPerPixel.TabIndex = 20;
 			this.sliderSamplesPerPixel.TickFrequency = 128;
 			this.sliderSamplesPerPixel.Value = 10;
+			this.sliderSamplesPerPixel.Scroll += new System.EventHandler(this.sliderSamplesPerPixel_Scroll);
 			// 
 			// MainForm
 			// 
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-			this.ClientSize = new System.Drawing.Size(1183, 819);
+			this.ClientSize = new System.Drawing.Size(1183, 836);
 			this.Controls.Add(this.tabTraceOptions);
 			this.Controls.Add(this.checkProgressive);
 			this.Controls.Add(this.buttonSave);
