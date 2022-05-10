@@ -32,16 +32,13 @@ namespace CSharpPathTracer
 			this.components = new System.ComponentModel.Container();
 			this.buttonStartRaytrace = new System.Windows.Forms.Button();
 			this.raytracingDisplay = new CSharpPathTracer.BitmapDisplay();
-			this.labelWidth = new System.Windows.Forms.Label();
-			this.labelHeight = new System.Windows.Forms.Label();
 			this.raytracingStatus = new System.Windows.Forms.StatusStrip();
+			this.labelDimensions = new System.Windows.Forms.ToolStripStatusLabel();
 			this.labelStatus = new System.Windows.Forms.ToolStripStatusLabel();
 			this.progressRT = new System.Windows.Forms.ToolStripProgressBar();
 			this.labelTotalRays = new System.Windows.Forms.ToolStripStatusLabel();
 			this.labelDeepestRecursion = new System.Windows.Forms.ToolStripStatusLabel();
 			this.labelTime = new System.Windows.Forms.ToolStripStatusLabel();
-			this.textWidth = new System.Windows.Forms.TextBox();
-			this.textHeight = new System.Windows.Forms.TextBox();
 			this.labelScene = new System.Windows.Forms.Label();
 			this.comboScene = new System.Windows.Forms.ComboBox();
 			this.timerFrameLoop = new System.Windows.Forms.Timer(this.components);
@@ -62,6 +59,13 @@ namespace CSharpPathTracer
 			this.sliderMaxRecursion = new System.Windows.Forms.TrackBar();
 			this.labelSamplesPerPixel = new System.Windows.Forms.Label();
 			this.sliderSamplesPerPixel = new System.Windows.Forms.TrackBar();
+			this.groupBoxCamera = new System.Windows.Forms.GroupBox();
+			this.sliderFocalDistance = new System.Windows.Forms.TrackBar();
+			this.sliderAperture = new System.Windows.Forms.TrackBar();
+			this.sliderFieldOfView = new System.Windows.Forms.TrackBar();
+			this.labelFocalDistance = new System.Windows.Forms.Label();
+			this.labelAperture = new System.Windows.Forms.Label();
+			this.labelFieldOfView = new System.Windows.Forms.Label();
 			this.raytracingStatus.SuspendLayout();
 			this.tabTraceOptions.SuspendLayout();
 			this.tabPageRealTime.SuspendLayout();
@@ -72,15 +76,19 @@ namespace CSharpPathTracer
 			((System.ComponentModel.ISupportInitialize)(this.sliderResReduction)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).BeginInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).BeginInit();
+			this.groupBoxCamera.SuspendLayout();
+			((System.ComponentModel.ISupportInitialize)(this.sliderFocalDistance)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.sliderAperture)).BeginInit();
+			((System.ComponentModel.ISupportInitialize)(this.sliderFieldOfView)).BeginInit();
 			this.SuspendLayout();
 			// 
 			// buttonStartRaytrace
 			// 
 			this.buttonStartRaytrace.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.buttonStartRaytrace.Location = new System.Drawing.Point(14, 641);
+			this.buttonStartRaytrace.Location = new System.Drawing.Point(13, 566);
 			this.buttonStartRaytrace.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.buttonStartRaytrace.Name = "buttonStartRaytrace";
-			this.buttonStartRaytrace.Size = new System.Drawing.Size(270, 77);
+			this.buttonStartRaytrace.Size = new System.Drawing.Size(175, 49);
 			this.buttonStartRaytrace.TabIndex = 1;
 			this.buttonStartRaytrace.Text = "Start Full Raytrace";
 			this.buttonStartRaytrace.UseVisualStyleBackColor = true;
@@ -96,53 +104,41 @@ namespace CSharpPathTracer
 			this.raytracingDisplay.Location = new System.Drawing.Point(296, 20);
 			this.raytracingDisplay.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.raytracingDisplay.Name = "raytracingDisplay";
-			this.raytracingDisplay.Size = new System.Drawing.Size(870, 746);
+			this.raytracingDisplay.Size = new System.Drawing.Size(870, 595);
 			this.raytracingDisplay.TabIndex = 7;
 			this.raytracingDisplay.Text = "renderTarget1";
 			this.raytracingDisplay.MouseDown += new System.Windows.Forms.MouseEventHandler(this.raytracingDisplay_MouseDown);
 			this.raytracingDisplay.MouseMove += new System.Windows.Forms.MouseEventHandler(this.raytracingDisplay_MouseMove);
 			this.raytracingDisplay.MouseUp += new System.Windows.Forms.MouseEventHandler(this.raytracingDisplay_MouseUp);
 			// 
-			// labelWidth
-			// 
-			this.labelWidth.AutoSize = true;
-			this.labelWidth.Location = new System.Drawing.Point(17, 522);
-			this.labelWidth.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-			this.labelWidth.Name = "labelWidth";
-			this.labelWidth.Size = new System.Drawing.Size(80, 15);
-			this.labelWidth.TabIndex = 8;
-			this.labelWidth.Text = "Output Width";
-			// 
-			// labelHeight
-			// 
-			this.labelHeight.AutoSize = true;
-			this.labelHeight.Location = new System.Drawing.Point(157, 522);
-			this.labelHeight.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-			this.labelHeight.Name = "labelHeight";
-			this.labelHeight.Size = new System.Drawing.Size(84, 15);
-			this.labelHeight.TabIndex = 9;
-			this.labelHeight.Text = "Output Height";
-			// 
 			// raytracingStatus
 			// 
 			this.raytracingStatus.ImageScalingSize = new System.Drawing.Size(24, 24);
 			this.raytracingStatus.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.labelDimensions,
             this.labelStatus,
             this.progressRT,
             this.labelTotalRays,
             this.labelDeepestRecursion,
             this.labelTime});
-			this.raytracingStatus.Location = new System.Drawing.Point(0, 806);
+			this.raytracingStatus.Location = new System.Drawing.Point(0, 631);
 			this.raytracingStatus.Name = "raytracingStatus";
 			this.raytracingStatus.Padding = new System.Windows.Forms.Padding(1, 0, 20, 0);
 			this.raytracingStatus.Size = new System.Drawing.Size(1183, 30);
 			this.raytracingStatus.TabIndex = 13;
 			this.raytracingStatus.Text = "statusStrip1";
 			// 
+			// labelDimensions
+			// 
+			this.labelDimensions.Name = "labelDimensions";
+			this.labelDimensions.Size = new System.Drawing.Size(80, 25);
+			this.labelDimensions.Text = "Dimensions: ?";
+			this.labelDimensions.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+			// 
 			// labelStatus
 			// 
 			this.labelStatus.Name = "labelStatus";
-			this.labelStatus.Size = new System.Drawing.Size(218, 25);
+			this.labelStatus.Size = new System.Drawing.Size(198, 25);
 			this.labelStatus.Spring = true;
 			this.labelStatus.Text = "Status: Waiting";
 			this.labelStatus.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -156,7 +152,7 @@ namespace CSharpPathTracer
 			// labelTotalRays
 			// 
 			this.labelTotalRays.Name = "labelTotalRays";
-			this.labelTotalRays.Size = new System.Drawing.Size(218, 25);
+			this.labelTotalRays.Size = new System.Drawing.Size(198, 25);
 			this.labelTotalRays.Spring = true;
 			this.labelTotalRays.Text = "Total Rays: ?";
 			this.labelTotalRays.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -164,7 +160,7 @@ namespace CSharpPathTracer
 			// labelDeepestRecursion
 			// 
 			this.labelDeepestRecursion.Name = "labelDeepestRecursion";
-			this.labelDeepestRecursion.Size = new System.Drawing.Size(218, 25);
+			this.labelDeepestRecursion.Size = new System.Drawing.Size(198, 25);
 			this.labelDeepestRecursion.Spring = true;
 			this.labelDeepestRecursion.Text = "Deepest Recursion: ?";
 			this.labelDeepestRecursion.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
@@ -172,35 +168,15 @@ namespace CSharpPathTracer
 			// labelTime
 			// 
 			this.labelTime.Name = "labelTime";
-			this.labelTime.Size = new System.Drawing.Size(218, 25);
+			this.labelTime.Size = new System.Drawing.Size(198, 25);
 			this.labelTime.Spring = true;
 			this.labelTime.Text = "Total Time: ?";
 			this.labelTime.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
 			// 
-			// textWidth
-			// 
-			this.textWidth.Location = new System.Drawing.Point(14, 557);
-			this.textWidth.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-			this.textWidth.Name = "textWidth";
-			this.textWidth.ReadOnly = true;
-			this.textWidth.Size = new System.Drawing.Size(115, 23);
-			this.textWidth.TabIndex = 14;
-			this.textWidth.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-			// 
-			// textHeight
-			// 
-			this.textHeight.Location = new System.Drawing.Point(157, 557);
-			this.textHeight.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-			this.textHeight.Name = "textHeight";
-			this.textHeight.ReadOnly = true;
-			this.textHeight.Size = new System.Drawing.Size(115, 23);
-			this.textHeight.TabIndex = 15;
-			this.textHeight.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
-			// 
 			// labelScene
 			// 
 			this.labelScene.AutoSize = true;
-			this.labelScene.Location = new System.Drawing.Point(17, 15);
+			this.labelScene.Location = new System.Drawing.Point(13, 23);
 			this.labelScene.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelScene.Name = "labelScene";
 			this.labelScene.Size = new System.Drawing.Size(38, 15);
@@ -211,10 +187,10 @@ namespace CSharpPathTracer
 			// 
 			this.comboScene.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
 			this.comboScene.FormattingEnabled = true;
-			this.comboScene.Location = new System.Drawing.Point(17, 45);
+			this.comboScene.Location = new System.Drawing.Point(59, 20);
 			this.comboScene.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.comboScene.Name = "comboScene";
-			this.comboScene.Size = new System.Drawing.Size(258, 23);
+			this.comboScene.Size = new System.Drawing.Size(216, 23);
 			this.comboScene.TabIndex = 17;
 			this.comboScene.SelectedIndexChanged += new System.EventHandler(this.comboScene_SelectedIndexChanged);
 			// 
@@ -226,10 +202,10 @@ namespace CSharpPathTracer
 			// buttonSave
 			// 
 			this.buttonSave.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-			this.buttonSave.Location = new System.Drawing.Point(14, 728);
+			this.buttonSave.Location = new System.Drawing.Point(200, 566);
 			this.buttonSave.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.buttonSave.Name = "buttonSave";
-			this.buttonSave.Size = new System.Drawing.Size(270, 38);
+			this.buttonSave.Size = new System.Drawing.Size(71, 49);
 			this.buttonSave.TabIndex = 20;
 			this.buttonSave.Text = "Save Results";
 			this.buttonSave.UseVisualStyleBackColor = true;
@@ -239,27 +215,27 @@ namespace CSharpPathTracer
 			// 
 			this.checkProgressive.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
 			this.checkProgressive.AutoSize = true;
-			this.checkProgressive.Location = new System.Drawing.Point(17, 609);
+			this.checkProgressive.Location = new System.Drawing.Point(14, 537);
 			this.checkProgressive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.checkProgressive.Name = "checkProgressive";
-			this.checkProgressive.Size = new System.Drawing.Size(86, 19);
+			this.checkProgressive.Size = new System.Drawing.Size(145, 19);
 			this.checkProgressive.TabIndex = 21;
-			this.checkProgressive.Text = "Progressive";
+			this.checkProgressive.Text = "Progressive Raytracing";
 			this.checkProgressive.UseVisualStyleBackColor = true;
 			// 
 			// tabTraceOptions
 			// 
 			this.tabTraceOptions.Controls.Add(this.tabPageRealTime);
 			this.tabTraceOptions.Controls.Add(this.tabPageFullTrace);
-			this.tabTraceOptions.Location = new System.Drawing.Point(14, 100);
+			this.tabTraceOptions.Location = new System.Drawing.Point(14, 51);
 			this.tabTraceOptions.Name = "tabTraceOptions";
 			this.tabTraceOptions.SelectedIndex = 0;
-			this.tabTraceOptions.Size = new System.Drawing.Size(261, 410);
+			this.tabTraceOptions.Size = new System.Drawing.Size(261, 242);
 			this.tabTraceOptions.TabIndex = 22;
 			// 
 			// tabPageRealTime
 			// 
-			this.tabPageRealTime.BackColor = System.Drawing.SystemColors.Control;
+			this.tabPageRealTime.BackColor = System.Drawing.SystemColors.ControlLightLight;
 			this.tabPageRealTime.Controls.Add(this.labelResReductionLive);
 			this.tabPageRealTime.Controls.Add(this.sliderResReductionLive);
 			this.tabPageRealTime.Controls.Add(this.labelMaxRecursionLive);
@@ -269,14 +245,14 @@ namespace CSharpPathTracer
 			this.tabPageRealTime.Location = new System.Drawing.Point(4, 24);
 			this.tabPageRealTime.Name = "tabPageRealTime";
 			this.tabPageRealTime.Padding = new System.Windows.Forms.Padding(3);
-			this.tabPageRealTime.Size = new System.Drawing.Size(253, 382);
+			this.tabPageRealTime.Size = new System.Drawing.Size(253, 214);
 			this.tabPageRealTime.TabIndex = 0;
-			this.tabPageRealTime.Text = "Live (Real-Time)";
+			this.tabPageRealTime.Text = "Live (Real-Time) Settings";
 			// 
 			// labelResReductionLive
 			// 
 			this.labelResReductionLive.AutoSize = true;
-			this.labelResReductionLive.Location = new System.Drawing.Point(10, 238);
+			this.labelResReductionLive.Location = new System.Drawing.Point(10, 148);
 			this.labelResReductionLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelResReductionLive.Name = "labelResReductionLive";
 			this.labelResReductionLive.Size = new System.Drawing.Size(120, 15);
@@ -286,7 +262,7 @@ namespace CSharpPathTracer
 			// sliderResReductionLive
 			// 
 			this.sliderResReductionLive.LargeChange = 1;
-			this.sliderResReductionLive.Location = new System.Drawing.Point(10, 268);
+			this.sliderResReductionLive.Location = new System.Drawing.Point(10, 168);
 			this.sliderResReductionLive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderResReductionLive.Maximum = 4;
 			this.sliderResReductionLive.Name = "sliderResReductionLive";
@@ -298,7 +274,7 @@ namespace CSharpPathTracer
 			// labelMaxRecursionLive
 			// 
 			this.labelMaxRecursionLive.AutoSize = true;
-			this.labelMaxRecursionLive.Location = new System.Drawing.Point(10, 130);
+			this.labelMaxRecursionLive.Location = new System.Drawing.Point(10, 80);
 			this.labelMaxRecursionLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelMaxRecursionLive.Name = "labelMaxRecursionLive";
 			this.labelMaxRecursionLive.Size = new System.Drawing.Size(152, 15);
@@ -307,7 +283,7 @@ namespace CSharpPathTracer
 			// 
 			// sliderMaxRecursionLive
 			// 
-			this.sliderMaxRecursionLive.Location = new System.Drawing.Point(10, 160);
+			this.sliderMaxRecursionLive.Location = new System.Drawing.Point(10, 100);
 			this.sliderMaxRecursionLive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderMaxRecursionLive.Maximum = 50;
 			this.sliderMaxRecursionLive.Minimum = 1;
@@ -321,7 +297,7 @@ namespace CSharpPathTracer
 			// labelSamplesPerPixelLive
 			// 
 			this.labelSamplesPerPixelLive.AutoSize = true;
-			this.labelSamplesPerPixelLive.Location = new System.Drawing.Point(10, 22);
+			this.labelSamplesPerPixelLive.Location = new System.Drawing.Point(10, 12);
 			this.labelSamplesPerPixelLive.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelSamplesPerPixelLive.Name = "labelSamplesPerPixelLive";
 			this.labelSamplesPerPixelLive.Size = new System.Drawing.Size(79, 15);
@@ -331,7 +307,7 @@ namespace CSharpPathTracer
 			// sliderSamplesPerPixelLive
 			// 
 			this.sliderSamplesPerPixelLive.LargeChange = 2;
-			this.sliderSamplesPerPixelLive.Location = new System.Drawing.Point(10, 52);
+			this.sliderSamplesPerPixelLive.Location = new System.Drawing.Point(10, 32);
 			this.sliderSamplesPerPixelLive.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderSamplesPerPixelLive.Maximum = 16;
 			this.sliderSamplesPerPixelLive.Minimum = 1;
@@ -343,7 +319,7 @@ namespace CSharpPathTracer
 			// 
 			// tabPageFullTrace
 			// 
-			this.tabPageFullTrace.BackColor = System.Drawing.SystemColors.Control;
+			this.tabPageFullTrace.BackColor = System.Drawing.SystemColors.ControlLightLight;
 			this.tabPageFullTrace.Controls.Add(this.labelResReduction);
 			this.tabPageFullTrace.Controls.Add(this.sliderResReduction);
 			this.tabPageFullTrace.Controls.Add(this.labelMaxRecursion);
@@ -353,14 +329,14 @@ namespace CSharpPathTracer
 			this.tabPageFullTrace.Location = new System.Drawing.Point(4, 24);
 			this.tabPageFullTrace.Name = "tabPageFullTrace";
 			this.tabPageFullTrace.Padding = new System.Windows.Forms.Padding(3);
-			this.tabPageFullTrace.Size = new System.Drawing.Size(253, 382);
+			this.tabPageFullTrace.Size = new System.Drawing.Size(253, 214);
 			this.tabPageFullTrace.TabIndex = 1;
-			this.tabPageFullTrace.Text = "Full (Slow)";
+			this.tabPageFullTrace.Text = "Full (Slow) Settings";
 			// 
 			// labelResReduction
 			// 
 			this.labelResReduction.AutoSize = true;
-			this.labelResReduction.Location = new System.Drawing.Point(10, 238);
+			this.labelResReduction.Location = new System.Drawing.Point(10, 148);
 			this.labelResReduction.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelResReduction.Name = "labelResReduction";
 			this.labelResReduction.Size = new System.Drawing.Size(120, 15);
@@ -370,7 +346,7 @@ namespace CSharpPathTracer
 			// sliderResReduction
 			// 
 			this.sliderResReduction.LargeChange = 1;
-			this.sliderResReduction.Location = new System.Drawing.Point(10, 268);
+			this.sliderResReduction.Location = new System.Drawing.Point(10, 168);
 			this.sliderResReduction.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderResReduction.Maximum = 4;
 			this.sliderResReduction.Name = "sliderResReduction";
@@ -381,7 +357,7 @@ namespace CSharpPathTracer
 			// labelMaxRecursion
 			// 
 			this.labelMaxRecursion.AutoSize = true;
-			this.labelMaxRecursion.Location = new System.Drawing.Point(10, 130);
+			this.labelMaxRecursion.Location = new System.Drawing.Point(10, 80);
 			this.labelMaxRecursion.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelMaxRecursion.Name = "labelMaxRecursion";
 			this.labelMaxRecursion.Size = new System.Drawing.Size(152, 15);
@@ -390,7 +366,7 @@ namespace CSharpPathTracer
 			// 
 			// sliderMaxRecursion
 			// 
-			this.sliderMaxRecursion.Location = new System.Drawing.Point(10, 160);
+			this.sliderMaxRecursion.Location = new System.Drawing.Point(10, 100);
 			this.sliderMaxRecursion.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderMaxRecursion.Maximum = 50;
 			this.sliderMaxRecursion.Minimum = 1;
@@ -404,7 +380,7 @@ namespace CSharpPathTracer
 			// labelSamplesPerPixel
 			// 
 			this.labelSamplesPerPixel.AutoSize = true;
-			this.labelSamplesPerPixel.Location = new System.Drawing.Point(10, 22);
+			this.labelSamplesPerPixel.Location = new System.Drawing.Point(10, 12);
 			this.labelSamplesPerPixel.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
 			this.labelSamplesPerPixel.Name = "labelSamplesPerPixel";
 			this.labelSamplesPerPixel.Size = new System.Drawing.Size(79, 15);
@@ -414,7 +390,7 @@ namespace CSharpPathTracer
 			// sliderSamplesPerPixel
 			// 
 			this.sliderSamplesPerPixel.LargeChange = 50;
-			this.sliderSamplesPerPixel.Location = new System.Drawing.Point(10, 52);
+			this.sliderSamplesPerPixel.Location = new System.Drawing.Point(10, 32);
 			this.sliderSamplesPerPixel.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
 			this.sliderSamplesPerPixel.Maximum = 2048;
 			this.sliderSamplesPerPixel.Minimum = 1;
@@ -425,25 +401,97 @@ namespace CSharpPathTracer
 			this.sliderSamplesPerPixel.Value = 10;
 			this.sliderSamplesPerPixel.Scroll += new System.EventHandler(this.sliderSamplesPerPixel_Scroll);
 			// 
+			// groupBoxCamera
+			// 
+			this.groupBoxCamera.Controls.Add(this.sliderFocalDistance);
+			this.groupBoxCamera.Controls.Add(this.sliderAperture);
+			this.groupBoxCamera.Controls.Add(this.sliderFieldOfView);
+			this.groupBoxCamera.Controls.Add(this.labelFocalDistance);
+			this.groupBoxCamera.Controls.Add(this.labelAperture);
+			this.groupBoxCamera.Controls.Add(this.labelFieldOfView);
+			this.groupBoxCamera.Location = new System.Drawing.Point(14, 299);
+			this.groupBoxCamera.Name = "groupBoxCamera";
+			this.groupBoxCamera.Size = new System.Drawing.Size(257, 227);
+			this.groupBoxCamera.TabIndex = 23;
+			this.groupBoxCamera.TabStop = false;
+			this.groupBoxCamera.Text = "Camera Settings";
+			// 
+			// sliderFocalDistance
+			// 
+			this.sliderFocalDistance.Location = new System.Drawing.Point(17, 171);
+			this.sliderFocalDistance.Maximum = 1000;
+			this.sliderFocalDistance.Name = "sliderFocalDistance";
+			this.sliderFocalDistance.Size = new System.Drawing.Size(223, 45);
+			this.sliderFocalDistance.TabIndex = 5;
+			this.sliderFocalDistance.TickFrequency = 100;
+			this.sliderFocalDistance.Scroll += new System.EventHandler(this.sliderFocalDistance_Scroll);
+			// 
+			// sliderAperture
+			// 
+			this.sliderAperture.Location = new System.Drawing.Point(14, 105);
+			this.sliderAperture.Maximum = 100;
+			this.sliderAperture.Name = "sliderAperture";
+			this.sliderAperture.Size = new System.Drawing.Size(226, 45);
+			this.sliderAperture.TabIndex = 4;
+			this.sliderAperture.TickFrequency = 10;
+			this.sliderAperture.Scroll += new System.EventHandler(this.sliderAperture_Scroll);
+			// 
+			// sliderFieldOfView
+			// 
+			this.sliderFieldOfView.LargeChange = 15;
+			this.sliderFieldOfView.Location = new System.Drawing.Point(14, 43);
+			this.sliderFieldOfView.Maximum = 120;
+			this.sliderFieldOfView.Minimum = 1;
+			this.sliderFieldOfView.Name = "sliderFieldOfView";
+			this.sliderFieldOfView.Size = new System.Drawing.Size(226, 45);
+			this.sliderFieldOfView.TabIndex = 3;
+			this.sliderFieldOfView.TickFrequency = 15;
+			this.sliderFieldOfView.Value = 45;
+			this.sliderFieldOfView.Scroll += new System.EventHandler(this.sliderFieldOfView_Scroll);
+			// 
+			// labelFocalDistance
+			// 
+			this.labelFocalDistance.AutoSize = true;
+			this.labelFocalDistance.Location = new System.Drawing.Point(14, 153);
+			this.labelFocalDistance.Name = "labelFocalDistance";
+			this.labelFocalDistance.Size = new System.Drawing.Size(115, 15);
+			this.labelFocalDistance.TabIndex = 2;
+			this.labelFocalDistance.Text = "Focal Plane Distance";
+			// 
+			// labelAperture
+			// 
+			this.labelAperture.AutoSize = true;
+			this.labelAperture.Location = new System.Drawing.Point(14, 87);
+			this.labelAperture.Name = "labelAperture";
+			this.labelAperture.Size = new System.Drawing.Size(53, 15);
+			this.labelAperture.TabIndex = 1;
+			this.labelAperture.Text = "Aperture";
+			// 
+			// labelFieldOfView
+			// 
+			this.labelFieldOfView.AutoSize = true;
+			this.labelFieldOfView.Location = new System.Drawing.Point(14, 25);
+			this.labelFieldOfView.Name = "labelFieldOfView";
+			this.labelFieldOfView.Size = new System.Drawing.Size(74, 15);
+			this.labelFieldOfView.TabIndex = 0;
+			this.labelFieldOfView.Text = "Field of View";
+			// 
 			// MainForm
 			// 
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.None;
-			this.ClientSize = new System.Drawing.Size(1183, 836);
+			this.ClientSize = new System.Drawing.Size(1183, 661);
+			this.Controls.Add(this.groupBoxCamera);
 			this.Controls.Add(this.tabTraceOptions);
 			this.Controls.Add(this.checkProgressive);
 			this.Controls.Add(this.buttonSave);
 			this.Controls.Add(this.comboScene);
 			this.Controls.Add(this.labelScene);
-			this.Controls.Add(this.textHeight);
-			this.Controls.Add(this.textWidth);
 			this.Controls.Add(this.raytracingStatus);
-			this.Controls.Add(this.labelHeight);
-			this.Controls.Add(this.labelWidth);
 			this.Controls.Add(this.raytracingDisplay);
 			this.Controls.Add(this.buttonStartRaytrace);
 			this.KeyPreview = true;
 			this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-			this.MinimumSize = new System.Drawing.Size(705, 875);
+			this.MinimumSize = new System.Drawing.Size(705, 700);
 			this.Name = "MainForm";
 			this.Text = "C# Path Tracer";
 			this.Load += new System.EventHandler(this.MainForm_Load);
@@ -463,6 +511,11 @@ namespace CSharpPathTracer
 			((System.ComponentModel.ISupportInitialize)(this.sliderResReduction)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderMaxRecursion)).EndInit();
 			((System.ComponentModel.ISupportInitialize)(this.sliderSamplesPerPixel)).EndInit();
+			this.groupBoxCamera.ResumeLayout(false);
+			this.groupBoxCamera.PerformLayout();
+			((System.ComponentModel.ISupportInitialize)(this.sliderFocalDistance)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.sliderAperture)).EndInit();
+			((System.ComponentModel.ISupportInitialize)(this.sliderFieldOfView)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
@@ -471,16 +524,12 @@ namespace CSharpPathTracer
 		#endregion
 		private System.Windows.Forms.Button buttonStartRaytrace;
 		private BitmapDisplay raytracingDisplay;
-		private System.Windows.Forms.Label labelWidth;
-		private System.Windows.Forms.Label labelHeight;
 		private System.Windows.Forms.StatusStrip raytracingStatus;
 		private System.Windows.Forms.ToolStripStatusLabel labelTotalRays;
 		private System.Windows.Forms.ToolStripStatusLabel labelDeepestRecursion;
 		private System.Windows.Forms.ToolStripStatusLabel labelTime;
 		private System.Windows.Forms.ToolStripProgressBar progressRT;
 		private System.Windows.Forms.ToolStripStatusLabel labelStatus;
-		private System.Windows.Forms.TextBox textWidth;
-		private System.Windows.Forms.TextBox textHeight;
 		private System.Windows.Forms.Label labelScene;
 		private System.Windows.Forms.ComboBox comboScene;
 		private System.Windows.Forms.Timer timerFrameLoop;
@@ -501,5 +550,13 @@ namespace CSharpPathTracer
 		private System.Windows.Forms.TrackBar sliderMaxRecursion;
 		private System.Windows.Forms.Label labelSamplesPerPixel;
 		private System.Windows.Forms.TrackBar sliderSamplesPerPixel;
+		private System.Windows.Forms.ToolStripStatusLabel labelDimensions;
+		private System.Windows.Forms.GroupBox groupBoxCamera;
+		private System.Windows.Forms.TrackBar sliderFocalDistance;
+		private System.Windows.Forms.TrackBar sliderAperture;
+		private System.Windows.Forms.TrackBar sliderFieldOfView;
+		private System.Windows.Forms.Label labelFocalDistance;
+		private System.Windows.Forms.Label labelAperture;
+		private System.Windows.Forms.Label labelFieldOfView;
 	}
 }

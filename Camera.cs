@@ -169,7 +169,7 @@ namespace CSharpPathTracer
 				return;
 
 			projMatrix = Matrix4x4.CreatePerspectiveFieldOfView(
-				MathF.PI / 4,
+				FieldOfView,
 				AspectRatio,
 				NearClip + FocalDistance,
 				FarClip);

@@ -119,8 +119,15 @@ namespace CSharpPathTracer
 			labelSamplesPerPixelLive.Text = "Samples Per Pixel: " + SamplesPerPixelLive;
 			labelMaxRecursionLive.Text = "Max Recursion Depth: " + MaxRecursionLive;
 			labelResReductionLive.Text = "Resolution Reduction: " + ResolutionReductionLive;
-			textWidth.Text = raytracingDisplay.Width.ToString();
-			textHeight.Text = raytracingDisplay.Height.ToString();
+			labelDimensions.Text = "Dimensions: " + raytracingDisplay.Width.ToString() + "x" + raytracingDisplay.Height.ToString();
+			labelFieldOfView.Text = "Field of View: " + (camera.FieldOfView * 180.0f / MathF.PI);
+			labelAperture.Text = "Aperture: " + camera.Aperture;
+			labelFocalDistance.Text = "Focal Plane Distance: " + camera.FocalDistance;
+
+			// Set up initial camera slider values
+			sliderFieldOfView.Value = (int)(camera.FieldOfView * 180.0f / MathF.PI);
+			sliderFocalDistance.Value = (int)(camera.FocalDistance * 10);
+			sliderAperture.Value = (int)(camera.Aperture * 10);
 
 			// Set up scene(s)
 			scenes = Scene.GenerateScenes();
@@ -361,12 +368,68 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Update the field of view of the camera and label
+		/// </summary>
+		private void sliderFieldOfView_Scroll(object sender, EventArgs e)
+		{
+			camera.FieldOfView = (float)(sliderFieldOfView.Value * MathF.PI / 180.0f);
+			labelFieldOfView.Text = "Field of View: " + (camera.FieldOfView * 180.0f / MathF.PI);
+
+			// Swap to the real-time tab
+			tabTraceOptions.SelectedTab = tabPageRealTime;
+
+			// Perform a single raytrace since the camera has changed
+			BeginRaytrace(
+				RaytracingMode.Once,
+				SamplesPerPixelLive,
+				ResolutionReductionLive,
+				MaxRecursionLive);
+		}
+
+		/// <summary>
+		/// Update the aperture of the camera and label
+		/// </summary>
+		private void sliderAperture_Scroll(object sender, EventArgs e)
+		{
+			camera.Aperture = sliderAperture.Value / 10.0f;
+			labelAperture.Text = "Aperture: " + camera.Aperture;
+
+			// Swap to the real-time tab
+			tabTraceOptions.SelectedTab = tabPageRealTime;
+
+			// Perform a single raytrace since the camera has changed
+			BeginRaytrace(
+				RaytracingMode.Once,
+				SamplesPerPixelLive,
+				ResolutionReductionLive,
+				MaxRecursionLive);
+		}
+
+		/// <summary>
+		/// Update the focal plane distance of the camera and label
+		/// </summary>
+		private void sliderFocalDistance_Scroll(object sender, EventArgs e)
+		{
+			camera.FocalDistance = sliderFocalDistance.Value / 10.0f;
+			labelFocalDistance.Text = "Focal Plane Distance: " + camera.FocalDistance;
+
+			// Swap to the real-time tab
+			tabTraceOptions.SelectedTab = tabPageRealTime;
+
+			// Perform a single raytrace since the camera has changed
+			BeginRaytrace(
+				RaytracingMode.Once,
+				SamplesPerPixelLive,
+				ResolutionReductionLive,
+				MaxRecursionLive);
+		}
+
+		/// <summary>
 		/// Adjusts the display now that the form has been resized
 		/// </summary>
 		private void MainForm_Resize(object sender, EventArgs e)
 		{
-			textWidth.Text = raytracingDisplay.Width.ToString();
-			textHeight.Text = raytracingDisplay.Height.ToString();
+			labelDimensions.Text = "Dimensions: " + raytracingDisplay.Width.ToString() + "x" + raytracingDisplay.Height.ToString();
 			raytracingDisplay.Invalidate();
 		}
 
@@ -564,7 +627,5 @@ namespace CSharpPathTracer
 
 			e.Handled = true;
 		}
-
-	
 	}
 }
