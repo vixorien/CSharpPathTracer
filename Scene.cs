@@ -109,6 +109,8 @@ namespace CSharpPathTracer
 			Texture crateTexture = new Texture("Content/Textures/crate.png");
 			Texture tilesTexture = new Texture("Content/Textures/tiles.png");
 			Texture tilesTextureNoGamma = new Texture("Content/Textures/tiles.png", false);
+			Texture lavaAlbedoTexture = new Texture("Content/Textures/lava_albedo.png");
+			Texture lavaEmissiveTexture = new Texture("Content/Textures/lava_emissive.png");
 
 			Texture skyRight = new Texture("Content/Skies/Clouds Blue/right.png");
 			Texture skyLeft = new Texture("Content/Skies/Clouds Blue/left.png");
@@ -138,6 +140,7 @@ namespace CSharpPathTracer
 			Material crate = new DiffuseMaterial(Vector3.One, crateTexture);
 			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), tilesTexture);
 			Material tilesRepeat = new DiffuseMaterial(Vector3.One, tilesTexture, null, 1.0f, new Vector2(10, 10));
+			Material lava = new EmissiveMaterial(Vector3.One, 2.0f, lavaEmissiveTexture, Vector3.One, lavaAlbedoTexture);
 			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3(), null, null, 0.5f);
 			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
 			Material blueMatte = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), tilesTexture);
@@ -277,11 +280,11 @@ namespace CSharpPathTracer
 				Entity ground = new Entity(quadMesh, grayMatte);
 				ground.Transform.SetScale(100.0f);
 
-				Entity left = new Entity(Sphere.Default, whiteLight);
+				Entity left = new Entity(Sphere.Default, greenMatte);
 				left.Transform.SetPosition(-5, 2, 0);
 				left.Transform.SetScale(2);
 
-				Entity middle = new Entity(Sphere.Default, mirror);
+				Entity middle = new Entity(Sphere.Default, lava);
 				middle.Transform.SetPosition(0, 4, 0);
 				middle.Transform.SetScale(2);
 

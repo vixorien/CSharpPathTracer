@@ -58,3 +58,8 @@
 #begin Textures/tiles.png
 /copy:Textures/tiles.png
 
+#begin Textures/lava_albedo.png
+/copy:Textures/lava_albedo.png
+
+#begin Textures/lava_emissive.png
+/copy:Textures/lava_emissive.png

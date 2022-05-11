@@ -328,13 +328,54 @@ namespace CSharpPathTracer
 	class EmissiveMaterial : DiffuseMaterial
 	{
 		/// <summary>
+		/// Gets or sets the emissive texture for this material
+		/// </summary>
+		public Texture EmissiveTexture { get; set; }
+
+		/// <summary>
+		/// Gets or sets the emissive color for the material.  When used
+		/// in conjunction with an emissive texture, this acts as a tint.
+		/// </summary>
+		public Vector3 EmissiveColor { get; set; }
+
+		/// <summary>
+		/// Gets or sets the intensity of emission.  This is a multiplier
+		/// to the overall emission of this material.
+		/// </summary>
+		public float EmissiveIntensity { get; set; }
+
+		/// <summary>
 		/// Creates a new perfectly diffuse material
 		/// </summary>
 		/// <param name="emissiveColor">Color emitted by the surface</param>
-		public EmissiveMaterial(Vector3 emissiveColor)
-			: base(emissiveColor)
+		/// <param name="emissiveIntensity">Intensity of emission</param>
+		/// <param name="emissiveTexture">Emissive map texture</param>
+		/// <param name="color">Base color</param>
+		/// <param name="texture">Texture (tinted by color)</param>
+		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="uvScale">UV scale to apply</param>
+		/// <param name="addressMode">Texture address mode</param>
+		/// <param name="filter">Texture filter mode</param>
+		public EmissiveMaterial(
+			Vector3 emissiveColor,
+			float emissiveIntensity = 1.0f,
+			Texture emissiveTexture = null,
+			Vector3 color = new Vector3(), // 0,0,0
+			Texture texture = null,
+			Texture roughnessMap = null,
+			float roughness = 1.0f,
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
+			:
+			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
 		{
+			EmissiveColor = emissiveColor;
+			EmissiveIntensity = emissiveIntensity;
+			EmissiveTexture = emissiveTexture;
 		}
+
 
 		/// <summary>
 		/// Returns the material's color for emission
@@ -343,7 +384,11 @@ namespace CSharpPathTracer
 		/// <returns>The emitted color</returns>
 		public override Vector3 GetEmissionAtUV(Vector2 uv)
 		{
-			return Color;
+			// Calculate overall color
+			Vector3 baseEmission = EmissiveColor * EmissiveIntensity;
+			
+			// Determine if texture is in use
+			return EmissiveTexture == null ? baseEmission : EmissiveTexture.Sample(uv * UVScale, AddressMode, Filter).ToVector3() * baseEmission;
 		}
 	}
 }
