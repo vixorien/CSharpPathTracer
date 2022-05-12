@@ -1,5 +1,5 @@
 ﻿
-//#define USE_MONOGAME
+#define USE_MONOGAME
 
 using System;
 using System.Windows.Forms;

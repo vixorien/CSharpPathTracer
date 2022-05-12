@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using ImGuiNET;
 
 namespace CSharpPathTracer
 {
@@ -10,6 +11,7 @@ namespace CSharpPathTracer
 	{
 		private GraphicsDeviceManager _graphics;
 		private SpriteBatch _spriteBatch;
+		private ImGuiHelper uiHelper;
 
 		public GamePathTracer()
 		{
@@ -20,7 +22,13 @@ namespace CSharpPathTracer
 
 		protected override void Initialize()
 		{
-			// TODO: Add your initialization logic here
+			// Set initial window size
+			_graphics.PreferredBackBufferWidth = 1920;
+			_graphics.PreferredBackBufferHeight = 1080;
+			_graphics.ApplyChanges();
+			this.Window.AllowUserResizing = true;
+
+			uiHelper = new ImGuiHelper(this);
 
 			base.Initialize();
 		}
@@ -37,7 +45,9 @@ namespace CSharpPathTracer
 			if (Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
 				Exit();
 
-			// TODO: Add your update logic here
+			uiHelper.PreUpdate(gameTime);
+
+			ImGui.Text("Hello, world!");
 
 			base.Update(gameTime);
 		}
@@ -46,7 +56,7 @@ namespace CSharpPathTracer
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			// TODO: Add your drawing code here
+			uiHelper.Draw();
 
 			base.Draw(gameTime);
 		}
