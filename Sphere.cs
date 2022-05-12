@@ -108,18 +108,29 @@ namespace CSharpPathTracer
 			Vector3 p1 = ray.Origin + ray.Direction * hitDistance;
 			
 			// Normals
-			Vector3 n1 = Vector3.Normalize(p1 - Center); 
-			if (side == HitSide.Inside) 
-				n1 *= -1.0f;
+			Vector3 normal = Vector3.Normalize(p1 - Center);
+			if (side == HitSide.Inside)
+			{
+				normal *= -1.0f;
+			}
 
 			// Calculate a UV based on normal
-			Vector2 xz = Vector2.Normalize(new Vector2(n1.X, n1.Z));
+			Vector2 xz = Vector2.Normalize(new Vector2(normal.X, normal.Z));
 			Vector2 uv = new Vector2(
 				-MathF.Atan2(xz.Y, xz.X) / MathF.PI + 1,
-				MathF.Acos(Vector3.Dot(Vector3.UnitY, n1)) / MathF.PI);
-			
+				MathF.Acos(Vector3.Dot(Vector3.UnitY, normal)) / MathF.PI);
+
+			// Calculate tangent from x/z vector
+			// - To rotate by 90 degrees: [x,y] -> [-y, x]
+			// - TODO: Verify this is the correct rotation direction
+			Vector3 tangent = new Vector3(-xz.Y, xz.X, 0.0f);
+			if (side == HitSide.Inside)
+			{
+				tangent *= -1.0f;
+			}
+
 			// Set up return values
-			hit = new RayHit(p1, n1, uv, hitDistance, side, null);
+			hit = new RayHit(p1, normal, tangent, uv, hitDistance, side, null);
 			return true;
 		}
 	}

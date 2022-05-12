@@ -59,19 +59,21 @@ namespace CSharpPathTracer
 	struct RayHit
 	{
 		public static RayHit None { get; } = new RayHit();
-		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, Vector2.Zero, float.PositiveInfinity, HitSide.Outside, null);
+		public static RayHit Infinity { get; } = new RayHit(Vector3.Zero, Vector3.Zero, Vector3.Zero, Vector2.Zero, float.PositiveInfinity, HitSide.Outside, null);
 
 		public Vector3 Position { get; set; }
 		public Vector3 Normal { get; set; }
+		public Vector3 Tangent { get; set; }
 		public Vector2 UV { get; set; }
 		public float Distance { get; set; }
 		public HitSide Side { get; set; }
 		public IRayIntersectable HitObject { get; set; }
 
-		public RayHit(Vector3 position, Vector3 normal, Vector2 uv, float distance, HitSide side, IRayIntersectable hitObj)
+		public RayHit(Vector3 position, Vector3 normal, Vector3 tangent, Vector2 uv, float distance, HitSide side, IRayIntersectable hitObj)
 		{
 			Position = position;
 			Normal = normal;
+			Tangent = tangent;
 			UV = uv;
 			Distance = distance;
 			Side = side;

@@ -55,11 +55,15 @@
 #begin Textures/crate.png
 /copy:Textures/crate.png
 
-#begin Textures/tiles.png
-/copy:Textures/tiles.png
-
 #begin Textures/lava_albedo.png
 /copy:Textures/lava_albedo.png
 
 #begin Textures/lava_emissive.png
 /copy:Textures/lava_emissive.png
+
+#begin Textures/lava_normals.png
+/copy:Textures/lava_normals.png
+
+#begin Textures/tiles.png
+/copy:Textures/tiles.png
+

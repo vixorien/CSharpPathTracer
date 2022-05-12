@@ -112,6 +112,19 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Calculates a tangent given barycentric coords
+		/// </summary>
+		/// <param name="barycentrics">The barycentric coords for interpolation</param>
+		/// <returns>The interpolated tangent</returns>
+		public Vector3 CalcTangentBarycentric(Vector3 barycentrics)
+		{
+			return Vector3.Normalize(
+				barycentrics.X * V1.Tangent +
+				barycentrics.Y * V2.Tangent +
+				barycentrics.Z * V0.Tangent);
+		}
+
+		/// <summary>
 		/// Calculates a uv given barycentric coords
 		/// </summary>
 		/// <param name="barycentrics">The barycentric coords for interpolation</param>
@@ -179,13 +192,18 @@ namespace CSharpPathTracer
 
 			// If we're inside, flip the normal
 			Vector3 hitNormal = CalcNormalBarycentric(bary);
+			Vector3 hitTangent = CalcTangentBarycentric(bary);
 			if (side == HitSide.Inside)
-				hitNormal *= -1;
+			{
+				hitNormal *= -1.0f;
+				hitTangent *= -1.0f;
+			}
 
 			// Success, so fill out the hit
 			hit = new RayHit(
 				ray.Origin + ray.Direction * t,
 				hitNormal,
+				hitTangent,
 				CalcUVBarycentric(bary),
 				t,
 				side,

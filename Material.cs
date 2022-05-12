@@ -49,6 +49,11 @@ namespace CSharpPathTracer
 		public Texture RoughnessMap { get; set; }
 
 		/// <summary>
+		/// Gets or sets the material's normal map texture.
+		/// </summary>
+		public Texture NormalMap { get; set; }
+
+		/// <summary>
 		/// Gets or sets the material's overall UV scale
 		/// </summary>
 		public Vector2 UVScale { get; set; }
@@ -57,25 +62,28 @@ namespace CSharpPathTracer
 		/// Creates a new material
 		/// </summary>
 		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
 		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
 		public Material(
-			Vector3 color, 
+			Vector3 color,
+			float roughness = 0.0f,
 			Texture texture = null, 
 			Texture roughnessMap = null, 
-			float roughness = 0.0f, 
-			Vector2? uvScale = null, 
+			Texture normalMap = null,
+			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 		{
 			Color = color;
+			Roughness = roughness;
 			Texture = texture;
 			RoughnessMap = roughnessMap;
-			Roughness = roughness;
+			NormalMap = normalMap;
 			UVScale = uvScale ?? Vector2.One;
 			AddressMode = addressMode;
 			Filter = filter;
@@ -99,6 +107,41 @@ namespace CSharpPathTracer
 		public float GetRoughnessAtUV(Vector2 uv)
 		{
 			return RoughnessMap == null ? Roughness : RoughnessMap.Sample(uv * UVScale, AddressMode, Filter).X;
+		}
+
+		/// <summary>
+		/// Gets the normal at the specified uv coord, taking into
+		/// account the surface's normal map (if one exists)
+		/// </summary>
+		/// <param name="uv">The uv to sample</param>
+		/// <param name="surfaceNormal">The surface's base normal</param>
+		/// <param name="surfaceTangent">The surface's base tangent</param>
+		/// <returns>A normal</returns>
+		public Vector3 GetNormalAtUV(Vector2 uv, Vector3 surfaceNormal, Vector3 surfaceTangent)
+		{
+			// Is there a normal map?
+			if (NormalMap == null)
+				return surfaceNormal;
+
+			// Sample and unpack normal map
+			Vector4 normalFromMap = NormalMap.Sample(uv * UVScale, AddressMode, Filter);
+			normalFromMap.W = 0.0f;
+			normalFromMap *= 2.0f;
+			normalFromMap = Vector4.Subtract(normalFromMap, Vector4.One);
+
+			// Create TBN matrix
+			Vector3 N = surfaceNormal;
+			Vector3 T = Vector3.Normalize(surfaceTangent - N * Vector3.Dot(surfaceTangent, N));
+			Vector3 B = Vector3.Cross(T, N);
+
+			Matrix4x4 TBN = new Matrix4x4(
+				T.X, T.Y, T.Z, 0,
+				B.X, B.Y, B.Z, 0,
+				N.X, N.Y, N.Z, 0,
+				0, 0, 0, 0);
+
+			// Apply TBN and return result
+			return Vector3.Normalize(Vector4.Transform(normalFromMap, TBN).ToVector3());
 		}
 
 		/// <summary>
@@ -166,22 +209,24 @@ namespace CSharpPathTracer
 		/// Creates a new perfectly diffuse material
 		/// </summary>
 		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
 		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
 		public DiffuseMaterial(
-			Vector3 color, 
-			Texture texture = null, 
-			Texture roughnessMap = null, 
-			float roughness = 1.0f, 
+			Vector3 color,
+			float roughness = 1.0f,
+			Texture texture = null,
+			Texture roughnessMap = null,
+			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			: 
-			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
 		{
 		}
 
@@ -193,6 +238,9 @@ namespace CSharpPathTracer
 		/// <returns>A new ray</returns>
 		public override Ray GetNextBounce(Ray ray, RayHit hit)
 		{
+			// Handle optional normal map
+			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+
 			// Random bounce since we're assuming its perfectly diffuse
 			Vector3 bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
 
@@ -215,22 +263,24 @@ namespace CSharpPathTracer
 		/// Creates a new metallic material
 		/// </summary>
 		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
 		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
 		public MetalMaterial(
-			Vector3 color, 
+			Vector3 color,
+			float roughness = 0.0f,
 			Texture texture = null,
-			Texture roughnessMap = null, 
-			float roughness = 0.0f, 
+			Texture roughnessMap = null,
+			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			: 
-			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
 		{
 		}
 
@@ -242,6 +292,9 @@ namespace CSharpPathTracer
 		/// <returns>A new ray</returns>
 		public override Ray GetNextBounce(Ray ray, RayHit hit)
 		{
+			// Handle optional normal map
+			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+
 			// Perfect reflection since we're metal
 			Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
 
@@ -271,23 +324,25 @@ namespace CSharpPathTracer
 		/// </summary>
 		/// <param name="color">Base color</param>
 		/// <param name="indexOfRefraction">Ratio of values of the two media</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
 		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
 		public TransparentMaterial(
 			Vector3 color, 
-			float indexOfRefraction, 
+			float indexOfRefraction,
+			float roughness = 0.0f,
 			Texture texture = null, 
-			Texture roughnessMap = null, 
-			float roughness = 0.0f, 
+			Texture roughnessMap = null,
+			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			: 
-			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
 		{
 			IndexOfRefraction = indexOfRefraction;
 		}
@@ -300,6 +355,9 @@ namespace CSharpPathTracer
 		/// <returns>A new ray</returns>
 		public override Ray GetNextBounce(Ray ray, RayHit hit)
 		{
+			// Handle optional normal map
+			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+
 			// Invert the index depending on the side
 			float ior = IndexOfRefraction;
 			if (hit.Side == HitSide.Outside)
@@ -351,9 +409,10 @@ namespace CSharpPathTracer
 		/// <param name="emissiveIntensity">Intensity of emission</param>
 		/// <param name="emissiveTexture">Emissive map texture</param>
 		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
 		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
@@ -362,14 +421,15 @@ namespace CSharpPathTracer
 			float emissiveIntensity = 1.0f,
 			Texture emissiveTexture = null,
 			Vector3 color = new Vector3(), // 0,0,0
+			float roughness = 1.0f,
 			Texture texture = null,
 			Texture roughnessMap = null,
-			float roughness = 1.0f,
+			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			:
-			base(color, texture, roughnessMap, roughness, uvScale, addressMode, filter)
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
 		{
 			EmissiveColor = emissiveColor;
 			EmissiveIntensity = emissiveIntensity;
