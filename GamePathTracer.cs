@@ -9,9 +9,16 @@ namespace CSharpPathTracer
 {
 	class GamePathTracer : Game
 	{
+		// Graphics stuff
 		private GraphicsDeviceManager _graphics;
 		private SpriteBatch _spriteBatch;
 		private ImGuiHelper uiHelper;
+
+		// Raytracing
+		private Camera camera;
+		private List<Scene> scenes;
+		private Raytracer raytracer;
+		private Texture2D raytracingResults;
 
 		public GamePathTracer()
 		{
@@ -30,8 +37,14 @@ namespace CSharpPathTracer
 
 			uiHelper = new ImGuiHelper(this);
 
+			raytracingResults = new Texture2D(
+				GraphicsDevice,
+				GraphicsDevice.PresentationParameters.BackBufferWidth,
+				GraphicsDevice.PresentationParameters.BackBufferHeight);
+
 			base.Initialize();
 		}
+
 
 		protected override void LoadContent()
 		{

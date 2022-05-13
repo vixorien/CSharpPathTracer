@@ -44,7 +44,7 @@ namespace CSharpPathTracer
 		// Scene and rendering
 		private Camera camera;
 		private List<Scene> scenes;
-		private Raytracer raytracer; 
+		private RaytracerWindowsForms raytracer; 
 		private RaytracingMode raytracingMode;
 		private bool raytracingInProgress;
 
@@ -106,7 +106,7 @@ namespace CSharpPathTracer
 			camera.Transform.Rotate(-0.25f, 0, 0);
 
 			// Create the ray tracer before the background worker
-			raytracer = new Raytracer();
+			raytracer = new RaytracerWindowsForms();
 			raytracingInProgress = false;
 			raytracingMode = RaytracingMode.None;
 
@@ -196,7 +196,7 @@ namespace CSharpPathTracer
 			worker = new BackgroundWorker();
 			worker.WorkerReportsProgress = true;
 			worker.WorkerSupportsCancellation = true;
-			worker.DoWork += raytracer.RaytraceScene;
+			worker.DoWork += raytracer.RaytraceSceneBackgroundWorker;
 			worker.ProgressChanged += ScanlineComplete;
 			worker.RunWorkerCompleted += RaytraceComplete;
 
@@ -207,7 +207,7 @@ namespace CSharpPathTracer
 				renderTarget = new Bitmap(raytracingDisplay.Width, raytracingDisplay.Height, PixelFormat.Format24bppRgb);
 				raytracingDisplay.Bitmap = renderTarget;
 
-				progressColorScanline = new byte[renderTarget.Width * Raytracer.ChannelsPerPixel]; // Assume black
+				progressColorScanline = new byte[renderTarget.Width * RaytracerWindowsForms.ChannelsPerPixel]; // Assume black
 			}
 
 			// Update camera to match new viewport
