@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using ImGuiNET;
+using SIMD = System.Numerics;
 
 namespace CSharpPathTracer
 {
@@ -17,8 +18,8 @@ namespace CSharpPathTracer
 		// Raytracing
 		private Camera camera;
 		private List<Scene> scenes;
-		private Raytracer raytracer;
-		private Texture2D raytracingResults;
+		private RaytracerMonoGame raytracer;
+		private Texture2D raytraceTexture;
 
 		public GamePathTracer()
 		{
@@ -30,17 +31,33 @@ namespace CSharpPathTracer
 		protected override void Initialize()
 		{
 			// Set initial window size
-			_graphics.PreferredBackBufferWidth = 1920;
-			_graphics.PreferredBackBufferHeight = 1080;
+			_graphics.PreferredBackBufferWidth = 1600;
+			_graphics.PreferredBackBufferHeight = 900;
 			_graphics.ApplyChanges();
 			this.Window.AllowUserResizing = true;
 
 			uiHelper = new ImGuiHelper(this);
 
-			raytracingResults = new Texture2D(
+			raytraceTexture = new Texture2D(
 				GraphicsDevice,
 				GraphicsDevice.PresentationParameters.BackBufferWidth,
-				GraphicsDevice.PresentationParameters.BackBufferHeight);
+				GraphicsDevice.PresentationParameters.BackBufferHeight,
+				false,
+				SurfaceFormat.Vector4);
+
+			// Set up scene stuff
+			raytracer = new RaytracerMonoGame();
+			scenes = Scene.GenerateScenes();
+			camera = new Camera(
+				new SIMD.Vector3(0, 8, 20),
+				(float)_graphics.PreferredBackBufferWidth / _graphics.PreferredBackBufferHeight,
+				MathF.PI / 4.0f,
+				0.01f,
+				1000.0f,
+				0.0f,
+				20.0f);
+			camera.Transform.Rotate(-0.25f, 0, 0);
+
 
 			base.Initialize();
 		}
@@ -61,6 +78,23 @@ namespace CSharpPathTracer
 			uiHelper.PreUpdate(gameTime);
 
 			ImGui.Text("Hello, world!");
+			if (ImGui.Button("Raytrace"))
+			{
+				RaytracingParameters rtParams = new RaytracingParameters(
+					scenes[0],
+					camera,
+					_graphics.PreferredBackBufferWidth,
+					_graphics.PreferredBackBufferHeight,
+					10,
+					1,
+					25,
+					false);
+
+				RaytracingResults results = raytracer.RaytraceScene(rtParams);
+
+				// Copy data into texture
+				raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
+			}
 
 			base.Update(gameTime);
 		}
@@ -68,6 +102,10 @@ namespace CSharpPathTracer
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
+
+			_spriteBatch.Begin();
+			_spriteBatch.Draw(raytraceTexture, Vector2.Zero, Color.White);
+			_spriteBatch.End();
 
 			uiHelper.Draw();
 
