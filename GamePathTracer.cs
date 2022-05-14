@@ -14,7 +14,8 @@ namespace CSharpPathTracer
 	{
 		None,
 		Realtime,
-		Full
+		Full,
+		FullProgressive
 	}
 
 	struct RaytracingOptions
@@ -55,7 +56,9 @@ namespace CSharpPathTracer
 
 		private RaytracingModeMonoGame rtMode;
 		private bool raytraceInProgress;
-		private int currentProgressiveScanline;
+		private bool progressiveRaytrace;
+		private ulong totalRaysFromLastRaytrace;
+		private int deepestRecursionFromLastRaytrace;
 
 		private BackgroundWorker worker;
 		private Stopwatch stopwatch;
@@ -92,6 +95,9 @@ namespace CSharpPathTracer
 			ResizeRaytracingTexture(windowWidth, windowHeight);
 			rtOptionsRealTime = new RaytracingOptions(1, 16, 10);
 			rtOptionsFull = new RaytracingOptions(10, 1, 50);
+			progressiveRaytrace = true;
+			totalRaysFromLastRaytrace = 0;
+			deepestRecursionFromLastRaytrace = 0;
 
 			// UI setup
 			uiHelper = new ImGuiHelper(this);
@@ -112,7 +118,6 @@ namespace CSharpPathTracer
 			// Perform a single raytrace
 			//Raytrace(rtOptionsRealTime);
 			raytraceInProgress = false;
-			currentProgressiveScanline = 0;
 			rtMode = RaytracingModeMonoGame.None;
 
 			base.Initialize();
@@ -234,6 +239,7 @@ namespace CSharpPathTracer
 					options = rtOptionsRealTime;
 					break;
 
+				case RaytracingModeMonoGame.FullProgressive:
 				case RaytracingModeMonoGame.Full:
 					options = rtOptionsFull;
 					break;
@@ -259,6 +265,8 @@ namespace CSharpPathTracer
 			// Track progress
 			raytraceInProgress = true;
 			rtMode = mode;
+			deepestRecursionFromLastRaytrace = 0;
+			totalRaysFromLastRaytrace = 0;
 
 			// Set up params and start thread
 			RaytracingParameters rtParams = new RaytracingParameters(
@@ -269,7 +277,7 @@ namespace CSharpPathTracer
 				options.SamplesPerPixel,
 				options.ResolutionReduction,
 				options.MaxRecursionDepth,
-				false);
+				mode == RaytracingModeMonoGame.FullProgressive);
 			worker.RunWorkerAsync(rtParams);
 
 			// Restart the stopwatch to track raytracing time
@@ -283,6 +291,10 @@ namespace CSharpPathTracer
 			RaytracingProgressMonoGame progress = e.UserState as RaytracingProgressMonoGame;
 			if (progress == null)
 				return;
+
+			// Save stats
+			totalRaysFromLastRaytrace = progress.Stats.TotalRays;
+			deepestRecursionFromLastRaytrace = progress.Stats.DeepestRecursion;
 
 			// We usually want to copy one extra line to simulate the black
 			// progress line across the final image (unless doing realtime)
@@ -402,10 +414,9 @@ namespace CSharpPathTracer
 					ImGui.TreePop();
 				}
 
+				// Starting the raytrace
 				ImGui.Spacing();
-				//if (ImGui.Button("Raytrace Progressive (Additive)")) { rtMode = RaytracingModeMonoGame.ProgressiveAdditive; }
-				//if (ImGui.Button("Raytrace Progressive (Scanline/Frame)")) { rtMode = RaytracingModeMonoGame.ProgressiveScanline; currentProgressiveScanline = 0; }
-				//if (ImGui.Button("Raytrace Full (All at once)")) { rtMode = RaytracingModeMonoGame.Full; }
+				ImGui.Checkbox("Progressive Raytrace", ref progressiveRaytrace);
 				if (ImGui.Button(raytraceInProgress ? "Cancel Raytrace" : "Start Full Raytrace"))
 				{
 					// If we're in progress, we're canceling the exisitng
@@ -417,8 +428,16 @@ namespace CSharpPathTracer
 					}
 
 					// Perform raytrace
-					BeginRaytrace(RaytracingModeMonoGame.Full);
+					BeginRaytrace(progressiveRaytrace ? RaytracingModeMonoGame.FullProgressive : RaytracingModeMonoGame.Full);
 				}
+
+				// Stats
+				ImGui.Spacing();
+				ImGui.Text("Time: " + stopwatch.Elapsed);
+				ImGui.Text("Total Rays: " + totalRaysFromLastRaytrace.ToString("N0"));
+				ImGui.Text("Deepest Recursion: " + deepestRecursionFromLastRaytrace);
+
+
 			}
 			ImGui.End();
 		}
