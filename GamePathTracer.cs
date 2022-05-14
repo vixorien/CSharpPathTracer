@@ -10,40 +10,63 @@ namespace CSharpPathTracer
 {
 	class GamePathTracer : Game
 	{
+		// Input
+		private MouseState prevMS;
+
 		// Graphics stuff
 		private GraphicsDeviceManager _graphics;
 		private SpriteBatch _spriteBatch;
 		private ImGuiHelper uiHelper;
+		private int windowWidth;
+		private int windowHeight;
 
-		// Raytracing
+		// Raytracing elements
 		private Camera camera;
 		private List<Scene> scenes;
 		private RaytracerMonoGame raytracer;
 		private Texture2D raytraceTexture;
+
+		// Raytracing options
+		private int resolutionReduction;
+		private int samplesPerPixel;
+		private int maxRecursionDepth;
 
 		public GamePathTracer()
 		{
 			_graphics = new GraphicsDeviceManager(this);
 			Content.RootDirectory = "Content";
 			IsMouseVisible = true;
+			Window.ClientSizeChanged += Window_ClientSizeChanged;
+		}
+
+		private void Window_ClientSizeChanged(object sender, EventArgs e)
+		{
+			windowWidth = Window.ClientBounds.Width;
+			windowHeight = Window.ClientBounds.Height;
+			ResizeRaytracingTexture();
 		}
 
 		protected override void Initialize()
 		{
-			// Set initial window size
-			_graphics.PreferredBackBufferWidth = 1600;
-			_graphics.PreferredBackBufferHeight = 900;
-			_graphics.ApplyChanges();
+			// General MonoGame setup
+			_spriteBatch = new SpriteBatch(GraphicsDevice);
 			this.Window.AllowUserResizing = true;
 
-			uiHelper = new ImGuiHelper(this);
+			// Set initial window size
+			windowWidth = 1600;
+			windowHeight = 900;
+			_graphics.PreferredBackBufferWidth = windowWidth;
+			_graphics.PreferredBackBufferHeight = windowHeight;
+			_graphics.ApplyChanges();
 
-			raytraceTexture = new Texture2D(
-				GraphicsDevice,
-				GraphicsDevice.PresentationParameters.BackBufferWidth,
-				GraphicsDevice.PresentationParameters.BackBufferHeight,
-				false,
-				SurfaceFormat.Vector4);
+			// Set up raytracing options
+			resolutionReduction = 1;
+			samplesPerPixel = 1;
+			maxRecursionDepth = 10;
+			ResizeRaytracingTexture();
+
+			// UI setup
+			uiHelper = new ImGuiHelper(this);
 
 			// Set up scene stuff
 			raytracer = new RaytracerMonoGame();
@@ -62,40 +85,22 @@ namespace CSharpPathTracer
 			base.Initialize();
 		}
 
-
-		protected override void LoadContent()
-		{
-			_spriteBatch = new SpriteBatch(GraphicsDevice);
-
-			// TODO: use this.Content to load your game content here
-		}
-
 		protected override void Update(GameTime gameTime)
 		{
 			if (Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
 				Exit();
 
+			// Handle the UI
 			uiHelper.PreUpdate(gameTime);
+			CreateUI();
 
-			ImGui.Text("Hello, world!");
-			if (ImGui.Button("Raytrace"))
+			// Camera movement causes a raytrace
+			if( UpdateCamera())
 			{
-				RaytracingParameters rtParams = new RaytracingParameters(
-					scenes[0],
-					camera,
-					_graphics.PreferredBackBufferWidth,
-					_graphics.PreferredBackBufferHeight,
-					10,
-					1,
-					25,
-					false);
-
-				RaytracingResults results = raytracer.RaytraceScene(rtParams);
-
-				// Copy data into texture
-				raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
+				Raytrace();
 			}
 
+			prevMS = Mouse.GetState();
 			base.Update(gameTime);
 		}
 
@@ -103,13 +108,123 @@ namespace CSharpPathTracer
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			_spriteBatch.Begin();
-			_spriteBatch.Draw(raytraceTexture, Vector2.Zero, Color.White);
+			// Draw the raytracing results
+			_spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp);
+			_spriteBatch.Draw(raytraceTexture, new Rectangle(0, 0, windowWidth, windowHeight), Color.White);
 			_spriteBatch.End();
 
+			// UI on top
 			uiHelper.Draw();
 
 			base.Draw(gameTime);
+		}
+
+		private void Raytrace()
+		{
+			// Resize if necessary
+			ResizeRaytracingTexture();
+
+			RaytracingParameters rtParams = new RaytracingParameters(
+				scenes[0],
+				camera,
+				_graphics.PreferredBackBufferWidth,
+				_graphics.PreferredBackBufferHeight,
+				samplesPerPixel,
+				resolutionReduction,
+				maxRecursionDepth,
+				false);
+
+			RaytracingResults results = raytracer.RaytraceScene(rtParams);
+
+			// Copy data into texture
+			raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
+		}
+
+		private void ResizeRaytracingTexture()
+		{
+			int idealWidth = GraphicsDevice.PresentationParameters.BackBufferWidth / resolutionReduction;
+			int idealHeight = GraphicsDevice.PresentationParameters.BackBufferHeight / resolutionReduction;
+
+			// Already the right size?
+			if (raytraceTexture!= null &&
+				raytraceTexture.Width == idealWidth &&
+				raytraceTexture.Height == idealHeight)
+				return;
+
+			// Dispose if necessary
+			if (raytraceTexture != null)
+				raytraceTexture.Dispose();
+
+			raytraceTexture = new Texture2D(
+				GraphicsDevice,
+				idealWidth,
+				idealHeight,
+				false,
+				SurfaceFormat.Vector4);
+		}
+
+		private bool UpdateCamera()
+		{
+			// Camera movement constantns
+			const float CameraMoveSpeed = 0.25f;
+			const float CameraMoveSpeedSlow = 0.05f;
+			const float CameraMoveSpeedFast = 1.0f;
+			const float CameraRotationSpeed = 0.01f;
+
+			// Grab input
+			KeyboardState kb = Keyboard.GetState();
+			MouseState ms = Mouse.GetState();
+			ImGuiIOPtr io = ImGui.GetIO();
+
+			// Track input change
+			bool input = false;
+
+			// Handle movement
+			if (!io.WantCaptureKeyboard)
+			{
+				float speed = CameraMoveSpeed;
+				if (kb.IsKeyDown(Keys.LeftShift)) speed = CameraMoveSpeedFast;
+				if (kb.IsKeyDown(Keys.LeftControl)) speed = CameraMoveSpeedSlow;
+
+				if (kb.IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); input = true; }
+				if (kb.IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); input = true; }
+				if (kb.IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); input = true; }
+				if (kb.IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); input = true; }
+				if (kb.IsKeyDown(Keys.Space)) { camera.Transform.MoveAbsolute(0, speed, 0); input = true; }
+				if (kb.IsKeyDown(Keys.X)) { camera.Transform.MoveAbsolute(0, -speed, 0); input = true; }
+			}
+
+			// Handle rotation
+			if (!io.WantCaptureMouse && ms.LeftButton == ButtonState.Pressed)
+			{
+				float xDiff = (prevMS.X - ms.X) * CameraRotationSpeed;
+				float yDiff = (prevMS.Y - ms.Y) * CameraRotationSpeed;
+
+				if (xDiff != 0.0f || yDiff != 0.0f)
+				{
+					camera.Transform.Rotate(yDiff, xDiff, 0);
+					input = true;
+				}
+			}
+
+			return input;
+		}
+
+		private void CreateUI()
+		{
+			ImGui.Begin("Raytracing Options");
+			{
+				// Basic sliders
+				ImGui.SliderInt("Samples Per Pixel", ref samplesPerPixel, 1, 1000);
+				ImGui.SliderInt("Resolution Reduction", ref resolutionReduction, 1, 16);
+				ImGui.SliderInt("Max Recursion Depth", ref maxRecursionDepth, 1, 100);
+
+				if (ImGui.Button("Raytrace"))
+				{
+					Raytrace();
+				}
+			}
+			ImGui.End();
 		}
 	}
 }
