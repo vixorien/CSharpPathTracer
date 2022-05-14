@@ -34,27 +34,6 @@ namespace CSharpPathTracer
 	}
 
 	/// <summary>
-	/// Progress reported after a single scanline is finished
-	/// </summary>
-	class RaytracingProgress
-	{
-		public int ScanlineIndex { get; private set; }
-		public int ScanlineDuplicateCount { get; private set; }
-		public byte[] Scanline { get; private set; }
-		public double CompletionPercent { get; private set; }
-		public RaytracingStats Stats { get; private set; }
-
-		public RaytracingProgress(int scanlineIndex, int duplicateCount, byte[] scanline, double completionPercent, RaytracingStats stats)
-		{
-			ScanlineIndex = scanlineIndex;
-			ScanlineDuplicateCount = duplicateCount;
-			Scanline = scanline;
-			CompletionPercent = completionPercent;
-			Stats = stats;
-		}
-	}
-
-	/// <summary>
 	/// Details on a single raytrace
 	/// </summary>
 	struct RaytracingStats

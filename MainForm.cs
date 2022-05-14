@@ -238,7 +238,7 @@ namespace CSharpPathTracer
 		/// </summary>
 		private void ScanlineComplete(object sender, ProgressChangedEventArgs e)
 		{
-			RaytracingProgress progress = e.UserState as RaytracingProgress;
+			RaytracingProgressWindowsForms progress = e.UserState as RaytracingProgressWindowsForms;
 			if (progress == null)
 				return;
 

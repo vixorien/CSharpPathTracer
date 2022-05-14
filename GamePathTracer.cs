@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Diagnostics;
+using System.ComponentModel;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -11,9 +13,8 @@ namespace CSharpPathTracer
 	enum RaytracingModeMonoGame
 	{
 		None,
-		Full,
-		ProgressiveAdditive,
-		ProgressiveScanline
+		Realtime,
+		Full
 	}
 
 	struct RaytracingOptions
@@ -42,19 +43,22 @@ namespace CSharpPathTracer
 		private int windowWidth;
 		private int windowHeight;
 
-		// Raytracing elements
+		// Resources
 		private Camera camera;
 		private List<Scene> scenes;
-		private RaytracerMonoGame raytracer;
 		private Texture2D raytraceTexture;
 
 		// Raytracing options
+		private RaytracerMonoGame raytracer;
 		private RaytracingOptions rtOptionsRealTime;
 		private RaytracingOptions rtOptionsFull;
 
 		private RaytracingModeMonoGame rtMode;
 		private bool raytraceInProgress;
 		private int currentProgressiveScanline;
+
+		private BackgroundWorker worker;
+		private Stopwatch stopwatch;
 
 		public GamePathTracer()
 		{
@@ -74,6 +78,7 @@ namespace CSharpPathTracer
 		{
 			// General MonoGame setup
 			_spriteBatch = new SpriteBatch(GraphicsDevice);
+			stopwatch = new Stopwatch();
 			//this.Window.AllowUserResizing = true;
 
 			// Set initial window size
@@ -105,7 +110,7 @@ namespace CSharpPathTracer
 			camera.Transform.Rotate(-0.25f, 0, 0);
 
 			// Perform a single raytrace
-			Raytrace(rtOptionsRealTime);
+			//Raytrace(rtOptionsRealTime);
 			raytraceInProgress = false;
 			currentProgressiveScanline = 0;
 			rtMode = RaytracingModeMonoGame.None;
@@ -122,14 +127,9 @@ namespace CSharpPathTracer
 			uiHelper.PreUpdate(gameTime);
 			CreateUI();
 
-			// Camera movement causes a raytrace
-			//if(UpdateCamera())
-			//{
-			//	Raytrace(rtOptionsRealTime);
-			//}
+			UpdateCamera(gameTime);
 
-			Raytrace(rtOptionsFull);
-
+			// Save old state
 			prevMS = Mouse.GetState();
 			base.Update(gameTime);
 		}
@@ -139,7 +139,7 @@ namespace CSharpPathTracer
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
 			// Draw the raytracing results
-			_spriteBatch.Begin(SpriteSortMode.Deferred, null, SamplerState.PointClamp);
+			_spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp);
 			_spriteBatch.Draw(raytraceTexture, new Rectangle(0, 0, windowWidth, windowHeight), Color.White);
 			_spriteBatch.End();
 
@@ -149,66 +149,152 @@ namespace CSharpPathTracer
 			base.Draw(gameTime);
 		}
 
-		private void Raytrace(RaytracingOptions rtOptions)
-		{
-			int scaledWidth = windowWidth / rtOptions.ResolutionReduction;
-			int scaledHeight = windowHeight / rtOptions.ResolutionReduction;
+		//private void Raytrace(RaytracingOptions rtOptions)
+		//{
+		//	int scaledWidth = windowWidth / rtOptions.ResolutionReduction;
+		//	int scaledHeight = windowHeight / rtOptions.ResolutionReduction;
 
-			// Resize if necessary
+		//	// Resize if necessary
+		//	ResizeRaytracingTexture(scaledWidth, scaledHeight);
+
+		//	RaytracingParameters rtParams = new RaytracingParameters(
+		//		scenes[0],
+		//		camera,
+		//		windowWidth,
+		//		windowHeight,
+		//		rtOptions.SamplesPerPixel,
+		//		rtOptions.ResolutionReduction,
+		//		rtOptions.MaxRecursionDepth,
+		//		false);
+
+		//	// Which mode?
+		//	switch (rtMode)
+		//	{
+
+		//		case RaytracingModeMonoGame.Full:
+		//			{
+		//				// Perform the full raytrace and copy results into texture
+		//				RaytracingResults results = raytracer.RaytraceScene(rtParams);
+		//				raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
+		//				rtMode = RaytracingModeMonoGame.None;
+		//			}
+		//			break;
+
+		//		case RaytracingModeMonoGame.ProgressiveAdditive:
+		//			break;
+
+		//		case RaytracingModeMonoGame.ProgressiveScanline:
+		//			{
+		//				// Perform a single scanline
+		//				RaytracingResults results = raytracer.RaytraceScanline(rtParams, currentProgressiveScanline);
+		//				raytraceTexture.SetData<SIMD.Vector4>(
+		//					0,
+		//					new Rectangle(0, currentProgressiveScanline, scaledWidth, 1),
+		//					results.Pixels,
+		//					0,//currentProgressiveScanline * scaledWidth,
+		//					scaledWidth);
+
+		//				// Move to the next line and end if necessary
+		//				currentProgressiveScanline++;
+		//				if (currentProgressiveScanline >= scaledHeight)
+		//					rtMode = RaytracingModeMonoGame.None;
+		//			}
+		//			break;
+		//	}
+
+
+		//}
+
+		private void BeginRaytrace(RaytracingModeMonoGame mode)
+		{
+			// Check the mode for the correct options
+			// or an early out
+			RaytracingOptions options;
+			switch (mode)
+			{
+				case RaytracingModeMonoGame.Realtime:
+					options = rtOptionsRealTime;
+					break;
+
+				case RaytracingModeMonoGame.Full:
+					options = rtOptionsFull;
+					break;
+
+				default: // Not a valid mode
+					return;
+			}
+
+			// Set up the worker for threading
+			worker?.Dispose();
+			worker = new BackgroundWorker();
+			worker.WorkerReportsProgress = true;
+			worker.WorkerSupportsCancellation = true;
+			worker.DoWork += raytracer.RaytraceSceneBackgroundWorker;
+			worker.ProgressChanged += ScanlineComplete;
+			worker.RunWorkerCompleted += RaytraceComplete;
+
+			// Update the texture if necessary
+			int scaledWidth = windowWidth / options.ResolutionReduction;
+			int scaledHeight = windowHeight / options.ResolutionReduction;
 			ResizeRaytracingTexture(scaledWidth, scaledHeight);
 
+			// Track progress
+			raytraceInProgress = true;
+			rtMode = mode;
+
+			// Set up params and start thread
 			RaytracingParameters rtParams = new RaytracingParameters(
 				scenes[0],
 				camera,
 				windowWidth,
 				windowHeight,
-				rtOptions.SamplesPerPixel,
-				rtOptions.ResolutionReduction,
-				rtOptions.MaxRecursionDepth,
+				options.SamplesPerPixel,
+				options.ResolutionReduction,
+				options.MaxRecursionDepth,
 				false);
+			worker.RunWorkerAsync(rtParams);
 
-			// Which mode?
-			switch (rtMode)
+			// Restart the stopwatch to track raytracing time
+			stopwatch.Restart();
+		}
+
+
+
+		private void ScanlineComplete(object sender, ProgressChangedEventArgs e)
+		{
+			RaytracingProgressMonoGame progress = e.UserState as RaytracingProgressMonoGame;
+			if (progress == null)
+				return;
+
+			// We usually want to copy one extra line to simulate the black
+			// progress line across the final image
+			int copyHeight = 3;
+			if (progress.ScanlineIndex >= raytraceTexture.Height - 2)
+				copyHeight = 1; // Last scanline
+
+			// Copy the given scanline into the final image
+			raytraceTexture.SetData<SIMD.Vector4>(
+				0,
+				new Rectangle(0, progress.ScanlineIndex, progress.ScanlineWidth, copyHeight),
+				progress.Pixels,
+				progress.ScanlineIndex * progress.ScanlineWidth,
+				progress.ScanlineWidth * copyHeight);
+		}
+
+		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
+		{
+			stopwatch.Stop();
+			raytraceInProgress = false;
+			if (rtMode == RaytracingModeMonoGame.Full)
 			{
-
-				case RaytracingModeMonoGame.Full:
-					{
-						// Perform the full raytrace and copy results into texture
-						RaytracingResults results = raytracer.RaytraceScene(rtParams);
-						raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
-						rtMode = RaytracingModeMonoGame.None;
-					}
-					break;
-
-				case RaytracingModeMonoGame.ProgressiveAdditive:
-					break;
-
-				case RaytracingModeMonoGame.ProgressiveScanline:
-					{
-						// Perform a single scaneline
-						RaytracingResults results = raytracer.RaytraceScanline(rtParams, currentProgressiveScanline);
-						raytraceTexture.SetData<SIMD.Vector4>(
-							0,
-							new Rectangle(0, currentProgressiveScanline, scaledWidth, 1),
-							results.Pixels,
-							0,//currentProgressiveScanline * scaledWidth,
-							scaledWidth);
-
-						// Move to the next line and end if necessary
-						currentProgressiveScanline++;
-						if (currentProgressiveScanline >= scaledHeight)
-							rtMode = RaytracingModeMonoGame.None;
-					}
-					break;
+				rtMode = RaytracingModeMonoGame.None;
 			}
-
-			
 		}
 
 		private void ResizeRaytracingTexture(int width, int height)
 		{
 			// Already the right size?
-			if (raytraceTexture!= null &&
+			if (raytraceTexture != null &&
 				raytraceTexture.Width == width &&
 				raytraceTexture.Height == height)
 				return;
@@ -225,7 +311,7 @@ namespace CSharpPathTracer
 				SurfaceFormat.Vector4);
 		}
 
-		private bool UpdateCamera()
+		private bool UpdateCamera(GameTime gt)
 		{
 			// Camera movement constants
 			const float CameraMoveSpeed = 0.25f;
@@ -247,6 +333,7 @@ namespace CSharpPathTracer
 				float speed = CameraMoveSpeed;
 				if (kb.IsKeyDown(Keys.LeftShift)) speed = CameraMoveSpeedFast;
 				if (kb.IsKeyDown(Keys.LeftControl)) speed = CameraMoveSpeedSlow;
+				//speed *= (float)gt.ElapsedGameTime.TotalSeconds;
 
 				if (kb.IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); input = true; }
 				if (kb.IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); input = true; }
@@ -280,7 +367,7 @@ namespace CSharpPathTracer
 				ImGui.Text("FPS: " + ImGui.GetIO().Framerate);
 
 				// Sliders for real time
-				if(ImGui.TreeNode("Live (Real-Time) Options"))
+				if (ImGui.TreeNode("Live (Real-Time) Options"))
 				{
 					ImGui.SliderInt("Samples Per Pixel", ref rtOptionsRealTime.SamplesPerPixel, 1, 1000);
 					ImGui.SliderInt("Resolution Reduction", ref rtOptionsRealTime.ResolutionReduction, 1, 16);
@@ -289,7 +376,7 @@ namespace CSharpPathTracer
 				}
 
 				// Sliders for real time
-				if(ImGui.TreeNode("Full (Slow) Options"))
+				if (ImGui.TreeNode("Full (Slow) Options"))
 				{
 					ImGui.SliderInt("Samples Per Pixel", ref rtOptionsFull.SamplesPerPixel, 1, 1000);
 					ImGui.SliderInt("Resolution Reduction", ref rtOptionsFull.ResolutionReduction, 1, 16);
@@ -298,10 +385,22 @@ namespace CSharpPathTracer
 				}
 
 				ImGui.Spacing();
-				if (ImGui.Button("Raytrace Progressive (Additive)")) { rtMode = RaytracingModeMonoGame.ProgressiveAdditive; }
-				if (ImGui.Button("Raytrace Progressive (Scanline/Frame)")) { rtMode = RaytracingModeMonoGame.ProgressiveScanline; currentProgressiveScanline = 0; }
-				if (ImGui.Button("Raytrace Full (All at once)")) { rtMode = RaytracingModeMonoGame.Full; }
+				//if (ImGui.Button("Raytrace Progressive (Additive)")) { rtMode = RaytracingModeMonoGame.ProgressiveAdditive; }
+				//if (ImGui.Button("Raytrace Progressive (Scanline/Frame)")) { rtMode = RaytracingModeMonoGame.ProgressiveScanline; currentProgressiveScanline = 0; }
+				//if (ImGui.Button("Raytrace Full (All at once)")) { rtMode = RaytracingModeMonoGame.Full; }
+				if (ImGui.Button(raytraceInProgress ? "Cancel Raytrace" : "Start Full Raytrace"))
+				{
+					// If we're in progress, we're canceling the exisitng
+					// work instead, which will be caught elsewhere
+					if (raytraceInProgress)
+					{
+						worker.CancelAsync();
+						return;
+					}
 
+					// Perform raytrace
+					BeginRaytrace(RaytracingModeMonoGame.Full);
+				}
 			}
 			ImGui.End();
 		}

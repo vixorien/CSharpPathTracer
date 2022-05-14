@@ -5,6 +5,27 @@ using System.Numerics;
 
 namespace CSharpPathTracer
 {
+	/// <summary>
+	/// Progress reported after a single scanline is finished in a windows form raytrace
+	/// </summary>
+	class RaytracingProgressWindowsForms
+	{
+		public int ScanlineIndex { get; private set; }
+		public int ScanlineDuplicateCount { get; private set; }
+		public byte[] Scanline { get; private set; }
+		public double CompletionPercent { get; private set; }
+		public RaytracingStats Stats { get; private set; }
+
+		public RaytracingProgressWindowsForms(int scanlineIndex, int duplicateCount, byte[] scanline, double completionPercent, RaytracingStats stats)
+		{
+			ScanlineIndex = scanlineIndex;
+			ScanlineDuplicateCount = duplicateCount;
+			Scanline = scanline;
+			CompletionPercent = completionPercent;
+			Stats = stats;
+		}
+	}
+
 	class RaytracerWindowsForms : Raytracer
 	{
 		// Results
@@ -126,7 +147,7 @@ namespace CSharpPathTracer
 					double percentComplete = (double)p / progressiveSteps;
 					percentComplete += ((double)y / height) * onePassPercentage;
 
-					RaytracingProgress progress = new RaytracingProgress(
+					RaytracingProgressWindowsForms progress = new RaytracingProgressWindowsForms(
 						y - half,
 						res,
 						pixels[y],
