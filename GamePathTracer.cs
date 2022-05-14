@@ -127,7 +127,25 @@ namespace CSharpPathTracer
 			uiHelper.PreUpdate(gameTime);
 			CreateUI();
 
-			UpdateCamera(gameTime);
+			bool input = UpdateCamera(gameTime);
+			if (input)
+			{
+				// Input means we do a real-time render
+				rtMode = RaytracingModeMonoGame.Realtime;
+			}
+			else if(rtMode == RaytracingModeMonoGame.Realtime)
+			{
+				// No input means we can stop a realtime render
+				rtMode = RaytracingModeMonoGame.None;
+			}
+
+			// If we're in realtime mode and the worker is not currently busy (or doesn't exist yet),
+			// then we can go ahead and begin a new low-res raytracing frame
+			if (rtMode == RaytracingModeMonoGame.Realtime &&
+				(worker == null || (worker != null && !worker.IsBusy)))
+			{
+				BeginRaytrace(RaytracingModeMonoGame.Realtime);
+			}
 
 			// Save old state
 			prevMS = Mouse.GetState();
@@ -267,10 +285,10 @@ namespace CSharpPathTracer
 				return;
 
 			// We usually want to copy one extra line to simulate the black
-			// progress line across the final image
+			// progress line across the final image (unless doing realtime)
 			int copyHeight = 3;
-			if (progress.ScanlineIndex >= raytraceTexture.Height - 2)
-				copyHeight = 1; // Last scanline
+			if (progress.ScanlineIndex >= raytraceTexture.Height - 2 || rtMode == RaytracingModeMonoGame.Realtime)
+				copyHeight = 1;
 
 			// Copy the given scanline into the final image
 			raytraceTexture.SetData<SIMD.Vector4>(
