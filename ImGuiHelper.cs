@@ -242,8 +242,9 @@ namespace CSharpPathTracer
 			// Restore state
 			device.Viewport = prevVP;
 			device.BlendState = prevBlend;
-			device.DepthStencilState = prevDepth;
 			device.RasterizerState = prevRast;
+			device.DepthStencilState = prevDepth;
+			device.ScissorRectangle = prevScissor;
 		}
 
 		/// <summary>

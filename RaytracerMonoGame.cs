@@ -98,11 +98,57 @@ namespace CSharpPathTracer
 				stats);
 		}
 
-		//public SIMD.Vector4[] RaytraceScanline(RaytracingParameters rtParams, int scanline)
-		//{
-			
-		//	return currentScanline;
-		//}
+		public RaytracingResults RaytraceScanline(RaytracingParameters rtParams, int scanlineIndex)
+		{
+			// Verify size
+			int fullWidth = rtParams.Width;
+			int fullHeight = rtParams.Height;
+			int finalWidth = fullWidth / rtParams.ResolutionReduction;
+			int finalHeight = fullHeight / rtParams.ResolutionReduction;
+			if (fullWidth <= 0 || fullHeight <= 0 ||
+				finalWidth <= 0 || finalHeight <= 0)
+				return new RaytracingResults();
+
+			// Reset stats for this trace
+			stats.Reset(rtParams.MaxRecursionDepth);
+
+			// Create the scanline vector
+			SIMD.Vector4[] scanline = new SIMD.Vector4[finalWidth];
+
+			// Parallel loop for the pixels on the current scanline
+			Parallel.For(0, finalWidth, x =>
+			{
+				// Handle multiple samples per pixel
+				SIMD.Vector3 totalColor = SIMD.Vector3.Zero;
+				for (int s = 0; s < rtParams.SamplesPerPixel; s++)
+				{
+					float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+					float adjustedY = scanlineIndex + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
+
+					// Get this ray and add to the total raytraced color
+					Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, finalWidth, finalHeight);
+					totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
+				}
+
+				// Average the color and set the resolution block
+				if (rtParams.SamplesPerPixel > 1)
+					totalColor /= rtParams.SamplesPerPixel;
+
+				// Replace color in array
+				scanline[x] = new SIMD.Vector4(
+					MathF.Pow(totalColor.X, GammaCorrectionPower),
+					MathF.Pow(totalColor.Y, GammaCorrectionPower),
+					MathF.Pow(totalColor.Z, GammaCorrectionPower),
+					1);
+			});
+
+			// Report the final details
+			return new RaytracingResults(
+				finalWidth,
+				1,
+				scanline,
+				stats);
+		}
 
 		private int Index(int x, int y, int width)
 		{
