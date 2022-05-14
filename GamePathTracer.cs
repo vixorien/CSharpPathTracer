@@ -8,6 +8,28 @@ using SIMD = System.Numerics;
 
 namespace CSharpPathTracer
 {
+	enum RaytracingModeMonoGame
+	{
+		None,
+		Full,
+		ProgressiveAdditive,
+		ProgressiveScanline
+	}
+
+	struct RaytracingOptions
+	{
+		public int SamplesPerPixel;
+		public int ResolutionReduction;
+		public int MaxRecursionDepth;
+
+		public RaytracingOptions(int samplesPerPixel, int resolutionReduction, int maxRecursionDepth)
+		{
+			SamplesPerPixel = samplesPerPixel;
+			ResolutionReduction = resolutionReduction;
+			MaxRecursionDepth = maxRecursionDepth;
+		}
+	}
+
 	class GamePathTracer : Game
 	{
 		// Input
@@ -27,9 +49,10 @@ namespace CSharpPathTracer
 		private Texture2D raytraceTexture;
 
 		// Raytracing options
-		private int resolutionReduction;
-		private int samplesPerPixel;
-		private int maxRecursionDepth;
+		private RaytracingOptions rtOptionsRealTime;
+		private RaytracingOptions rtOptionsFull;
+
+		private RaytracingModeMonoGame rtMode;
 
 		public GamePathTracer()
 		{
@@ -43,7 +66,6 @@ namespace CSharpPathTracer
 		{
 			windowWidth = Window.ClientBounds.Width;
 			windowHeight = Window.ClientBounds.Height;
-			ResizeRaytracingTexture();
 		}
 
 		protected override void Initialize()
@@ -60,10 +82,9 @@ namespace CSharpPathTracer
 			_graphics.ApplyChanges();
 
 			// Set up raytracing options
-			resolutionReduction = 1;
-			samplesPerPixel = 1;
-			maxRecursionDepth = 10;
-			ResizeRaytracingTexture();
+			ResizeRaytracingTexture(windowWidth, windowHeight);
+			rtOptionsRealTime = new RaytracingOptions(1, 16, 10);
+			rtOptionsFull = new RaytracingOptions(10, 1, 50);
 
 			// UI setup
 			uiHelper = new ImGuiHelper(this);
@@ -81,6 +102,9 @@ namespace CSharpPathTracer
 				20.0f);
 			camera.Transform.Rotate(-0.25f, 0, 0);
 
+			// Perform a single raytrace
+			rtMode = RaytracingModeMonoGame.None;
+			Raytrace(rtOptionsRealTime);
 
 			base.Initialize();
 		}
@@ -95,9 +119,9 @@ namespace CSharpPathTracer
 			CreateUI();
 
 			// Camera movement causes a raytrace
-			if( UpdateCamera())
+			if(UpdateCamera())
 			{
-				Raytrace();
+				Raytrace(rtOptionsRealTime);
 			}
 
 			prevMS = Mouse.GetState();
@@ -119,19 +143,19 @@ namespace CSharpPathTracer
 			base.Draw(gameTime);
 		}
 
-		private void Raytrace()
+		private void Raytrace(RaytracingOptions rtOptions)
 		{
 			// Resize if necessary
-			ResizeRaytracingTexture();
+			ResizeRaytracingTexture(windowWidth / rtOptions.ResolutionReduction, windowHeight / rtOptions.ResolutionReduction);
 
 			RaytracingParameters rtParams = new RaytracingParameters(
 				scenes[0],
 				camera,
-				_graphics.PreferredBackBufferWidth,
-				_graphics.PreferredBackBufferHeight,
-				samplesPerPixel,
-				resolutionReduction,
-				maxRecursionDepth,
+				windowWidth,
+				windowHeight,
+				rtOptions.SamplesPerPixel,
+				rtOptions.ResolutionReduction,
+				rtOptions.MaxRecursionDepth,
 				false);
 
 			RaytracingResults results = raytracer.RaytraceScene(rtParams);
@@ -140,15 +164,12 @@ namespace CSharpPathTracer
 			raytraceTexture.SetData<SIMD.Vector4>(results.Pixels);
 		}
 
-		private void ResizeRaytracingTexture()
+		private void ResizeRaytracingTexture(int width, int height)
 		{
-			int idealWidth = GraphicsDevice.PresentationParameters.BackBufferWidth / resolutionReduction;
-			int idealHeight = GraphicsDevice.PresentationParameters.BackBufferHeight / resolutionReduction;
-
 			// Already the right size?
 			if (raytraceTexture!= null &&
-				raytraceTexture.Width == idealWidth &&
-				raytraceTexture.Height == idealHeight)
+				raytraceTexture.Width == width &&
+				raytraceTexture.Height == height)
 				return;
 
 			// Dispose if necessary
@@ -157,8 +178,8 @@ namespace CSharpPathTracer
 
 			raytraceTexture = new Texture2D(
 				GraphicsDevice,
-				idealWidth,
-				idealHeight,
+				width,
+				height,
 				false,
 				SurfaceFormat.Vector4);
 		}
@@ -212,17 +233,34 @@ namespace CSharpPathTracer
 
 		private void CreateUI()
 		{
+			//ImGui.ShowDemoWindow();
 			ImGui.Begin("Raytracing Options");
 			{
-				// Basic sliders
-				ImGui.SliderInt("Samples Per Pixel", ref samplesPerPixel, 1, 1000);
-				ImGui.SliderInt("Resolution Reduction", ref resolutionReduction, 1, 16);
-				ImGui.SliderInt("Max Recursion Depth", ref maxRecursionDepth, 1, 100);
+				ImGui.Text("FPS: " + ImGui.GetIO().Framerate);
 
-				if (ImGui.Button("Raytrace"))
+				// Sliders for real time
+				if(ImGui.TreeNode("Live (Real-Time)"))
 				{
-					Raytrace();
+					ImGui.SliderInt("Samples Per Pixel", ref rtOptionsRealTime.SamplesPerPixel, 1, 1000);
+					ImGui.SliderInt("Resolution Reduction", ref rtOptionsRealTime.ResolutionReduction, 1, 16);
+					ImGui.SliderInt("Max Recursion Depth", ref rtOptionsRealTime.MaxRecursionDepth, 1, 100);
+					ImGui.TreePop();
 				}
+
+				// Sliders for real time
+				if(ImGui.TreeNode("Full (Slow)"))
+				{
+					ImGui.SliderInt("Samples Per Pixel", ref rtOptionsFull.SamplesPerPixel, 1, 1000);
+					ImGui.SliderInt("Resolution Reduction", ref rtOptionsFull.ResolutionReduction, 1, 16);
+					ImGui.SliderInt("Max Recursion Depth", ref rtOptionsFull.MaxRecursionDepth, 1, 100);
+					ImGui.TreePop();
+				}
+
+				if (ImGui.Button("Full Raytrace"))
+				{
+					Raytrace(rtOptionsFull);
+				}
+
 			}
 			ImGui.End();
 		}

@@ -180,7 +180,8 @@ namespace CSharpPathTracer
 			io.MouseDown[0] = ms.LeftButton == ButtonState.Pressed;
 			io.MouseDown[1] = ms.RightButton == ButtonState.Pressed;
 			io.MouseDown[2] = ms.MiddleButton == ButtonState.Pressed;
-			io.MouseWheel = ms.ScrollWheelValue - totalScrollWheel;
+			int scrollDelta = ms.ScrollWheelValue - totalScrollWheel;
+			io.MouseWheel = Math.Sign(scrollDelta);
 			totalScrollWheel = ms.ScrollWheelValue;
 
 			for (int i = 0; i < 256; i++)
