@@ -35,7 +35,7 @@ namespace CSharpPathTracer
 			// 
 			// buttonWinForms
 			// 
-			this.buttonWinForms.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.buttonWinForms.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.buttonWinForms.Location = new System.Drawing.Point(12, 12);
 			this.buttonWinForms.Name = "buttonWinForms";
 			this.buttonWinForms.Size = new System.Drawing.Size(160, 157);
@@ -46,12 +46,12 @@ namespace CSharpPathTracer
 			// 
 			// buttonMonoGame
 			// 
-			this.buttonMonoGame.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
+			this.buttonMonoGame.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point);
 			this.buttonMonoGame.Location = new System.Drawing.Point(178, 12);
 			this.buttonMonoGame.Name = "buttonMonoGame";
 			this.buttonMonoGame.Size = new System.Drawing.Size(160, 157);
 			this.buttonMonoGame.TabIndex = 1;
-			this.buttonMonoGame.Text = "MonoGame";
+			this.buttonMonoGame.Text = "Mono Game";
 			this.buttonMonoGame.UseVisualStyleBackColor = true;
 			this.buttonMonoGame.Click += new System.EventHandler(this.buttonMonoGame_Click);
 			// 
