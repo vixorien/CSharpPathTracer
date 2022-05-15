@@ -51,6 +51,7 @@ namespace CSharpPathTracer
 		private string[] sceneNames;
 		private int currentSceneIndex;
 		private Texture2D raytraceTexture;
+		private SIMD.Vector4[] raytraceProgressLine;
 
 		// Raytracing options
 		private RaytracerMonoGame raytracer;
@@ -60,6 +61,7 @@ namespace CSharpPathTracer
 		private RaytracingModeMonoGame rtMode;
 		private bool raytraceInProgress;
 		private bool progressiveRaytrace;
+		private bool showProgressLine;
 		private double percentComplete;
 		private ulong totalRaysFromLastRaytrace;
 		private int deepestRecursionFromLastRaytrace;
@@ -253,19 +255,26 @@ namespace CSharpPathTracer
 			deepestRecursionFromLastRaytrace = progress.Stats.DeepestRecursion;
 			percentComplete = progress.CompletionPercent;
 
-			// We usually want to copy one extra line to simulate the black
-			// progress line across the final image (unless doing realtime)
-			int copyHeight = 3;
-			if (progress.ScanlineIndex >= raytraceTexture.Height - 2 || rtMode == RaytracingModeMonoGame.Realtime)
-				copyHeight = 1;
-
 			// Copy the given scanline into the final image
 			raytraceTexture.SetData<SIMD.Vector4>(
 				0,
-				new Rectangle(0, progress.ScanlineIndex, progress.ScanlineWidth, copyHeight),
+				new Rectangle(0, progress.ScanlineIndex, progress.ScanlineWidth, 1),
 				progress.Pixels,
 				progress.ScanlineIndex * progress.ScanlineWidth,
-				progress.ScanlineWidth * copyHeight);
+				progress.ScanlineWidth);
+
+			// Need to copy the black progress line?
+			if (showProgressLine && 
+				progress.ScanlineIndex < raytraceTexture.Height - 1 && 
+				rtMode != RaytracingModeMonoGame.Realtime)
+			{
+				raytraceTexture.SetData<SIMD.Vector4>(
+					0,
+					new Rectangle(0, progress.ScanlineIndex + 1, progress.ScanlineWidth, 1),
+					raytraceProgressLine,
+					0,
+					progress.ScanlineWidth);
+			}
 		}
 
 		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
@@ -297,6 +306,10 @@ namespace CSharpPathTracer
 				height,
 				false,
 				SurfaceFormat.Vector4);
+
+			// Set up the progress line, which is a single black line of pixels
+			raytraceProgressLine = new SIMD.Vector4[width];
+			Array.Fill<SIMD.Vector4>(raytraceProgressLine, new SIMD.Vector4(0, 0, 0, 1));
 		}
 
 		private bool UpdateCamera(GameTime gt)
@@ -449,6 +462,7 @@ namespace CSharpPathTracer
 
 				// Starting the raytrace
 				ImGui.Spacing();
+				ImGui.Checkbox("Show Progress Line", ref showProgressLine);
 				ImGui.Checkbox("Progressive Raytrace", ref progressiveRaytrace);
 				if (ImGui.Button(raytraceInProgress ? "Cancel Raytrace" : "Start Full Raytrace"))
 				{
