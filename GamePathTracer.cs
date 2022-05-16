@@ -51,6 +51,7 @@ namespace CSharpPathTracer
 		private string[] sceneNames;
 		private int currentSceneIndex;
 		private Texture2D raytraceTexture;
+		private RenderTarget2D finalRenderTarget;
 		private SIMD.Vector4[] raytraceProgressLine;
 
 		// Raytracing options
@@ -81,6 +82,10 @@ namespace CSharpPathTracer
 		{
 			windowWidth = Window.ClientBounds.Width;
 			windowHeight = Window.ClientBounds.Height;
+
+			// Resize the final render target
+			finalRenderTarget?.Dispose();
+			finalRenderTarget = new RenderTarget2D(GraphicsDevice, windowWidth, windowHeight, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
 		}
 
 		protected override void Initialize()
@@ -96,6 +101,15 @@ namespace CSharpPathTracer
 			_graphics.PreferredBackBufferWidth = windowWidth;
 			_graphics.PreferredBackBufferHeight = windowHeight;
 			_graphics.ApplyChanges();
+			finalRenderTarget = new RenderTarget2D(
+				GraphicsDevice,
+				windowWidth, 
+				windowHeight, 
+				false, 
+				SurfaceFormat.Color, 
+				DepthFormat.None,
+				0,
+				RenderTargetUsage.PreserveContents);
 
 			// Set up raytracing options
 			ResizeRaytracingTexture(windowWidth, windowHeight);
@@ -172,9 +186,16 @@ namespace CSharpPathTracer
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
 
-			// Draw the raytracing results
-			_spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp);
+			// Draw the raytracing results to the full size render target
+			GraphicsDevice.SetRenderTarget(finalRenderTarget);
+			_spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp);
 			_spriteBatch.Draw(raytraceTexture, new Rectangle(0, 0, windowWidth, windowHeight), Color.White);
+			_spriteBatch.End();
+
+			// Draw the final render target to the back buffer
+			GraphicsDevice.SetRenderTarget(null);
+			_spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque, SamplerState.PointClamp);
+			_spriteBatch.Draw(finalRenderTarget, new Rectangle(0, 0, windowWidth, windowHeight), Color.White);
 			_spriteBatch.End();
 
 			// UI on top
@@ -480,9 +501,16 @@ namespace CSharpPathTracer
 
 				if (ImGui.Button("Save Image"))
 				{
-					// Need different texture format ughhhh
-					//using (FileStream fs = File.OpenWrite("output.png"))
-					//	raytraceTexture.SaveAsPng(fs, windowWidth, windowHeight);
+					System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
+					dialog.Title = "Save Image As...";
+					dialog.Filter = "PNG (*.png)|*.png";
+					System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+
+					if (result == System.Windows.Forms.DialogResult.OK)
+					{
+						using (FileStream fs = File.OpenWrite(dialog.FileName))
+							finalRenderTarget.SaveAsPng(fs, windowWidth, windowHeight);
+					}
 				}
 
 			}

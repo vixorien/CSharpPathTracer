@@ -138,10 +138,10 @@ namespace CSharpPathTracer
 
 
 			// === Materials ===
-			Material crate = new DiffuseMaterial(Vector3.One, 1.0f, crateTexture);
+			Material crate = new DiffuseMaterial(Vector3.One, 1.0f, crateTexture, null, null, null, TextureAddressMode.Wrap, TextureFilter.Linear);
 			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), 1.0f, tilesTexture);
 			Material tilesRepeat = new DiffuseMaterial(Vector3.One, 1.0f, tilesTexture, null, null, new Vector2(10, 10));
-			Material lava = new EmissiveMaterial(Vector3.One, 2.0f, lavaEmissiveTexture, Vector3.One, 0.0f, lavaAlbedoTexture);
+			Material lava = new EmissiveMaterial(Vector3.One, 5.0f, lavaEmissiveTexture, Vector3.One, 0.0f, lavaAlbedoTexture);
 			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3(), 0.5f, null, null);
 			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
 			Material blueMatte = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), 0, tilesTexture);
