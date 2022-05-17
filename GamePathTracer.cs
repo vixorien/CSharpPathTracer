@@ -11,7 +11,7 @@ using SIMD = System.Numerics;
 
 namespace CSharpPathTracer
 {
-	enum RaytracingModeMonoGame
+	enum RaytracingState
 	{
 		None,
 		Realtime,
@@ -59,10 +59,12 @@ namespace CSharpPathTracer
 		private RaytracingOptions rtOptionsRealTime;
 		private RaytracingOptions rtOptionsFull;
 
-		private RaytracingModeMonoGame rtMode;
+		private RaytracingState rtState;
+		private bool rtStateTransitionPeriod;
 		private bool raytraceInProgress;
 		private bool progressiveRaytrace;
 		private bool showProgressLine;
+		private bool inputDuringFrame;
 		private double percentComplete;
 		private ulong totalRaysFromLastRaytrace;
 		private int deepestRecursionFromLastRaytrace;
@@ -103,10 +105,10 @@ namespace CSharpPathTracer
 			_graphics.ApplyChanges();
 			finalRenderTarget = new RenderTarget2D(
 				GraphicsDevice,
-				windowWidth, 
-				windowHeight, 
-				false, 
-				SurfaceFormat.Color, 
+				windowWidth,
+				windowHeight,
+				false,
+				SurfaceFormat.Color,
 				DepthFormat.None,
 				0,
 				RenderTargetUsage.PreserveContents);
@@ -115,10 +117,12 @@ namespace CSharpPathTracer
 			ResizeRaytracingTexture(windowWidth, windowHeight);
 			rtOptionsRealTime = new RaytracingOptions(1, 16, 10);
 			rtOptionsFull = new RaytracingOptions(10, 1, 50);
-			progressiveRaytrace = true;
+			progressiveRaytrace = false;
+			showProgressLine = true;
 			totalRaysFromLastRaytrace = 0;
 			deepestRecursionFromLastRaytrace = 0;
 			percentComplete = 0.0;
+			worker = new BackgroundWorker(); // So it's never null
 
 			// UI setup
 			uiHelper = new ImGuiHelper(this);
@@ -136,14 +140,15 @@ namespace CSharpPathTracer
 			camera.Transform.Rotate(-0.25f, 0, 0);
 			scenes = Scene.GenerateScenes();
 			sceneNames = new string[scenes.Count];
-			for (int i = 0; i < scenes.Count; i++) 
+			for (int i = 0; i < scenes.Count; i++)
 				sceneNames[i] = scenes[i].Name;
 			currentSceneIndex = 0;
 
 			// Perform a single raytrace
 			raytraceInProgress = false;
-			rtMode = RaytracingModeMonoGame.None;
-			BeginRaytrace(RaytracingModeMonoGame.Realtime);
+			rtStateTransitionPeriod = false;
+			rtState = RaytracingState.None;
+			BeginRaytrace(RaytracingState.Realtime);
 
 			base.Initialize();
 		}
@@ -153,28 +158,93 @@ namespace CSharpPathTracer
 			if (Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
 				Exit();
 
-			// Handle the UI
+			// Reset input tracking
+			inputDuringFrame = false;
+
+			// Handle the UI (may cause input)
 			uiHelper.PreUpdate(gameTime);
 			CreateUI();
 
-			bool input = UpdateCamera(gameTime);
-			if (input)
-			{
-				// Input means we do a real-time render
-				rtMode = RaytracingModeMonoGame.Realtime;
-			}
-			else if(rtMode == RaytracingModeMonoGame.Realtime)
-			{
-				// No input means we can stop a realtime render
-				rtMode = RaytracingModeMonoGame.None;
-			}
+			// Scene updates
+			bool camInput = UpdateCamera(gameTime);
+			inputDuringFrame = inputDuringFrame || camInput;
 
-			// If we're in realtime mode and the worker is not currently busy (or doesn't exist yet),
-			// then we can go ahead and begin a new low-res raytracing frame
-			if (rtMode == RaytracingModeMonoGame.Realtime &&
-				(worker == null || (worker != null && !worker.IsBusy)))
+			// States
+			switch (rtState)
 			{
-				BeginRaytrace(RaytracingModeMonoGame.Realtime);
+				case RaytracingState.None: // Not currently raytracing
+
+					// Was there input?  If so, start a realtime
+					if (inputDuringFrame)
+					{
+						rtState = RaytracingState.Realtime;
+						rtStateTransitionPeriod = true;
+						worker?.CancelAsync();
+					}
+					else if (!raytraceInProgress)
+					{
+						rtStateTransitionPeriod = false;
+					}
+
+					break;
+
+				case RaytracingState.Realtime:
+
+					// Lack of input should send us to progressive
+					if (!inputDuringFrame)
+					{
+						rtState = RaytracingState.FullProgressive;
+						rtStateTransitionPeriod = true;
+						worker?.CancelAsync();
+					}
+					else if (!raytraceInProgress) // Otherwise, keep going ASAP!
+					{
+						BeginRaytrace(RaytracingState.Realtime);
+					}
+
+					break;
+
+				case RaytracingState.Full:
+
+					// Was there input?  If so, start a realtime
+					if (inputDuringFrame)
+					{
+						rtState = RaytracingState.Realtime;
+						rtStateTransitionPeriod = true;
+						worker?.CancelAsync();
+					}
+					else if (rtStateTransitionPeriod && !raytraceInProgress) // Waiting to start a full raytrace?
+					{
+						BeginRaytrace(RaytracingState.Full);
+						rtStateTransitionPeriod = false;
+					}
+					else if (!rtStateTransitionPeriod)
+					{
+						rtState = RaytracingState.None;
+					}
+
+					break;
+
+				case RaytracingState.FullProgressive:
+
+					// Was there input?  If so, start a realtime
+					if (inputDuringFrame)
+					{
+						rtState = RaytracingState.Realtime;
+						rtStateTransitionPeriod = true;
+						worker?.CancelAsync();
+					}
+					else if (rtStateTransitionPeriod && !raytraceInProgress) // Waiting to start a full progressive raytrace?
+					{
+						BeginRaytrace(RaytracingState.FullProgressive);
+						rtStateTransitionPeriod = false;
+					}
+					else if (!rtStateTransitionPeriod)
+					{
+						rtState = RaytracingState.None;
+					}
+
+					break;
 			}
 
 			// Save old state
@@ -204,27 +274,19 @@ namespace CSharpPathTracer
 			base.Draw(gameTime);
 		}
 
-		
 
-		private void BeginRaytrace(RaytracingModeMonoGame mode)
+
+		private void BeginRaytrace(RaytracingState state)
 		{
+			// Valid mode?
+			if (state == RaytracingState.None)
+				return;
+
 			// Check the mode for the correct options
-			// or an early out
-			RaytracingOptions options;
-			switch (mode)
-			{
-				case RaytracingModeMonoGame.Realtime:
-					options = rtOptionsRealTime;
-					break;
-
-				case RaytracingModeMonoGame.FullProgressive:
-				case RaytracingModeMonoGame.Full:
-					options = rtOptionsFull;
-					break;
-
-				default: // Not a valid mode
-					return;
-			}
+			RaytracingOptions options =
+				state == RaytracingState.Realtime
+					? rtOptionsRealTime
+					: rtOptionsFull;
 
 			// Set up the worker for threading
 			worker?.Dispose();
@@ -242,7 +304,7 @@ namespace CSharpPathTracer
 
 			// Track progress
 			raytraceInProgress = true;
-			rtMode = mode;
+			rtState = state;
 			deepestRecursionFromLastRaytrace = 0;
 			totalRaysFromLastRaytrace = 0;
 			percentComplete = 0.0;
@@ -256,7 +318,7 @@ namespace CSharpPathTracer
 				options.SamplesPerPixel,
 				options.ResolutionReduction,
 				options.MaxRecursionDepth,
-				mode == RaytracingModeMonoGame.FullProgressive);
+				state == RaytracingState.FullProgressive);
 			worker.RunWorkerAsync(rtParams);
 
 			// Restart the stopwatch to track raytracing time
@@ -285,9 +347,9 @@ namespace CSharpPathTracer
 				progress.ScanlineWidth);
 
 			// Need to copy the black progress line?
-			if (showProgressLine && 
-				progress.ScanlineIndex < raytraceTexture.Height - 1 && 
-				rtMode != RaytracingModeMonoGame.Realtime)
+			if (showProgressLine &&
+				progress.ScanlineIndex < raytraceTexture.Height - 1 &&
+				rtState != RaytracingState.Realtime)
 			{
 				raytraceTexture.SetData<SIMD.Vector4>(
 					0,
@@ -302,10 +364,12 @@ namespace CSharpPathTracer
 		{
 			stopwatch.Stop();
 			raytraceInProgress = false;
-			percentComplete = 1.0;
-			if (rtMode == RaytracingModeMonoGame.Full)
+
+			// If this wasn't cancelled the ensure
+			// the percentage is exactly 100%
+			if (!e.Cancelled)
 			{
-				rtMode = RaytracingModeMonoGame.None;
+				percentComplete = 1.0;
 			}
 		}
 
@@ -352,13 +416,9 @@ namespace CSharpPathTracer
 			// Only move camera is left button is down
 			if (!io.WantCaptureMouse && ms.LeftButton == ButtonState.Pressed && this.IsActive)
 			{
-				// Is this a first click?
-				if (prevMS.LeftButton == ButtonState.Released && worker != null && worker.IsBusy)
-				{
-					// Cancel pending raytrace
-					worker.CancelAsync();
-				}
-
+				// Definitely counts as input
+				input = true;
+	
 				// Determine if the mouse has moved
 				float xDiff = (prevMS.X - ms.X) * CameraRotationSpeed;
 				float yDiff = (prevMS.Y - ms.Y) * CameraRotationSpeed;
@@ -398,11 +458,24 @@ namespace CSharpPathTracer
 				ImGui.Spacing();
 				ImGui.Indent(10);
 				ImGui.Text("FPS: " + ImGui.GetIO().Framerate);
-				ImGui.Text("Trace Time: " + stopwatch.Elapsed);
-				ImGui.Text("Total Rays: " + totalRaysFromLastRaytrace.ToString("N0"));
-				ImGui.Text("Deepest Recursion: " + deepestRecursionFromLastRaytrace);
-				ImGui.Text("Progress..." + percentComplete.ToString("P2"));
-				ImGui.ProgressBar((float)percentComplete, new SIMD.Vector2(-1,0));
+
+				// Don't print stats during realtime mode
+				if (rtState == RaytracingState.Realtime)
+				{
+					ImGui.Text("Trace Time: ");
+					ImGui.Text("Total Rays: ");
+					ImGui.Text("Deepest Recursion: ");
+					ImGui.Text("Progress...");
+					ImGui.ProgressBar(0.0f, new SIMD.Vector2(-1, 0), "Realtime Mode");
+				}
+				else
+				{
+					ImGui.Text("Trace Time: " + stopwatch.Elapsed);
+					ImGui.Text("Total Rays: " + totalRaysFromLastRaytrace.ToString("N0"));
+					ImGui.Text("Deepest Recursion: " + deepestRecursionFromLastRaytrace);
+					ImGui.Text("Progress..." + percentComplete.ToString("P2") + "%");
+					ImGui.ProgressBar((float)percentComplete, new SIMD.Vector2(-1, 0));
+				}
 				ImGui.Indent(-10);
 
 
@@ -415,34 +488,43 @@ namespace CSharpPathTracer
 				ImGui.Spacing();
 				ImGui.Indent(10);
 
-				if (raytraceInProgress)
+				// Scene combo box
+				if (ImGui.Combo("Current Scene", ref currentSceneIndex, sceneNames, sceneNames.Length))
 				{
-					ImGui.Text("Cancel raytrace to change scenes");
-				}
-				else if (ImGui.Combo("Scene", ref currentSceneIndex, sceneNames, sceneNames.Length))
-				{
-					if (raytraceInProgress)
-					{
-						worker.CancelAsync();
-					}
-					else
-					{
-						BeginRaytrace(RaytracingModeMonoGame.Realtime);
-					}
+					worker.CancelAsync();
+					rtState = RaytracingState.FullProgressive;
+					rtStateTransitionPeriod = true;
 				}
 
-				ImGui.Spacing();
+				if (ImGui.TreeNode("Scene Details"))
+				{
+					// Work in progress!
+					for (int i = 0; i < scenes[currentSceneIndex].EntityCount; i++)
+					{
+						Entity e = scenes[currentSceneIndex][i];
+						ImGui.Text(e.Geometry.GetType().ToString());
+					}
 
-				// Local camera vars
-				float fov = camera.FieldOfView;
-				float ap = camera.Aperture;
-				float focDist = camera.FocalDistance;
+					ImGui.TreePop();
+				}
 
-				bool camChange = false;
-				if (ImGui.SliderFloat("Camera Field of View", ref fov, 0.0f, MathF.PI * 2)) { camera.FieldOfView = fov; camChange = true; }
-				if (ImGui.SliderFloat("Camera Aperture", ref ap, 0.0f, 100.0f)) { camera.Aperture = ap; camChange = true; }
-				if (ImGui.SliderFloat("Camera Focal Distance", ref focDist, 0.0f, 100.0f)) { camera.FocalDistance = focDist; camChange = true; }
-				if (camChange) { BeginRaytrace(RaytracingModeMonoGame.Realtime); }
+
+				if (ImGui.TreeNode("Camera Details"))
+				{
+					// Local camera vars
+					float fov = camera.FieldOfView;
+					float ap = camera.Aperture;
+					float focDist = camera.FocalDistance;
+
+					if (ImGui.SliderFloat("Camera Field of View", ref fov, 0.0f, MathF.PI * 2)) { camera.FieldOfView = fov; }
+					if (ImGui.IsItemActive()) inputDuringFrame = true;
+					if (ImGui.SliderFloat("Camera Aperture", ref ap, 0.0f, 100.0f)) { camera.Aperture = ap; }
+					if (ImGui.IsItemActive()) inputDuringFrame = true;
+					if (ImGui.SliderFloat("Camera Focal Distance", ref focDist, 0.0f, 100.0f)) { camera.FocalDistance = focDist; }
+					if (ImGui.IsItemActive()) inputDuringFrame = true;
+
+					ImGui.TreePop();
+				}
 
 				ImGui.Indent(-10);
 
@@ -492,14 +574,17 @@ namespace CSharpPathTracer
 					if (raytraceInProgress)
 					{
 						worker.CancelAsync();
+						rtState = RaytracingState.None;
+						rtStateTransitionPeriod = true;
 						return;
 					}
 
 					// Perform raytrace
-					BeginRaytrace(progressiveRaytrace ? RaytracingModeMonoGame.FullProgressive : RaytracingModeMonoGame.Full);
+					BeginRaytrace(progressiveRaytrace ? RaytracingState.FullProgressive : RaytracingState.Full);
 				}
 
-				if (ImGui.Button("Save Image"))
+				// Handle "Save" button
+				if (raytraceInProgress ? ButtonDisabled("Save Image") : ImGui.Button("Save Image"))
 				{
 					System.Windows.Forms.SaveFileDialog dialog = new System.Windows.Forms.SaveFileDialog();
 					dialog.Title = "Save Image As...";
@@ -515,6 +600,18 @@ namespace CSharpPathTracer
 
 			}
 			ImGui.End();
+		}
+
+		private bool ButtonDisabled(string text)
+		{
+			ImGui.PushStyleColor(ImGuiCol.Button, new SIMD.Vector4(0.5f, 0.5f, 0.5f, 1.0f));
+			ImGui.PushStyleColor(ImGuiCol.ButtonActive, new SIMD.Vector4(0.5f, 0.5f, 0.5f, 1.0f));
+			ImGui.PushStyleColor(ImGuiCol.ButtonHovered, new SIMD.Vector4(0.5f, 0.5f, 0.5f, 1.0f));
+			ImGui.Button("Save Image");
+			ImGui.PopStyleColor();
+			ImGui.PopStyleColor();
+			ImGui.PopStyleColor();
+			return false;
 		}
 	}
 }
