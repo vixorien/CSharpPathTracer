@@ -34,9 +34,15 @@ namespace CSharpPathTracer
 		public AABB AABB { get; private set; }
 
 		/// <summary>
-		/// Gets the shrunken AABB of this oct, if it exists
+		/// Gets the shrunken AABB of this oct.  Verify this object
+		/// is valid using <see cref="HasShrunkAABB"/>
 		/// </summary>
-		public AABB? ShrunkAABB { get; private set; }
+		public AABB ShrunkAABB { get; private set; }
+
+		/// <summary>
+		/// Gets whether or not this oct has a valid ShrunkAABB
+		/// </summary>
+		public bool HasShrunkAABB { get; private set; }
 
 		/// <summary>
 		/// Creates a new Octree node
@@ -48,7 +54,8 @@ namespace CSharpPathTracer
 			this.allowOverlaps = allowOverlaps;
 
 			AABB = bounds;
-			ShrunkAABB = null;
+			ShrunkAABB = new AABB();
+			HasShrunkAABB = false;
 
 			objects = new List<T>();
 		}
@@ -62,7 +69,7 @@ namespace CSharpPathTracer
 		public bool RayIntersection(Ray ray, out RayHit hit)
 		{
 			// Which AABB?
-			AABB boxToCheck = ShrunkAABB.HasValue ? ShrunkAABB.Value : AABB;
+			AABB boxToCheck = HasShrunkAABB ? ShrunkAABB : AABB;
 
 			// Does the ray hit this oct?
 			if (boxToCheck.Intersects(ray))
@@ -193,12 +200,15 @@ namespace CSharpPathTracer
 					child.ShrinkAndPrune();
 
 					// Add the child's shrunken AABB to this one, if necessary
-					if (child.ShrunkAABB.HasValue)
+					if (child.HasShrunkAABB)
 					{
-						if (ShrunkAABB.HasValue)
-							ShrunkAABB = AABB.Combine(ShrunkAABB.Value, child.ShrunkAABB.Value);
+						if (this.HasShrunkAABB)
+							ShrunkAABB = AABB.Combine(ShrunkAABB, child.ShrunkAABB);
 						else
-							ShrunkAABB = child.ShrunkAABB.Value;
+							ShrunkAABB = child.ShrunkAABB;
+
+						// We now have a shrunken AABB
+						this.HasShrunkAABB = true;
 					}
 
 					// Remember the last child
@@ -219,7 +229,8 @@ namespace CSharpPathTracer
 					// that child's data instead of our own
 					this.children = lastChildFound.children;
 					this.objects = lastChildFound.objects;
-					this.ShrunkAABB = lastChildFound.ShrunkAABB.Value;
+					this.ShrunkAABB = lastChildFound.ShrunkAABB;
+					this.HasShrunkAABB = true;
 				}
 			}
 
@@ -227,10 +238,15 @@ namespace CSharpPathTracer
 			foreach (T obj in objects)
 			{
 				// Is there a value?
-				if (ShrunkAABB.HasValue)
-					ShrunkAABB = AABB.Combine(ShrunkAABB.Value, obj.AABB);
+				if (HasShrunkAABB)
+				{
+					ShrunkAABB = AABB.Combine(ShrunkAABB, obj.AABB);
+				}
 				else
-					ShrunkAABB = obj.AABB;
+				{
+					ShrunkAABB = obj.AABB; 
+					HasShrunkAABB = true;
+				}
 			}
 		}
 

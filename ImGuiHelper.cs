@@ -54,6 +54,7 @@ namespace CSharpPathTracer
 				Size = newSize;
 
 				// Handle buffer resizing based on type
+				// This is SUUUPER gross but it's quick and simplifies lots of other code
 				if (typeof(T) == typeof(VertexBuffer))
 				{
 					Data = new byte[Size * ImGuiVertex.Size];
@@ -183,7 +184,7 @@ namespace CSharpPathTracer
 			int scrollDelta = ms.ScrollWheelValue - totalScrollWheel;
 			io.MouseWheel = Math.Sign(scrollDelta);
 			totalScrollWheel = ms.ScrollWheelValue;
-
+			
 			for (int i = 0; i < 256; i++)
 			{
 				io.KeysDown[i] = kb.IsKeyDown((Keys)i);
@@ -232,7 +233,7 @@ namespace CSharpPathTracer
 						ImGui.GetIO().DisplaySize.X,
 						ImGui.GetIO().DisplaySize.Y,
 						0.0f,
-						-1.0f,
+						0.0f,
 						1.0f);
 
 			// Fill buffers and draw

@@ -46,6 +46,7 @@ namespace CSharpPathTracer
 		private int windowHeight;
 
 		// Resources
+		private Stopwatch stopwatch;
 		private Camera camera;
 		private List<Scene> scenes;
 		private string[] sceneNames;
@@ -54,7 +55,8 @@ namespace CSharpPathTracer
 		private RenderTarget2D finalRenderTarget;
 		private SIMD.Vector4[] raytraceProgressLine;
 
-		// Raytracing options
+		// Raytracing
+		private BackgroundWorker worker;
 		private RaytracerMonoGame raytracer;
 		private RaytracingOptions rtOptionsRealTime;
 		private RaytracingOptions rtOptionsFull;
@@ -69,9 +71,9 @@ namespace CSharpPathTracer
 		private ulong totalRaysFromLastRaytrace;
 		private int deepestRecursionFromLastRaytrace;
 
-		private BackgroundWorker worker;
-		private Stopwatch stopwatch;
-
+		/// <summary>
+		/// The main MonoGame class for the path tracer
+		/// </summary>
 		public GamePathTracer()
 		{
 			_graphics = new GraphicsDeviceManager(this);
@@ -80,6 +82,9 @@ namespace CSharpPathTracer
 			Window.ClientSizeChanged += Window_ClientSizeChanged;
 		}
 
+		/// <summary>
+		/// Handles the window resizing and resizes the final render target
+		/// </summary>
 		private void Window_ClientSizeChanged(object sender, EventArgs e)
 		{
 			windowWidth = Window.ClientBounds.Width;
@@ -90,6 +95,9 @@ namespace CSharpPathTracer
 			finalRenderTarget = new RenderTarget2D(GraphicsDevice, windowWidth, windowHeight, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
 		}
 
+		/// <summary>
+		/// Initializes the path tracer
+		/// </summary>
 		protected override void Initialize()
 		{
 			// General MonoGame setup
@@ -153,6 +161,39 @@ namespace CSharpPathTracer
 			base.Initialize();
 		}
 
+
+		/// <summary>
+		/// Resizes the raytracing texture if necessary
+		/// </summary>
+		/// <param name="width">The new width</param>
+		/// <param name="height">The new height</param>
+		private void ResizeRaytracingTexture(int width, int height)
+		{
+			// Already the right size?
+			if (raytraceTexture != null &&
+				raytraceTexture.Width == width &&
+				raytraceTexture.Height == height)
+				return;
+
+			// Dispose if necessary then recreate
+			raytraceTexture?.Dispose();
+			raytraceTexture = new Texture2D(
+				GraphicsDevice,
+				width,
+				height,
+				false,
+				SurfaceFormat.Vector4);
+
+			// Set up the progress line, which is a single black line of pixels
+			raytraceProgressLine = new SIMD.Vector4[width];
+			Array.Fill<SIMD.Vector4>(raytraceProgressLine, new SIMD.Vector4(0, 0, 0, 1));
+		}
+
+
+		/// <summary>
+		/// Updates the UI, camera and overall raytracing state machine
+		/// </summary>
+		/// <param name="gameTime"></param>
 		protected override void Update(GameTime gameTime)
 		{
 			if (Keyboard.GetState().IsKeyDown(Microsoft.Xna.Framework.Input.Keys.Escape))
@@ -252,6 +293,67 @@ namespace CSharpPathTracer
 			base.Update(gameTime);
 		}
 
+		/// <summary>
+		/// Updates the camera based on input and returns
+		/// whether or not input was detected
+		/// </summary>
+		/// <param name="gt">Game time info</param>
+		/// <returns>True if there was camera-related input, false otherwise</returns>
+		private bool UpdateCamera(GameTime gt)
+		{
+			// Camera movement constants
+			const float CameraMoveSpeed = 0.25f;
+			const float CameraMoveSpeedSlow = 0.05f;
+			const float CameraMoveSpeedFast = 1.0f;
+			const float CameraRotationSpeed = 0.01f;
+
+			// Grab input
+			KeyboardState kb = Keyboard.GetState();
+			MouseState ms = Mouse.GetState();
+			ImGuiIOPtr io = ImGui.GetIO();
+
+			// Track input change
+			bool input = false;
+
+			// Only move camera is left button is down
+			if (!io.WantCaptureMouse && ms.LeftButton == ButtonState.Pressed && this.IsActive)
+			{
+				// Definitely counts as input
+				input = true;
+
+				// Determine if the mouse has moved
+				float xDiff = (prevMS.X - ms.X) * CameraRotationSpeed;
+				float yDiff = (prevMS.Y - ms.Y) * CameraRotationSpeed;
+
+				if (xDiff != 0.0f || yDiff != 0.0f)
+				{
+					camera.Transform.Rotate(yDiff, xDiff, 0);
+				}
+
+				// Handle movement
+				if (!io.WantCaptureKeyboard && this.IsActive)
+				{
+					float speed = CameraMoveSpeed;
+					if (kb.IsKeyDown(Keys.LeftShift)) speed = CameraMoveSpeedFast;
+					if (kb.IsKeyDown(Keys.LeftControl)) speed = CameraMoveSpeedSlow;
+					//speed *= (float)gt.ElapsedGameTime.TotalSeconds;
+
+					if (kb.IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); }
+					if (kb.IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); }
+					if (kb.IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); }
+					if (kb.IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); }
+					if (kb.IsKeyDown(Keys.Space)) { camera.Transform.MoveAbsolute(0, speed, 0); }
+					if (kb.IsKeyDown(Keys.X)) { camera.Transform.MoveAbsolute(0, -speed, 0); }
+				}
+			}
+
+			return input;
+		}
+
+		/// <summary>
+		/// Draws the raytracing results to a render target and then to the screen
+		/// </summary>
+		/// <param name="gameTime">Time info</param>
 		protected override void Draw(GameTime gameTime)
 		{
 			GraphicsDevice.Clear(Color.CornflowerBlue);
@@ -275,7 +377,10 @@ namespace CSharpPathTracer
 		}
 
 
-
+		/// <summary>
+		/// Actually causes a raytrace to begin using the given state
+		/// </summary>
+		/// <param name="state">The new raytracing state</param>
 		private void BeginRaytrace(RaytracingState state)
 		{
 			// Valid mode?
@@ -326,9 +431,13 @@ namespace CSharpPathTracer
 		}
 
 
-
+		/// <summary>
+		/// Callback for a single scanline (horizontal line of pixels) being
+		/// completed by the raytracing background worker
+		/// </summary>
 		private void ScanlineComplete(object sender, ProgressChangedEventArgs e)
 		{
+			// Verify the progress parameter exists
 			RaytracingProgressMonoGame progress = e.UserState as RaytracingProgressMonoGame;
 			if (progress == null)
 				return;
@@ -351,6 +460,8 @@ namespace CSharpPathTracer
 				progress.ScanlineIndex < raytraceTexture.Height - 1 &&
 				rtState != RaytracingState.Realtime)
 			{
+				// TODO: This could probably be handled directly in draw
+				// now by stretching a 1x1 black pixel where necessary...
 				raytraceTexture.SetData<SIMD.Vector4>(
 					0,
 					new Rectangle(0, progress.ScanlineIndex + 1, progress.ScanlineWidth, 1),
@@ -360,6 +471,11 @@ namespace CSharpPathTracer
 			}
 		}
 
+
+		/// <summary>
+		/// Callback for raytracing ending, either due to the worker finishing
+		/// or a cancellation of work during the raytrace
+		/// </summary>
 		private void RaytraceComplete(object sender, RunWorkerCompletedEventArgs e)
 		{
 			stopwatch.Stop();
@@ -373,82 +489,11 @@ namespace CSharpPathTracer
 			}
 		}
 
-		private void ResizeRaytracingTexture(int width, int height)
-		{
-			// Already the right size?
-			if (raytraceTexture != null &&
-				raytraceTexture.Width == width &&
-				raytraceTexture.Height == height)
-				return;
-
-			// Dispose if necessary
-			if (raytraceTexture != null)
-				raytraceTexture.Dispose();
-
-			raytraceTexture = new Texture2D(
-				GraphicsDevice,
-				width,
-				height,
-				false,
-				SurfaceFormat.Vector4);
-
-			// Set up the progress line, which is a single black line of pixels
-			raytraceProgressLine = new SIMD.Vector4[width];
-			Array.Fill<SIMD.Vector4>(raytraceProgressLine, new SIMD.Vector4(0, 0, 0, 1));
-		}
-
-		private bool UpdateCamera(GameTime gt)
-		{
-			// Camera movement constants
-			const float CameraMoveSpeed = 0.25f;
-			const float CameraMoveSpeedSlow = 0.05f;
-			const float CameraMoveSpeedFast = 1.0f;
-			const float CameraRotationSpeed = 0.01f;
-
-			// Grab input
-			KeyboardState kb = Keyboard.GetState();
-			MouseState ms = Mouse.GetState();
-			ImGuiIOPtr io = ImGui.GetIO();
-
-			// Track input change
-			bool input = false;
-
-			// Only move camera is left button is down
-			if (!io.WantCaptureMouse && ms.LeftButton == ButtonState.Pressed && this.IsActive)
-			{
-				// Definitely counts as input
-				input = true;
-	
-				// Determine if the mouse has moved
-				float xDiff = (prevMS.X - ms.X) * CameraRotationSpeed;
-				float yDiff = (prevMS.Y - ms.Y) * CameraRotationSpeed;
-
-				if (xDiff != 0.0f || yDiff != 0.0f)
-				{
-					camera.Transform.Rotate(yDiff, xDiff, 0);
-					input = true;
-				}
-
-				// Handle movement
-				if (!io.WantCaptureKeyboard && this.IsActive)
-				{
-					float speed = CameraMoveSpeed;
-					if (kb.IsKeyDown(Keys.LeftShift)) speed = CameraMoveSpeedFast;
-					if (kb.IsKeyDown(Keys.LeftControl)) speed = CameraMoveSpeedSlow;
-					//speed *= (float)gt.ElapsedGameTime.TotalSeconds;
-
-					if (kb.IsKeyDown(Keys.W)) { camera.Transform.MoveRelative(0, 0, -speed); input = true; }
-					if (kb.IsKeyDown(Keys.S)) { camera.Transform.MoveRelative(0, 0, speed); input = true; }
-					if (kb.IsKeyDown(Keys.A)) { camera.Transform.MoveRelative(-speed, 0, 0); input = true; }
-					if (kb.IsKeyDown(Keys.D)) { camera.Transform.MoveRelative(speed, 0, 0); input = true; }
-					if (kb.IsKeyDown(Keys.Space)) { camera.Transform.MoveAbsolute(0, speed, 0); input = true; }
-					if (kb.IsKeyDown(Keys.X)) { camera.Transform.MoveAbsolute(0, -speed, 0); input = true; }
-				}
-			}
-
-			return input;
-		}
-
+		
+		
+		/// <summary>
+		/// Creates the ImGui interface
+		/// </summary>
 		private void CreateUI()
 		{
 			ImGui.ShowDemoWindow();
@@ -602,6 +647,11 @@ namespace CSharpPathTracer
 			ImGui.End();
 		}
 
+		/// <summary>
+		/// Helper for showing a "disabled" button that can't be clicked
+		/// </summary>
+		/// <param name="text">The text of the button</param>
+		/// <returns>Always returns false</returns>
 		private bool ButtonDisabled(string text)
 		{
 			ImGui.PushStyleColor(ImGuiCol.Button, new SIMD.Vector4(0.5f, 0.5f, 0.5f, 1.0f));

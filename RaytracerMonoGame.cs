@@ -58,130 +58,29 @@ namespace CSharpPathTracer
 		/// </summary>
 		public RaytracerMonoGame() { }
 
-
-		public RaytracingResults RaytraceScene(RaytracingParameters rtParams)
-		{
-			// Verify size
-			int fullWidth = rtParams.Width;
-			int fullHeight = rtParams.Height;
-			int finalWidth = fullWidth / rtParams.ResolutionReduction;
-			int finalHeight = fullHeight / rtParams.ResolutionReduction;
-			if (fullWidth <= 0 || fullHeight <= 0 ||
-				finalWidth <= 0 || finalHeight <= 0)
-				return new RaytracingResults();
-
-			// Need to update the pixel array?
-			int totalPixels = finalWidth * finalHeight;
-			if (pixels == null || pixels.Length != totalPixels)
-			{
-				pixels = new SIMD.Vector4[totalPixels];
-			}
-
-			// Reset stats for this trace
-			stats.Reset(rtParams.MaxRecursionDepth);
-
-			// Loop through scanlines
-			for (int y = 0; y < finalHeight; y++)
-			{
-				// Parallel loop for the pixels on the current scanline
-				Parallel.For(0, finalWidth, x =>
-				{
-					// Handle multiple samples per pixel
-					SIMD.Vector3 totalColor = SIMD.Vector3.Zero;
-					for (int s = 0; s < rtParams.SamplesPerPixel; s++)
-					{
-						float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
-						float adjustedY = y + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
-						
-						// Get this ray and add to the total raytraced color
-						Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, finalWidth, finalHeight);
-						totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
-					}
-
-					// Average the color and set the resolution block
-					if (rtParams.SamplesPerPixel > 1)
-						totalColor /= rtParams.SamplesPerPixel;
-
-					// Replace color in array
-					pixels[Index(x,y,finalWidth)] = new SIMD.Vector4(
-						MathF.Pow(totalColor.X, GammaCorrectionPower),
-						MathF.Pow(totalColor.Y, GammaCorrectionPower),
-						MathF.Pow(totalColor.Z, GammaCorrectionPower), 
-						1);
-				});
-			}
-
-			// Report the final details
-			return new RaytracingResults(
-				finalWidth,
-				finalHeight,
-				pixels,
-				stats);
-		}
-
-		public RaytracingResults RaytraceScanline(RaytracingParameters rtParams, int scanlineIndex)
-		{
-			// Verify size
-			int fullWidth = rtParams.Width;
-			int fullHeight = rtParams.Height;
-			int finalWidth = fullWidth / rtParams.ResolutionReduction;
-			int finalHeight = fullHeight / rtParams.ResolutionReduction;
-			if (fullWidth <= 0 || fullHeight <= 0 ||
-				finalWidth <= 0 || finalHeight <= 0)
-				return new RaytracingResults();
-
-			// Reset stats for this trace
-			stats.Reset(rtParams.MaxRecursionDepth);
-
-			// Create the scanline vector
-			SIMD.Vector4[] scanline = new SIMD.Vector4[finalWidth];
-
-			// Parallel loop for the pixels on the current scanline
-			Parallel.For(0, finalWidth, x =>
-			{
-				// Handle multiple samples per pixel
-				SIMD.Vector3 totalColor = SIMD.Vector3.Zero;
-				for (int s = 0; s < rtParams.SamplesPerPixel; s++)
-				{
-					float adjustedX = x + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
-					float adjustedY = scanlineIndex + ThreadSafeRandom.Instance.NextFloat(-0.5f, 0.5f);
-
-					// Get this ray and add to the total raytraced color
-					Ray ray = rtParams.Camera.GetRayThroughPixel(adjustedX, adjustedY, finalWidth, finalHeight);
-					totalColor += TraceRay(ray, rtParams.Scene, rtParams.MaxRecursionDepth);
-				}
-
-				// Average the color and set the resolution block
-				if (rtParams.SamplesPerPixel > 1)
-					totalColor /= rtParams.SamplesPerPixel;
-
-				// Replace color in array
-				scanline[x] = new SIMD.Vector4(
-					MathF.Pow(totalColor.X, GammaCorrectionPower),
-					MathF.Pow(totalColor.Y, GammaCorrectionPower),
-					MathF.Pow(totalColor.Z, GammaCorrectionPower),
-					1);
-			});
-
-			// Report the final details
-			return new RaytracingResults(
-				finalWidth,
-				1,
-				scanline,
-				stats);
-		}
-
+		/// <summary>
+		/// Helper for converting from 2D indices to a 1D index
+		/// </summary>
+		/// <param name="x">X index</param>
+		/// <param name="y">Y index</param>
+		/// <param name="width">Width of the array</param>
+		/// <returns>A 1D index</returns>
 		private int Index(int x, int y, int width)
 		{
 			return y * width + x;
 		}
 
+		/// <summary>
+		/// Raytraces a scene for a background worker object
+		/// </summary>
 		public void RaytraceSceneBackgroundWorker(object sender, DoWorkEventArgs e)
 		{
+			// Make sure a background worker invoked this method
 			BackgroundWorker worker = sender as BackgroundWorker;
 			if (worker == null)
 				return;
 
+			// Ensure we have proper parameters
 			RaytracingParameters rtParams = e.Argument as RaytracingParameters;
 			if (rtParams == null)
 				return;
@@ -218,7 +117,7 @@ namespace CSharpPathTracer
 			for (int p = 0; p < progressiveSteps; p++)
 			{
 				// Loop through scanlines
-				for (int y = 0; y < finalHeight; y += 1)
+				for (int y = 0; y < finalHeight; y++)
 				{
 					// Loop through pixels on a scanline (parallel so it's async)
 					Parallel.For(0, finalWidth, x =>
@@ -241,14 +140,15 @@ namespace CSharpPathTracer
 
 						// Add to the progressive color and average
 						int pixelIndex = Index(x, y, finalWidth);
-						progressivePixels[pixelIndex] += new SIMD.Vector4(
-							MathF.Pow(totalColor.X, GammaCorrectionPower),
-							MathF.Pow(totalColor.Y, GammaCorrectionPower),
-							MathF.Pow(totalColor.Z, GammaCorrectionPower),
-							1);
+						progressivePixels[pixelIndex] += new SIMD.Vector4(totalColor, 1);
+						SIMD.Vector4 average = progressivePixels[pixelIndex] / (p + 1);
 
-						// Average the result into the actual pixel array
-						pixels[pixelIndex] = progressivePixels[pixelIndex] / (p + 1);
+						// Gamma correct the averaged color as we store
+						pixels[pixelIndex] = new SIMD.Vector4(
+							MathF.Pow(average.X, GammaCorrectionPower),
+							MathF.Pow(average.Y, GammaCorrectionPower),
+							MathF.Pow(average.Z, GammaCorrectionPower),
+							1);
 					});
 
 					// Check for cancellation
