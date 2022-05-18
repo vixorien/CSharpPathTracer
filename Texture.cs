@@ -98,7 +98,7 @@ namespace CSharpPathTracer
 
 			// Speeds up the processing a bit!
 			Parallel.For(0, Height, h =>
-			{	
+			{
 				for (int w = 0; w < Width; w++)
 				{
 					// Grab a pixel worth of data and convert
@@ -122,6 +122,21 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Creates a new texture given a 2D array of pixel colors
+		/// </summary>
+		/// <param name="colors">
+		/// 2D array of RGBA pixel colors where 
+		/// each component is between 0.0 and 1.0
+		/// </param>
+		public Texture(Vector4[,] colors)
+		{
+			// Clone the colors array so we have our own data
+			pixels = (Vector4[,])colors.Clone();
+			Height = pixels.GetLength(0);
+			Width = pixels.GetLength(1);
+		}
+
+		/// <summary>
 		/// Samples the given texture at the specified coordinates
 		/// </summary>
 		/// <param name="uv">The UV coords for sampling</param>
@@ -136,7 +151,7 @@ namespace CSharpPathTracer
 				case TextureAddressMode.Wrap:
 					// Truncate the UV
 					uv -= new Vector2(MathF.Truncate(uv.X), MathF.Truncate(uv.Y));
-					
+
 					// Adjust by 1 if we're negative
 					if (uv.X < 0.0f) uv.X += 1.0f;
 					if (uv.Y < 0.0f) uv.Y += 1.0f;
@@ -196,5 +211,63 @@ namespace CSharpPathTracer
 			}
 		}
 
+		/// <summary>
+		/// Creates a checkboard texture using black and white as its two colors
+		/// </summary>
+		/// <param name="width">The overall pixel width of the texture</param>
+		/// <param name="height">The overall pixel height of the texture</param>
+		/// <param name="numCheckersX">Number of checkers (squares of opposite colors) along X</param>
+		/// <param name="numCheckersY">Number of checkers (squares of opposite colors) along Y</param>
+		/// <returns>A new checkerboard texture</returns>
+		public static Texture CreateCheckerboard(int width, int height, int numCheckersX, int numCheckersY)
+		{
+			return CreateCheckerboard(width, height, numCheckersX, numCheckersY, new Vector4(0, 0, 0, 1), new Vector4(1, 1, 1, 1));
+		}
+
+		/// <summary>
+		/// Creates a checkboard texture
+		/// </summary>
+		/// <param name="width">The overall pixel width of the texture</param>
+		/// <param name="height">The overall pixel height of the texture</param>
+		/// <param name="numCheckersX">Number of checkers (squares of opposite colors) along X</param>
+		/// <param name="numCheckersY">Number of checkers (squares of opposite colors) along Y</param>
+		/// <param name="color0">The first color (used in the top-left checker)</param>
+		/// <param name="color1">The second color</param>
+		/// <returns>A new checkerboard texture</returns>
+		public static Texture CreateCheckerboard(int width, int height, int numCheckersX, int numCheckersY, Vector4 color0, Vector4 color1)
+		{
+			// Verify parameters
+			if (width <= 0 || height <= 0 || numCheckersX <= 0 || numCheckersY <= 0)
+				throw new ArgumentException("Cannot create checkerboard texture.  One or more parameters are less than or equal to zero.");
+
+			// Create the array of pixel colors
+			Vector4[,] checker = new Vector4[height, width];
+
+			// How many pixels of each color?
+			int checkerWidth = width / numCheckersX;
+			int checkerHeight = height / numCheckersY;
+
+			// Loop through each pixel
+			for (int y = 0; y < height; y++)
+			{
+				for (int x = 0; x < width; x++)
+				{
+					// Assume its color 0
+					Vector4 c = color0;
+
+					// Flip-flop between color 0 and 1 over the width
+					if ((x / checkerWidth) % 2 == 1) 
+						c = color1;
+
+					// Potentially flip-flop again based on y value
+					if ((y / checkerHeight) % 2 == 1)
+						c = c == color0 ? color1 : color0;
+
+					checker[y, x] = c;
+				}
+			}
+
+			return new Texture(checker);
+		}
 	}
 }

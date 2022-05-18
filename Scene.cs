@@ -107,7 +107,7 @@ namespace CSharpPathTracer
 
 			// === Textures ===
 			Texture crateTexture = new Texture("Content/Textures/crate.png");
-			Texture tilesTexture = new Texture("Content/Textures/tiles.png");
+			Texture checkerboardTexture = Texture.CreateCheckerboard(256, 256, 4, 4, new Vector4(0,0,0,1), new Vector4(1,1,1,1));
 			Texture tilesTextureNoGamma = new Texture("Content/Textures/tiles.png", false);
 			Texture lavaAlbedoTexture = new Texture("Content/Textures/lava_albedo.png");
 			Texture lavaEmissiveTexture = new Texture("Content/Textures/lava_emissive.png");
@@ -139,14 +139,14 @@ namespace CSharpPathTracer
 
 			// === Materials ===
 			Material crate = new DiffuseMaterial(Vector3.One, 1.0f, crateTexture, null, null, null, TextureAddressMode.Wrap, TextureFilter.Linear);
-			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), 1.0f, tilesTexture);
-			Material tilesRepeat = new DiffuseMaterial(Vector3.One, 1.0f, tilesTexture, null, null, new Vector2(10, 10));
+			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), 1.0f, checkerboardTexture);
+			Material tilesRepeat = new DiffuseMaterial(Vector3.One, 1.0f, checkerboardTexture, null, null, new Vector2(10, 10));
 			Material lava = new EmissiveMaterial(Vector3.One, 5.0f, lavaEmissiveTexture, Vector3.One, 0.0f, lavaAlbedoTexture);
 			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3(), 0.5f, null, null);
 			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
-			Material blueMatte = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), 0, tilesTexture);
+			Material blueMatteChecker = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), 0, checkerboardTexture);
 
-			Material metalTiles = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), 0, null, tilesTextureNoGamma, null, new Vector2(3, 3));
+			Material metalTiles = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), 0, null, checkerboardTexture, null, new Vector2(3, 3));
 			Material mirror = new MetalMaterial(new Vector3(1, 1, 1));
 			Material gold = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f));
 
@@ -213,7 +213,7 @@ namespace CSharpPathTracer
 			// === MESH SCENE ===
 			{
 				// Entities ===
-				Entity helix = new Entity(helixMesh, blueMatte);
+				Entity helix = new Entity(helixMesh, blueMatteChecker);
 				helix.Transform.MoveAbsolute(0, 2.5f, 0);
 				helix.Transform.ScaleRelative(5.0f);
 
