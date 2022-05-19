@@ -299,11 +299,18 @@ namespace CSharpPathTracer
 			Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
 
 			// Adjust based on roughness
-			reflection += ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+			Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+			Vector3 roughReflection = reflection + randVec;
+
+			// Verify this new reflection vector is on the correct side 
+			// of the normal, and if not, reverse the random vector
+			// Note: The probability isn't uniform, so this may need a PDF?
+			if (Vector3.Dot(hit.Normal, roughReflection) < 0) 
+				roughReflection = reflection - randVec;
 
 			return new Ray(
 				hit.Position,
-				reflection,
+				roughReflection,
 				ray.TMin,
 				ray.TMax);
 		}
@@ -372,11 +379,12 @@ namespace CSharpPathTracer
 			if (reflectFresnel || !Refract(ray.Direction, hit.Normal, ior, out newDir))
 				newDir = Vector3.Reflect(ray.Direction, hit.Normal);
 
-			// Adjust based on roughness (TODO: test this more)
-			newDir += ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+			// Adjust based on roughness
+			Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+			Vector3 roughNewDir = newDir + randVec;
 
 			// Create the new ray based on either reflection or refraction
-			return new Ray(hit.Position, newDir, ray.TMin, ray.TMax);
+			return new Ray(hit.Position, roughNewDir, ray.TMin, ray.TMax);
 		}
 	}
 
