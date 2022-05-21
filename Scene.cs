@@ -138,13 +138,16 @@ namespace CSharpPathTracer
 
 
 			// === Materials ===
-			Material crate = new DiffuseMaterial(Vector3.One, 1.0f, crateTexture, null, null, null, TextureAddressMode.Wrap, TextureFilter.Linear);
-			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), 1.0f, checkerboardTexture);
-			Material tilesRepeat = new DiffuseMaterial(Vector3.One, 1.0f, checkerboardTexture, null, null, new Vector2(10, 10));
-			Material lava = new EmissiveMaterial(Vector3.One, 5.0f, lavaEmissiveTexture, Vector3.One, 0.0f, lavaAlbedoTexture);
-			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3(), 0.5f, null, null);
-			Material greenMatte = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f));
-			Material blueMatteChecker = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), 0, checkerboardTexture);
+			Material crate = new DiffuseMaterial(Vector3.One, crateTexture, null, null, TextureAddressMode.Wrap, TextureFilter.Linear);
+			Material tiles = new DiffuseMaterial(new Vector3(0.2f, 1.0f, 0.2f), checkerboardTexture);
+			Material tilesRepeat = new DiffuseMaterial(Vector3.One, checkerboardTexture, null, new Vector2(10, 10));
+			Material lava = new EmissiveMaterial(Vector3.One, 5.0f, lavaEmissiveTexture, Vector3.One, lavaAlbedoTexture);
+
+			Material grayMatte = new DiffuseMaterial(System.Drawing.Color.LightGray.ToVector3());
+			Material whiteMatte = new DiffuseMaterial(new Vector3(1, 1, 1));
+			Material redMatte = new DiffuseMaterial(new Vector3(1, 0, 0));
+			Material greenMatte = new DiffuseMaterial(new Vector3(0, 1, 0));
+			Material blueMatteChecker = new DiffuseMaterial(new Vector3(0.2f, 0.2f, 1.0f), checkerboardTexture);
 
 			Material metalTiles = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), 0, null, checkerboardTexture, null, new Vector2(3, 3));
 			Material mirror = new MetalMaterial(new Vector3(1, 1, 1));
@@ -322,6 +325,53 @@ namespace CSharpPathTracer
 				scene.Add(left);
 				scene.Add(middle);
 				scene.Add(right);
+
+				// Add to scene list
+				scenes.Add(scene);
+			}
+
+			// === CORNELL BOX ===
+			{
+				Entity ground = new Entity(quadMesh, whiteMatte);
+				Entity ceiling = new Entity(quadMesh, whiteMatte);
+				Entity backWall = new Entity(quadMesh, whiteMatte);
+				Entity leftWall = new Entity(quadMesh, greenMatte);
+				Entity rightWall = new Entity(quadMesh, redMatte);
+
+				// Scale the box
+				float boxSize = 5;
+				float halfBox = boxSize;// / 2.0f;
+				float halfPi = MathF.PI / 2.0f;
+				ground.Transform.SetScale(boxSize);
+				ceiling.Transform.SetScale(boxSize);
+				backWall.Transform.SetScale(boxSize);
+				leftWall.Transform.SetScale(boxSize);
+				rightWall.Transform.SetScale(boxSize);
+
+				// Arrange the sides
+				ground.Transform.MoveAbsolute(0, -halfBox, 0);
+				ceiling.Transform.MoveAbsolute(0, halfBox, 0);
+
+				backWall.Transform.MoveAbsolute(0, 0, -halfBox);
+				backWall.Transform.Rotate(halfPi, 0, 0);
+
+				leftWall.Transform.MoveAbsolute(-halfBox, 0, 0);
+				leftWall.Transform.Rotate(0, 0, halfPi);
+
+				rightWall.Transform.MoveAbsolute(halfBox, 0, 0);
+				rightWall.Transform.Rotate(0, 0, halfPi);
+
+				// Light
+				Entity light = new Entity(Sphere.Default, whiteLight);
+
+
+				Scene scene = new Scene("Cornell Box", blackEnv, sceneBounds);
+				scene.Add(ground);
+				scene.Add(ceiling);
+				scene.Add(backWall);
+				scene.Add(leftWall);
+				scene.Add(rightWall);
+				scene.Add(light);
 
 				// Add to scene list
 				scenes.Add(scene);

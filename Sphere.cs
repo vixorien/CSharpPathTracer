@@ -123,7 +123,8 @@ namespace CSharpPathTracer
 			// Calculate tangent from x/z vector
 			// - To rotate by 90 degrees: [x,y] -> [-y, x]
 			// - TODO: Verify this is the correct rotation direction
-			Vector3 tangent = new Vector3(-xz.Y, xz.X, 0.0f);
+			// - UPDATE: Rotating the other direction instead [x,y] -> [y, -x]
+			Vector3 tangent = new Vector3(xz.Y, -xz.X, 0.0f);
 			if (side == HitSide.Inside)
 			{
 				tangent *= -1.0f;

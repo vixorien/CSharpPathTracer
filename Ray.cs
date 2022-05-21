@@ -23,18 +23,20 @@ namespace CSharpPathTracer
 		public Vector3 InvDirection { get => invDirection; }
 		public float TMin { get; set; }
 		public float TMax { get; set; }
+		public bool Specular { get; set; }
 
-		public Ray(Vector3 origin, Vector3 direction)
-			: this(origin, direction, 0.0f, 1000.0f)
+		public Ray(Vector3 origin, Vector3 direction, bool specular = false)
+			: this(origin, direction, 0.0f, 1000.0f, specular)
 		{ }
 
-		public Ray(Vector3 origin, Vector3 direction, float tmin, float tmax)
+		public Ray(Vector3 origin, Vector3 direction, float tmin, float tmax, bool specular = false)
 		{
 			Origin = origin;
 			this.direction = direction;
 			invDirection = Vector3.One / direction;
 			TMin = tmin;
 			TMax = tmax;
+			Specular = specular;
 		}
 
 		public Ray GetTransformed(Matrix4x4 transMatrix)
@@ -44,6 +46,7 @@ namespace CSharpPathTracer
 			tRay.Direction = Vector3.Normalize(Vector3.TransformNormal(Direction, transMatrix));
 			tRay.TMin = Vector3.TransformNormal(Direction * TMin, transMatrix).Length();
 			tRay.TMax = Vector3.TransformNormal(Direction * TMax, transMatrix).Length();
+			tRay.Specular = this.Specular;
 			return tRay;
 		}
 	}

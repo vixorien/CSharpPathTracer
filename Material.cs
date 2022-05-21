@@ -124,24 +124,23 @@ namespace CSharpPathTracer
 				return surfaceNormal;
 
 			// Sample and unpack normal map
-			Vector4 normalFromMap = NormalMap.Sample(uv * UVScale, AddressMode, Filter);
-			normalFromMap.W = 0.0f;
+			Vector3 normalFromMap = NormalMap.Sample(uv * UVScale, AddressMode, Filter).ToVector3();
 			normalFromMap *= 2.0f;
-			normalFromMap = Vector4.Subtract(normalFromMap, Vector4.One);
+			normalFromMap = Vector3.Subtract(normalFromMap, Vector3.One);
 
 			// Create TBN matrix
 			Vector3 N = surfaceNormal;
 			Vector3 T = Vector3.Normalize(surfaceTangent - N * Vector3.Dot(surfaceTangent, N));
-			Vector3 B = Vector3.Cross(T, N);
+			Vector3 B = Vector3.Cross(N, T);  // Reverse due to right-handed
 
 			Matrix4x4 TBN = new Matrix4x4(
 				T.X, T.Y, T.Z, 0,
 				B.X, B.Y, B.Z, 0,
 				N.X, N.Y, N.Z, 0,
-				0, 0, 0, 0);
+				0, 0, 0, 1);
 
 			// Apply TBN and return result
-			return Vector3.Normalize(Vector4.Transform(normalFromMap, TBN).ToVector3());
+			return Vector3.Normalize(Vector3.TransformNormal(normalFromMap, TBN));
 		}
 
 		/// <summary>
@@ -198,6 +197,38 @@ namespace CSharpPathTracer
 			float r0 = MathF.Pow((1.0f - indexOfRefraction) / (1.0f + indexOfRefraction), 2.0f);
 			return r0 + (1.0f - r0) * MathF.Pow(1 - NdotV, 5.0f);
 		}
+
+
+		/// <summary>
+		/// Schlick approx of Fresnel using a constant 0.04 for f0
+		/// </summary>
+		/// <param name="NdotV">Dot between normal and "view"</param>
+		/// <returns>Fresnel approximation result</returns>
+		public static double FresnelSchlick(float NdotV)
+		{
+			float f0 = 0.04f;
+			return f0 + (1.0f - f0) * MathF.Pow(1 - NdotV, 5.0f);
+		}
+
+		// See: https://computergraphics.stackexchange.com/questions/4486/mimicking-blenders-roughness-in-my-path-tracer
+		// Also look up paper: "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
+		public static Vector3 GGX_NormalDistribution(float roughness, float rand1, float rand2)
+		{
+			// theta = arctan((roughness * sqrt(r1)) / sqrt(1-r1))
+			// phi = 2*pi*r2
+			// Where r1 and r2 are uniform random numbers [0,1]
+			// Output is a set of polar coords (theta,phi) relative to surface normal
+
+			float theta = MathF.Atan((roughness * MathF.Sqrt(rand1)) / MathF.Sqrt(1.0f - rand1));
+			float phi = 2.0f * MathF.PI * rand2;
+
+			// Note: This assumes x/y plane and "z up"
+			float x = MathF.Cos(phi) * MathF.Sin(theta);
+			float y = MathF.Sin(phi) * MathF.Sin(theta);
+			float z = MathF.Cos(theta);
+
+			return new Vector3(x, y, z);
+		}
 	}
 
 	/// <summary>
@@ -209,24 +240,20 @@ namespace CSharpPathTracer
 		/// Creates a new perfectly diffuse material
 		/// </summary>
 		/// <param name="color">Base color</param>
-		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
 		/// <param name="texture">Texture (tinted by color)</param>
-		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
 		/// <param name="normalMap">Normal map texture</param>
 		/// <param name="uvScale">UV scale to apply</param>
 		/// <param name="addressMode">Texture address mode</param>
 		/// <param name="filter">Texture filter mode</param>
 		public DiffuseMaterial(
 			Vector3 color,
-			float roughness = 1.0f,
 			Texture texture = null,
-			Texture roughnessMap = null,
 			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			: 
-			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
+			base(color, 1.0f, texture, null, normalMap, uvScale, addressMode, filter)
 		{
 		}
 
@@ -242,7 +269,101 @@ namespace CSharpPathTracer
 			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
 
 			// Random bounce since we're assuming its perfectly diffuse
+			// TODO: Handle bounce ray going through the object due to normal map
 			Vector3 bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+
+			return new Ray(
+				hit.Position,
+				bounce,
+				ray.TMin,
+				ray.TMax,
+				false); // Perfectly diffuse so there's never a specular ray
+		}
+	}
+
+	class DiffuseAndSpecularMaterial : Material
+	{
+		/// <summary>
+		/// Creates a new perfectly diffuse material
+		/// </summary>
+		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="texture">Texture (tinted by color)</param>
+		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
+		/// <param name="normalMap">Normal map texture</param>
+		/// <param name="uvScale">UV scale to apply</param>
+		/// <param name="addressMode">Texture address mode</param>
+		/// <param name="filter">Texture filter mode</param>
+		public DiffuseAndSpecularMaterial(
+			Vector3 color,
+			float roughness = 1.0f,
+			Texture texture = null,
+			Texture roughnessMap = null,
+			Texture normalMap = null,
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
+			:
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
+		{
+		}
+
+		/// <summary>
+		/// Completely random bounce in the hemisphere centered on this hit's normal
+		/// </summary>
+		/// <param name="ray">The ray to further bounce</param>
+		/// <param name="hit">Hit information about the intersection</param>
+		/// <returns>A new ray</returns>
+		public override Ray GetNextBounce(Ray ray, RayHit hit)
+		{
+			// Handle optional normal map
+			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+
+			// Adjust normal based on roughness using GGX Normal Dist Function
+			Vector3 ggxNormal = GGX_NormalDistribution(
+				GetRoughnessAtUV(hit.UV),
+				ThreadSafeRandom.Instance.NextFloat(),
+				ThreadSafeRandom.Instance.NextFloat());
+
+			Vector3 N = hit.Normal;
+			Vector3 T = Vector3.Normalize(hit.Tangent - N * Vector3.Dot(hit.Tangent, N));
+			Vector3 B = Vector3.Cross(N, T);
+
+			Matrix4x4 TBN = new Matrix4x4(
+				T.X, T.Y, T.Z, 0,
+				B.X, B.Y, B.Z, 0,
+				N.X, N.Y, N.Z, 0,
+				0, 0, 0, 1);
+
+			Vector3 roughNormal = Vector3.Normalize(Vector3.TransformNormal(ggxNormal, TBN));
+
+			// Randomly choose whether this is a diffuse or specular ray
+			float NdotV = Vector3.Dot(-1 * ray.Direction, roughNormal);// hit.Normal);
+			bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
+
+			// Determine if the bounce is specular or diffuse
+			Vector3 bounce;
+			if (reflectFresnel)
+			{
+				Vector3 refl = Vector3.Reflect(ray.Direction, roughNormal);// hit.Normal);
+
+				// Adjust based on roughness
+				Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+				bounce = refl + randVec;
+
+				// Verify this new reflection vector is on the correct side 
+				// of the normal, and if not, reverse the random vector
+				// Note: The probability isn't uniform, so this may need a PDF?
+				if (Vector3.Dot(hit.Normal, bounce) < 0)
+					bounce = refl - randVec;
+			}
+			else
+			{
+				// Random bounce since we're assuming its perfectly diffuse
+				// Shouldn't need the GGX normal, right?
+				bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			}
+
 
 			// Note: This assumes 100% roughness (perfectly diffuse) - could handle roughness
 			// but we'd need to split into diffuse & specular components
@@ -250,7 +371,8 @@ namespace CSharpPathTracer
 				hit.Position,
 				bounce,
 				ray.TMin,
-				ray.TMax);
+				ray.TMax,
+				reflectFresnel); // Fresnel = specular ray here
 		}
 	}
 
@@ -429,15 +551,13 @@ namespace CSharpPathTracer
 			float emissiveIntensity = 1.0f,
 			Texture emissiveTexture = null,
 			Vector3 color = new Vector3(), // 0,0,0
-			float roughness = 1.0f,
 			Texture texture = null,
-			Texture roughnessMap = null,
 			Texture normalMap = null,
 			Vector2? uvScale = null,
 			TextureAddressMode addressMode = DefaultAddressMode,
 			TextureFilter filter = DefaultFilterMode)
 			:
-			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
+			base(color, texture, normalMap, uvScale, addressMode, filter)
 		{
 			EmissiveColor = emissiveColor;
 			EmissiveIntensity = emissiveIntensity;

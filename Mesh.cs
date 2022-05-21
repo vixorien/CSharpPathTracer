@@ -409,6 +409,89 @@ namespace CSharpPathTracer
 					}
 				}
 			}
+
+			// Calculate the tangents for all vertices
+			CalculateTangents(triangles);
 		}
+
+		// Calculates the tangents of the vertices in a mesh
+		// Code originally adapted from: http://www.terathon.com/code/tangent.html
+		// Updated version now found here: http://foundationsofgameenginedev.com/FGED2-sample.pdf
+		//  - See listing 7.4 in section 7.5 (page 9 of the PDF)
+		private void CalculateTangents(List<Triangle> triangles)
+		{
+			// Note: Not reset tangents as they're just overridden below
+
+			// Calculate tangents one whole triangle at a time
+			for (int i = 0; i < triangles.Count; i++)
+			{
+				// Grab indices and vertices of first triangle
+				Triangle tri = triangles[i];
+				Vertex v1 = triangles[i].V0;
+				Vertex v2 = triangles[i].V1;
+				Vertex v3 = triangles[i].V2;
+
+				// Calculate vectors relative to triangle positions
+				float x1 = v2.Position.X - v1.Position.X;
+				float y1 = v2.Position.Y - v1.Position.Y;
+				float z1 = v2.Position.Z - v1.Position.Z;
+
+				float x2 = v3.Position.X - v1.Position.X;
+				float y2 = v3.Position.Y - v1.Position.Y;
+				float z2 = v3.Position.Z - v1.Position.Z;
+
+				// Do the same for vectors relative to triangle uv's
+				float s1 = v2.UV.X - v1.UV.X;
+				float t1 = v2.UV.Y - v1.UV.Y;
+
+				float s2 = v3.UV.X - v1.UV.X;
+				float t2 = v3.UV.Y - v1.UV.Y;
+
+				// Create vectors for tangent calculation
+				float r = 1.0f / (s1 * t2 - s2 * t1);
+
+				float tx = (t2 * x1 - t1 * x2) * r;
+				float ty = (t2 * y1 - t1 * y2) * r;
+				float tz = (t2 * z1 - t1 * z2) * r;
+
+				// Adjust tangents of each vert of the triangle
+				// Note: Since we don't actually share vertices,
+				//       we're simply setting the tangent here
+				Vector3 tangentAdjust = new Vector3(tx, ty, tz);
+				v1.Tangent = /*v1.Tangent +*/ tangentAdjust;
+				v2.Tangent = /*v2.Tangent +*/ tangentAdjust;
+				v3.Tangent = /*v3.Tangent +*/ tangentAdjust;
+
+				// Replace the vertices
+				tri.V0 = v1;
+				tri.V1 = v2;
+				tri.V2 = v3;
+				triangles[i] = tri;
+			}
+
+			// Ensure all of the tangents are orthogonal to the normals
+			for (int i = 0; i < triangles.Count; i++)
+			{
+				Triangle tri = triangles[i];
+				Vertex v0 = tri.V0;
+				Vertex v1 = tri.V1;
+				Vertex v2 = tri.V2;
+
+				v0.Tangent = OrthogonalizeTangent(v0.Normal, v0.Tangent);
+				v1.Tangent = OrthogonalizeTangent(v1.Normal, v1.Tangent);
+				v2.Tangent = OrthogonalizeTangent(v2.Normal, v2.Tangent);
+
+				tri.V0 = v0;
+				tri.V1 = v1;
+				tri.V2 = v2;
+				triangles[i] = tri;
+			}
+		}
+
+		private Vector3 OrthogonalizeTangent(Vector3 normal, Vector3 tangent)
+		{
+			return Vector3.Normalize(tangent - normal * Vector3.Dot(normal, tangent));
+		}
+
 	}
 }

@@ -92,14 +92,25 @@ namespace CSharpPathTracer
 			{
 				// Grab the entity from the hit
 				Entity hitEntity = hit.HitObject as Entity;
-
+				Vector3 n = hitEntity.Material.GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+				
 				// How is this ray bouncing?
 				Ray newRay = hitEntity.Material.GetNextBounce(ray, hit);
-				
-				// Take into account the hit color and trace the next ray
-				return 
-					hitEntity.Material.GetEmissionAtUV(hit.UV) + 
-					hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
+
+				// Handle specular rays differently than non-specular (diffuse) rays
+				if (newRay.Specular)
+				{
+					// The specular ray is just a bounce, so we only need to 
+					// worry about the reflection
+					return TraceRay(newRay, scene, depth - 1);
+				}
+				else
+				{
+					// Take into account the hit color and emission and trace the next ray
+					return
+						hitEntity.Material.GetEmissionAtUV(hit.UV) +
+						hitEntity.Material.GetColorAtUV(hit.UV) * TraceRay(newRay, scene, depth - 1);
+				}
 			}
 			else
 			{
