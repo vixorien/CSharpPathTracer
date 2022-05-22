@@ -168,6 +168,31 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Generates a cosine-weighted vector in a hemisphere centered 
+		/// around the positive Z axis (basically tangent space)
+		/// </summary>
+		/// <param name="rng">The random object itself</param>
+		/// <returns>A cosine weighted vector in the +Z hemisphere</returns>
+		public static Vector3 NextCosineHemisphereVectorTangentSpace(this Random rng)
+		{
+			// From: https://www.rorydriscoll.com/2009/01/07/better-sampling/
+
+			// Two uniform 0-1 random numbers
+			float rand1 = rng.NextFloat();
+			float rand2 = rng.NextFloat();
+
+			// Random radius closer to center
+			float radius = MathF.Sqrt(rand1);
+			float theta = 2.0f * MathF.PI * rand2;
+
+			// Calculate vector components
+			float x = radius * MathF.Cos(theta);
+			float y = radius * MathF.Sin(theta);
+			float z = MathF.Sqrt(1.0f - rand1);
+			return new Vector3(x, y, z);
+		}
+
+		/// <summary>
 		/// Generates a 3D vector with random x & y components within a 
 		/// circle of the given radius, and a z component of zero
 		/// </summary>
