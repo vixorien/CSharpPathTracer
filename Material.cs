@@ -288,6 +288,9 @@ namespace CSharpPathTracer
 		}
 	}
 
+	/// <summary>
+	/// A basic diffuse + specular material based on Fresnel
+	/// </summary>
 	class DiffuseAndSpecularMaterial : Material
 	{
 		/// <summary>
@@ -326,51 +329,6 @@ namespace CSharpPathTracer
 			// Handle optional normal map
 			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
 
-			//// Adjust normal based on roughness using GGX Normal Dist Function
-			//Vector3 ggxNormal = GGX_NormalDistribution(
-			//	GetRoughnessAtUV(hit.UV),
-			//	ThreadSafeRandom.Instance.NextFloat(),
-			//	ThreadSafeRandom.Instance.NextFloat());
-
-			//Vector3 N = hit.Normal;
-			//Vector3 T = Vector3.Normalize(hit.Tangent - N * Vector3.Dot(hit.Tangent, N));
-			//Vector3 B = Vector3.Cross(N, T);
-
-			//Matrix4x4 TBN = new Matrix4x4(
-			//	T.X, T.Y, T.Z, 0,
-			//	B.X, B.Y, B.Z, 0,
-			//	N.X, N.Y, N.Z, 0,
-			//	0, 0, 0, 1);
-
-			//Vector3 roughNormal = Vector3.Normalize(Vector3.TransformNormal(ggxNormal, TBN));
-
-			//// Randomly choose whether this is a diffuse or specular ray
-			//float NdotV = Vector3.Dot(-1 * ray.Direction, roughNormal);// hit.Normal);
-			//bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
-
-			//// Determine if the bounce is specular or diffuse
-			//Vector3 bounce;
-			//if (reflectFresnel)
-			//{
-			//	Vector3 refl = Vector3.Reflect(ray.Direction, roughNormal);// hit.Normal);
-
-			//	// Adjust based on roughness
-			//	Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
-			//	bounce = refl + randVec;
-
-			//	// Verify this new reflection vector is on the correct side 
-			//	// of the normal, and if not, reverse the random vector
-			//	// Note: The probability isn't uniform, so this may need a PDF?
-			//	if (Vector3.Dot(hit.Normal, bounce) < 0)
-			//		bounce = refl - randVec;
-			//}
-			//else
-			//{
-			//	// Random bounce since we're assuming its perfectly diffuse
-			//	// Shouldn't need the GGX normal, right?
-			//	bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
-			//}
-
 			// Currently based on the implementation here:
 			// https://blog.demofox.org/2020/06/06/casual-shadertoy-path-tracing-2-image-improvement-and-glossy-reflections/
 			// Need to do some weighting as shown here:
@@ -385,13 +343,111 @@ namespace CSharpPathTracer
 			Vector3 diffuseBounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
 			Vector3 specularBounce = Vector3.Reflect(ray.Direction, hit.Normal);
 
-			// Adjust specular based on roughness
+			// Adjust specular based on roughness squared
 			float roughness = GetRoughnessAtUV(hit.UV);
 			float a = roughness * roughness;
 			specularBounce = Vector3.Normalize(Vector3.Lerp(specularBounce, diffuseBounce, a));
 
 			// Which ray are we actually using?
+			// Note: We should weight the final color by the probability, though
+			// that doesn't happen here.  Will need to restructure a bit!
 			Vector3 bounce = reflectFresnel ? specularBounce : diffuseBounce;
+
+			return new Ray(
+				hit.Position,
+				bounce,
+				ray.TMin,
+				ray.TMax,
+				reflectFresnel); // Fresnel = specular ray here
+		}
+	}
+
+	/// <summary>
+	/// A diffuse + specular material using GGX normal distribution
+	/// NOTE: Work in progress!!!
+	/// </summary>
+	class GGXMaterial : Material
+	{
+		/// <summary>
+		/// Creates a new perfectly diffuse material
+		/// </summary>
+		/// <param name="color">Base color</param>
+		/// <param name="roughness">Uniform roughness value (superseded by roughness map)</param>
+		/// <param name="texture">Texture (tinted by color)</param>
+		/// <param name="roughnessMap">Roughness map texture (supersedes roughness value)</param>
+		/// <param name="normalMap">Normal map texture</param>
+		/// <param name="uvScale">UV scale to apply</param>
+		/// <param name="addressMode">Texture address mode</param>
+		/// <param name="filter">Texture filter mode</param>
+		public GGXMaterial(
+			Vector3 color,
+			float roughness = 1.0f,
+			Texture texture = null,
+			Texture roughnessMap = null,
+			Texture normalMap = null,
+			Vector2? uvScale = null,
+			TextureAddressMode addressMode = DefaultAddressMode,
+			TextureFilter filter = DefaultFilterMode)
+			:
+			base(color, roughness, texture, roughnessMap, normalMap, uvScale, addressMode, filter)
+		{
+		}
+
+		/// <summary>
+		/// Completely random bounce in the hemisphere centered on this hit's normal
+		/// </summary>
+		/// <param name="ray">The ray to further bounce</param>
+		/// <param name="hit">Hit information about the intersection</param>
+		/// <returns>A new ray</returns>
+		public override Ray GetNextBounce(Ray ray, RayHit hit)
+		{
+			// Handle optional normal map
+			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
+
+			// Adjust normal based on roughness using GGX Normal Dist Function
+			Vector3 ggxNormal = GGX_NormalDistribution(
+				GetRoughnessAtUV(hit.UV),
+				ThreadSafeRandom.Instance.NextFloat(),
+				ThreadSafeRandom.Instance.NextFloat());
+
+			Vector3 N = hit.Normal;
+			Vector3 T = Vector3.Normalize(hit.Tangent - N * Vector3.Dot(hit.Tangent, N));
+			Vector3 B = Vector3.Cross(N, T);
+
+			Matrix4x4 TBN = new Matrix4x4(
+				T.X, T.Y, T.Z, 0,
+				B.X, B.Y, B.Z, 0,
+				N.X, N.Y, N.Z, 0,
+				0, 0, 0, 1);
+
+			Vector3 roughNormal = Vector3.Normalize(Vector3.TransformNormal(ggxNormal, TBN));
+
+			// Randomly choose whether this is a diffuse or specular ray
+			float NdotV = Vector3.Dot(-1 * ray.Direction, roughNormal);// hit.Normal);
+			bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
+
+			// Determine if the bounce is specular or diffuse
+			Vector3 bounce;
+			if (reflectFresnel)
+			{
+				Vector3 refl = Vector3.Reflect(ray.Direction, roughNormal);// hit.Normal);
+
+				// Adjust based on roughness
+				Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+				bounce = refl + randVec;
+
+				// Verify this new reflection vector is on the correct side 
+				// of the normal, and if not, reverse the random vector
+				// Note: The probability isn't uniform, so this may need a PDF?
+				if (Vector3.Dot(hit.Normal, bounce) < 0)
+					bounce = refl - randVec;
+			}
+			else
+			{
+				// Random bounce since we're assuming its perfectly diffuse
+				// Shouldn't need the GGX normal, right?
+				bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			}
 
 			// Note: This assumes 100% roughness (perfectly diffuse) - could handle roughness
 			// but we'd need to split into diffuse & specular components
