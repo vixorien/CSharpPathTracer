@@ -213,6 +213,31 @@ namespace CSharpPathTracer
 				scenes.Add(sceneSkybox);
 			}
 
+			// === SPECULAR TEST ===
+			{
+				Entity ground = new Entity(quadMesh, grayMatte);
+				ground.Transform.SetScale(100.0f);
+
+				// Set up the scene
+				Scene scene = new Scene("Specular Test", skybox, sceneBounds);
+				scene.Add(ground);
+
+				// Create several entities with variable roughness
+				int numSpheres = 3;
+				float scale = 2.0f;
+				for (int i = 0; i < numSpheres; i++)
+				{
+					DiffuseAndSpecularMaterial m = new DiffuseAndSpecularMaterial(new Vector3(0.25f, 0.25f, 1.0f), (float)i / (numSpheres - 1));
+					Entity e = new Entity(Sphere.Default, m);
+					e.Transform.SetPosition((i - numSpheres / 2.0f + 0.5f) * scale * 2, scale, 0);
+					e.Transform.SetScale(scale);
+					scene.Add(e);
+				}
+
+				// Add to the scene list
+				scenes.Add(scene);
+			}
+
 			// === MESH SCENE ===
 			{
 				// Entities ===

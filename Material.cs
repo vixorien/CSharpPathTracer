@@ -212,14 +212,21 @@ namespace CSharpPathTracer
 
 		// See: https://computergraphics.stackexchange.com/questions/4486/mimicking-blenders-roughness-in-my-path-tracer
 		// Also look up paper: "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
+		// http://hacksoflife.blogspot.com/2015/12/importance-sampling-look-mom-no-weights.html
+		// https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
+		// https://schuttejoe.github.io/post/ggximportancesamplingpart1/
+		// http://cwyman.org/code/dxrTutors/tutors/Tutor14/tutorial14.md.html <-----
 		public static Vector3 GGX_NormalDistribution(float roughness, float rand1, float rand2)
 		{
-			// theta = arctan((roughness * sqrt(r1)) / sqrt(1-r1))
+			// theta = arctan((a * sqrt(r1)) / sqrt(1-r1))
 			// phi = 2*pi*r2
 			// Where r1 and r2 are uniform random numbers [0,1]
 			// Output is a set of polar coords (theta,phi) relative to surface normal
 
-			float theta = MathF.Atan((roughness * MathF.Sqrt(rand1)) / MathF.Sqrt(1.0f - rand1));
+			// a = roughness^2 (and unreal does it again!)
+			float a = roughness * roughness;
+
+			float theta = MathF.Atan((a * MathF.Sqrt(rand1)) / MathF.Sqrt(1.0f - rand1));
 			float phi = 2.0f * MathF.PI * rand2;
 
 			// Note: This assumes x/y plane and "z up"
@@ -319,51 +326,67 @@ namespace CSharpPathTracer
 			// Handle optional normal map
 			hit.Normal = GetNormalAtUV(hit.UV, hit.Normal, hit.Tangent);
 
-			// Adjust normal based on roughness using GGX Normal Dist Function
-			Vector3 ggxNormal = GGX_NormalDistribution(
-				GetRoughnessAtUV(hit.UV),
-				ThreadSafeRandom.Instance.NextFloat(),
-				ThreadSafeRandom.Instance.NextFloat());
+			//// Adjust normal based on roughness using GGX Normal Dist Function
+			//Vector3 ggxNormal = GGX_NormalDistribution(
+			//	GetRoughnessAtUV(hit.UV),
+			//	ThreadSafeRandom.Instance.NextFloat(),
+			//	ThreadSafeRandom.Instance.NextFloat());
 
-			Vector3 N = hit.Normal;
-			Vector3 T = Vector3.Normalize(hit.Tangent - N * Vector3.Dot(hit.Tangent, N));
-			Vector3 B = Vector3.Cross(N, T);
+			//Vector3 N = hit.Normal;
+			//Vector3 T = Vector3.Normalize(hit.Tangent - N * Vector3.Dot(hit.Tangent, N));
+			//Vector3 B = Vector3.Cross(N, T);
 
-			Matrix4x4 TBN = new Matrix4x4(
-				T.X, T.Y, T.Z, 0,
-				B.X, B.Y, B.Z, 0,
-				N.X, N.Y, N.Z, 0,
-				0, 0, 0, 1);
+			//Matrix4x4 TBN = new Matrix4x4(
+			//	T.X, T.Y, T.Z, 0,
+			//	B.X, B.Y, B.Z, 0,
+			//	N.X, N.Y, N.Z, 0,
+			//	0, 0, 0, 1);
 
-			Vector3 roughNormal = Vector3.Normalize(Vector3.TransformNormal(ggxNormal, TBN));
+			//Vector3 roughNormal = Vector3.Normalize(Vector3.TransformNormal(ggxNormal, TBN));
 
+			//// Randomly choose whether this is a diffuse or specular ray
+			//float NdotV = Vector3.Dot(-1 * ray.Direction, roughNormal);// hit.Normal);
+			//bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
+
+			//// Determine if the bounce is specular or diffuse
+			//Vector3 bounce;
+			//if (reflectFresnel)
+			//{
+			//	Vector3 refl = Vector3.Reflect(ray.Direction, roughNormal);// hit.Normal);
+
+			//	// Adjust based on roughness
+			//	Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
+			//	bounce = refl + randVec;
+
+			//	// Verify this new reflection vector is on the correct side 
+			//	// of the normal, and if not, reverse the random vector
+			//	// Note: The probability isn't uniform, so this may need a PDF?
+			//	if (Vector3.Dot(hit.Normal, bounce) < 0)
+			//		bounce = refl - randVec;
+			//}
+			//else
+			//{
+			//	// Random bounce since we're assuming its perfectly diffuse
+			//	// Shouldn't need the GGX normal, right?
+			//	bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			//}
+
+			// Very basic diffuse/specular switch using a lerp
 			// Randomly choose whether this is a diffuse or specular ray
-			float NdotV = Vector3.Dot(-1 * ray.Direction, roughNormal);// hit.Normal);
+			float NdotV = Vector3.Dot(-1 * ray.Direction, hit.Normal);
 			bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
 
-			// Determine if the bounce is specular or diffuse
-			Vector3 bounce;
-			if (reflectFresnel)
-			{
-				Vector3 refl = Vector3.Reflect(ray.Direction, roughNormal);// hit.Normal);
+			// Calculate both bounces
+			Vector3 diffuseBounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			Vector3 specularBounce = Vector3.Reflect(ray.Direction, hit.Normal);
 
-				// Adjust based on roughness
-				Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
-				bounce = refl + randVec;
+			// Adjust specular based on roughness
+			float roughness = GetRoughnessAtUV(hit.UV);
+			float a = roughness * roughness;
+			specularBounce = Vector3.Normalize(Vector3.Lerp(specularBounce, diffuseBounce, a));
 
-				// Verify this new reflection vector is on the correct side 
-				// of the normal, and if not, reverse the random vector
-				// Note: The probability isn't uniform, so this may need a PDF?
-				if (Vector3.Dot(hit.Normal, bounce) < 0)
-					bounce = refl - randVec;
-			}
-			else
-			{
-				// Random bounce since we're assuming its perfectly diffuse
-				// Shouldn't need the GGX normal, right?
-				bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
-			}
-
+			// Which ray are we actually using?
+			Vector3 bounce = reflectFresnel ? specularBounce : diffuseBounce;
 
 			// Note: This assumes 100% roughness (perfectly diffuse) - could handle roughness
 			// but we'd need to split into diffuse & specular components
