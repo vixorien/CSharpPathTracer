@@ -371,6 +371,11 @@ namespace CSharpPathTracer
 			//	bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
 			//}
 
+			// Currently based on the implementation here:
+			// https://blog.demofox.org/2020/06/06/casual-shadertoy-path-tracing-2-image-improvement-and-glossy-reflections/
+			// Need to do some weighting as shown here:
+			// https://blog.demofox.org/2020/06/14/casual-shadertoy-path-tracing-3-fresnel-rough-refraction-absorption-orbit-camera/
+
 			// Very basic diffuse/specular switch using a lerp
 			// Randomly choose whether this is a diffuse or specular ray
 			float NdotV = Vector3.Dot(-1 * ray.Direction, hit.Normal);
