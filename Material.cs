@@ -110,6 +110,30 @@ namespace CSharpPathTracer
 		}
 
 		/// <summary>
+		/// Converts a vector from tangent to world space
+		/// </summary>
+		/// <param name="vectorToConvert">The vector to convert from tangent space to world space</param>
+		/// <param name="surfaceNormal">The surface's normal</param>
+		/// <param name="surfaceTangent">The surface's tangent</param>
+		/// <returns>The given tangent-space vector in world space</returns>
+		public Vector3 TangentToWorldSpace(Vector3 vectorToConvert, Vector3 surfaceNormal, Vector3 surfaceTangent)
+		{
+			// Create TBN matrix
+			Vector3 N = surfaceNormal;
+			Vector3 T = Vector3.Normalize(surfaceTangent - N * Vector3.Dot(surfaceTangent, N));
+			Vector3 B = Vector3.Cross(N, T);  // Reverse due to right-handed
+
+			Matrix4x4 TBN = new Matrix4x4(
+				T.X, T.Y, T.Z, 0,
+				B.X, B.Y, B.Z, 0,
+				N.X, N.Y, N.Z, 0,
+				0, 0, 0, 1);
+
+			// Apply TBN and return result
+			return Vector3.Normalize(Vector3.TransformNormal(vectorToConvert, TBN));
+		}
+
+		/// <summary>
 		/// Gets the normal at the specified uv coord, taking into
 		/// account the surface's normal map (if one exists)
 		/// </summary>
@@ -128,19 +152,8 @@ namespace CSharpPathTracer
 			normalFromMap *= 2.0f;
 			normalFromMap = Vector3.Subtract(normalFromMap, Vector3.One);
 
-			// Create TBN matrix
-			Vector3 N = surfaceNormal;
-			Vector3 T = Vector3.Normalize(surfaceTangent - N * Vector3.Dot(surfaceTangent, N));
-			Vector3 B = Vector3.Cross(N, T);  // Reverse due to right-handed
-
-			Matrix4x4 TBN = new Matrix4x4(
-				T.X, T.Y, T.Z, 0,
-				B.X, B.Y, B.Z, 0,
-				N.X, N.Y, N.Z, 0,
-				0, 0, 0, 1);
-
-			// Apply TBN and return result
-			return Vector3.Normalize(Vector3.TransformNormal(normalFromMap, TBN));
+			// Convert to world space
+			return TangentToWorldSpace(normalFromMap, surfaceNormal, surfaceTangent);
 		}
 
 		/// <summary>
@@ -278,6 +291,9 @@ namespace CSharpPathTracer
 			// Random bounce since we're assuming its perfectly diffuse
 			// TODO: Handle bounce ray going through the object due to normal map
 			Vector3 bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+
+			//Vector3 bounceTangentSpace = ThreadSafeRandom.Instance.NextCosineHemisphereVectorTangentSpace();
+			//Vector3 bounce = this.TangentToWorldSpace(bounceTangentSpace, hit.Normal, hit.Tangent);
 
 			return new Ray(
 				hit.Position,
@@ -504,15 +520,25 @@ namespace CSharpPathTracer
 			// Perfect reflection since we're metal
 			Vector3 reflection = Vector3.Reflect(ray.Direction, hit.Normal);
 
-			// Adjust based on roughness
-			Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * GetRoughnessAtUV(hit.UV);
-			Vector3 roughReflection = reflection + randVec;
+			// Completely random bounce, too
+			Vector3 randomBounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
 
-			// Verify this new reflection vector is on the correct side 
-			// of the normal, and if not, reverse the random vector
-			// Note: The probability isn't uniform, so this may need a PDF?
-			if (Vector3.Dot(hit.Normal, roughReflection) < 0) 
-				roughReflection = reflection - randVec;
+			// Adjust perfect bounce based on roughness squared
+			float roughness = GetRoughnessAtUV(hit.UV);
+			float a = roughness * roughness;
+			Vector3 roughReflection = Vector3.Normalize(Vector3.Lerp(reflection, randomBounce, a));
+
+			//// Adjust based on roughness squared
+			//float roughness = GetRoughnessAtUV(hit.UV);
+			//float a = roughness * roughness;
+			//Vector3 randVec = ThreadSafeRandom.Instance.NextVector3() * a;
+			//Vector3 roughReflection = reflection + randVec;
+
+			//// Verify this new reflection vector is on the correct side 
+			//// of the normal, and if not, reverse the random vector
+			//// Note: The probability isn't uniform, so this may need a PDF?
+			//if (Vector3.Dot(hit.Normal, roughReflection) < 0)
+			//	roughReflection = reflection - randVec;
 
 			return new Ray(
 				hit.Position,

@@ -223,15 +223,25 @@ namespace CSharpPathTracer
 				scene.Add(ground);
 
 				// Create several entities with variable roughness
-				int numSpheres = 3;
+				int numSpheres = 5;
 				float scale = 2.0f;
 				for (int i = 0; i < numSpheres; i++)
 				{
+					float x = (i - numSpheres / 2.0f + 0.5f) * 1.5f * scale * 2;
+
+					// Diffuse+Specular material
 					DiffuseAndSpecularMaterial m = new DiffuseAndSpecularMaterial(new Vector3(0.25f, 0.25f, 1.0f), (float)i / (numSpheres - 1));
 					Entity e = new Entity(Sphere.Default, m);
-					e.Transform.SetPosition((i - numSpheres / 2.0f + 0.5f) * scale * 2, scale, 0);
+					e.Transform.SetPosition(x, scale, 0);
 					e.Transform.SetScale(scale);
 					scene.Add(e);
+
+					// Metal material
+					MetalMaterial met = new MetalMaterial(new Vector3(1.000f, 0.766f, 0.336f), (float)i / (numSpheres - 1));
+					Entity eMet = new Entity(Sphere.Default, met);
+					eMet.Transform.SetPosition(x, scale * 3 + 1, 0);
+					eMet.Transform.SetScale(scale);
+					scene.Add(eMet);
 				}
 
 				// Add to the scene list
