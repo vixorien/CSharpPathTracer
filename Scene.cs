@@ -398,8 +398,20 @@ namespace CSharpPathTracer
 				rightWall.Transform.Rotate(0, 0, halfPi);
 
 				// Light
-				Entity light = new Entity(Sphere.Default, whiteLight);
+				Entity light = new Entity(quadMesh, whiteLight);
+				light.Transform.MoveAbsolute(0, halfBox - 0.01f, 0);
+				light.Transform.SetScale(3);
 
+				// Objects inside box
+				Entity obj1 = new Entity(cubeMesh, grayMatte);
+				obj1.Transform.SetScale(3, 6, 3);
+				obj1.Transform.MoveAbsolute(-2.5f, -3, -1);
+				obj1.Transform.Rotate(0, 0.25f, 0);
+
+				Entity obj2 = new Entity(cubeMesh, mirror);
+				obj2.Transform.SetScale(2.5f, 4, 2.5f);
+				obj2.Transform.MoveAbsolute(2.5f, -4, 0);
+				obj2.Transform.Rotate(0, -MathF.PI / 4, 0);
 
 				Scene scene = new Scene("Cornell Box", blackEnv, sceneBounds);
 				scene.Add(ground);
@@ -408,6 +420,8 @@ namespace CSharpPathTracer
 				scene.Add(leftWall);
 				scene.Add(rightWall);
 				scene.Add(light);
+				scene.Add(obj1);
+				scene.Add(obj2);
 
 				// Add to scene list
 				scenes.Add(scene);
