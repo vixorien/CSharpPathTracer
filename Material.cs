@@ -213,14 +213,14 @@ namespace CSharpPathTracer
 
 
 		/// <summary>
-		/// Schlick approx of Fresnel using a constant 0.04 for f0
+		/// Schlick approx of Fresnel using a constant 0.04 for reflectance at 0 incidence (r0)
 		/// </summary>
 		/// <param name="NdotV">Dot between normal and "view"</param>
 		/// <returns>Fresnel approximation result</returns>
 		public static double FresnelSchlick(float NdotV)
 		{
-			float f0 = 0.04f;
-			return f0 + (1.0f - f0) * MathF.Pow(1 - NdotV, 5.0f);
+			float r0 = 0.04f;
+			return r0 + (1.0f - r0) * MathF.Pow(1 - NdotV, 5.0f);
 		}
 
 		// See: https://computergraphics.stackexchange.com/questions/4486/mimicking-blenders-roughness-in-my-path-tracer
@@ -290,10 +290,10 @@ namespace CSharpPathTracer
 
 			// Random bounce since we're assuming its perfectly diffuse
 			// TODO: Handle bounce ray going through the object due to normal map
-			Vector3 bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			//Vector3 bounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
 
-			//Vector3 bounceTangentSpace = ThreadSafeRandom.Instance.NextCosineHemisphereVectorTangentSpace();
-			//Vector3 bounce = this.TangentToWorldSpace(bounceTangentSpace, hit.Normal, hit.Tangent);
+			Vector3 bounceTangentSpace = ThreadSafeRandom.Instance.NextCosineHemisphereVectorTangentSpace();
+			Vector3 bounce = this.TangentToWorldSpace(bounceTangentSpace, hit.Normal, hit.Tangent);
 
 			return new Ray(
 				hit.Position,
@@ -356,7 +356,10 @@ namespace CSharpPathTracer
 			bool reflectFresnel = FresnelSchlick(NdotV) > ThreadSafeRandom.Instance.NextFloat();
 
 			// Calculate both bounces
-			Vector3 diffuseBounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			//Vector3 diffuseBounce = ThreadSafeRandom.Instance.NextVectorInHemisphere(hit.Normal);
+			Vector3 diffuseBounceTangentSpace = ThreadSafeRandom.Instance.NextCosineHemisphereVectorTangentSpace();
+			Vector3 diffuseBounce = this.TangentToWorldSpace(diffuseBounceTangentSpace, hit.Normal, hit.Tangent);
+
 			Vector3 specularBounce = Vector3.Reflect(ray.Direction, hit.Normal);
 
 			// Adjust specular based on roughness squared

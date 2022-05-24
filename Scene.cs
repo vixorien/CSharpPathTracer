@@ -405,12 +405,12 @@ namespace CSharpPathTracer
 				// Objects inside box
 				Entity obj1 = new Entity(cubeMesh, grayMatte);
 				obj1.Transform.SetScale(3, 6, 3);
-				obj1.Transform.MoveAbsolute(-2.5f, -3, -1);
-				obj1.Transform.Rotate(0, 0.25f, 0);
+				obj1.Transform.MoveAbsolute(-2f, -3, -1);
+				obj1.Transform.Rotate(0, 0.35f, 0);
 
-				Entity obj2 = new Entity(cubeMesh, mirror);
+				Entity obj2 = new Entity(cubeMesh, grayMatte);
 				obj2.Transform.SetScale(2.5f, 4, 2.5f);
-				obj2.Transform.MoveAbsolute(2.5f, -4, 0);
+				obj2.Transform.MoveAbsolute(1.5f, -4, 1);
 				obj2.Transform.Rotate(0, -MathF.PI / 4, 0);
 
 				Scene scene = new Scene("Cornell Box", blackEnv, sceneBounds);
