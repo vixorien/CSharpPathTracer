@@ -125,21 +125,35 @@ namespace CSharpPathTracer
 		/// <returns>A ray whose origin is the camera that travels through the given pixel</returns>
 		public Ray GetRayThroughPixel(float x, float y, int screenWidth, int screenHeight)
 		{
-			// Calculate NDCs
-			Vector4 ndc = new Vector4(x, y, 0, 1);
-			ndc.X = ndc.X / screenWidth * 2.0f - 1.0f;
-			ndc.Y = ndc.Y / screenHeight * 2.0f - 1.0f;
-			ndc.Y = -ndc.Y;
+			#region Matrix version (Replaced below)
+			//// Calculate NDCs
+			//Vector4 ndc = new Vector4(x, y, 0, 1);
+			//ndc.X = ndc.X / screenWidth * 2.0f - 1.0f;
+			//ndc.Y = ndc.Y / screenHeight * 2.0f - 1.0f;
+			//ndc.Y = -ndc.Y;
 
-			// Unproject coordinates
-			Vector4 unprojPos = Vector4.Transform(ndc, InverseViewProjection);
-			unprojPos /= unprojPos.W;
+			//// Unproject coordinates
+			//Vector4 unprojPos = Vector4.Transform(ndc, InverseViewProjection);
+			//unprojPos /= unprojPos.W;
 
-			// Create a vector3 from the unprojected vec4
-			Vector3 worldPos = new Vector3(
-				unprojPos.X,
-				unprojPos.Y,
-				unprojPos.Z);
+			//// Create a vector3 from the unprojected vec4
+			//Vector3 worldPos = new Vector3(
+			//	unprojPos.X,
+			//	unprojPos.Y,
+			//	unprojPos.Z);
+			#endregion
+
+			// New (non-matrix) math for position - slightly faster, especially in release
+			float w = 2 * MathF.Tan(fieldOfView / 2.0f) * nearClip;
+			Vector2 ndc = new Vector2(x / screenWidth, y / screenHeight);
+			ndc = Vector2.Add(Vector2.Multiply(2.0f, ndc), new Vector2(-1, -1));
+
+			ndc.X *= w;
+			ndc.Y *= w / aspectRatio;
+
+			Vector3 screenCenter = transform.Position + transform.Forward * nearClip;
+			Vector3 worldPos = screenCenter - transform.Up * ndc.Y + transform.Right * ndc.X;
+
 
 			// Calculate the depth of field offset
 			Vector3 randCircle = ThreadSafeRandom.Instance.NextVectorInCircle(lensRadius);
